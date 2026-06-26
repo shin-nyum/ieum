@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>이음 — 마음을 잇다</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#a87f6a" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="이음" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<link rel="icon" type="image/png" href="icon-192.png" />
+<script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" onerror="window.__kakaoFailed=true"></script>
+<style>
+  :root{
+    --bg:#f3efe8; --card:#ffffff; --ink:#39342e; --muted:#8b8378;
+    --line:#e7e0d5; --primary:#a87f6a; --primary-d:#8f6852;
+    --sage:#7f9080; --sage-d:#5f7060; --rose:#c08497; --gold:#bfa06a;
+    --ok:#5b8c6e; --warn:#c98a4b; --danger:#bd6a5a;
+    --radius:14px; --shadow:0 6px 24px rgba(57,52,46,.08);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;background:#e9e3d9;color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic","맑은 고딕",sans-serif;
+    font-size:15px;line-height:1.55}
+  .serif{font-family:"Nanum Myeongjo",Georgia,"Apple SD Gothic Neo",serif}
+  .phone{max-width:430px;margin:0 auto;min-height:100vh;background:var(--bg);
+    box-shadow:0 0 40px rgba(0,0,0,.12);position:relative;padding-bottom:60px}
+  header{position:sticky;top:0;z-index:30;background:rgba(243,239,232,.92);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 14px}
+  .brand{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .brand .logo{display:flex;align-items:baseline;gap:8px}
+  .brand b{font-size:19px;letter-spacing:.04em;color:var(--primary-d)}
+  .brand .slogan{font-size:11px;color:var(--muted);letter-spacing:.02em}
+  .brand .dd{font-size:11px;color:var(--muted)}
+  .seg{display:flex;background:#e7e0d5;border-radius:10px;padding:3px;margin-top:9px}
+  .seg button{flex:1;border:0;background:transparent;padding:8px 6px;border-radius:8px;
+    font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:.15s}
+  .seg button.on{background:var(--card);color:var(--primary-d);box-shadow:0 1px 4px rgba(0,0,0,.07)}
+  main{padding:16px 14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
+  .card h3{margin:0 0 4px;font-size:14px;letter-spacing:.02em}
+  .card .sub{color:var(--muted);font-size:12px;margin:0 0 12px}
+  label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;font-weight:600}
+  input,select,textarea{width:100%;padding:10px 11px;border:1px solid var(--line);
+    border-radius:10px;font-size:14px;background:#fcfbf9;color:var(--ink);font-family:inherit}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)}
+  .row{display:flex;gap:8px}.row>*{flex:1}
+  .btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;
+    border:0;border-radius:11px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;
+    transition:.15s;font-family:inherit}
+  .btn:active{transform:translateY(1px)}
+  .btn-primary{background:var(--primary);color:#fff}
+  .btn-primary:hover{background:var(--primary-d)}
+  .btn-kakao{background:#FEE500;color:#3A1D1D}
+  .btn-toss{background:#0064FF;color:#fff}
+  .btn-ghost{background:#f1ece4;color:var(--ink);border:1px solid var(--line)}
+  .btn-sage{background:var(--sage);color:#fff}
+  .btn-line{background:#fff;color:var(--primary-d);border:1.5px solid var(--primary)}
+  .btn-sm{padding:9px 10px;font-size:13px;border-radius:9px}
+  .btn[disabled],.btn-disabled{background:#ece7df;color:#b3aa9c;cursor:not-allowed;box-shadow:none}
+  .btn-disabled .lock{font-size:11px;opacity:.7}
+  .stack>*{margin-top:9px}
+  .hero{text-align:center;padding:26px 18px 22px;background:
+    radial-gradient(120% 90% at 50% 0%, #fff 0%, #f7f3ec 60%, #f0e9dd 100%);
+    border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:14px}
+  .hero .lead{font-size:11px;letter-spacing:.35em;color:var(--gold);text-transform:uppercase}
+  .hero .names{font-size:25px;margin:12px 0 4px;color:#4a443c}
+  .hero .names span{color:var(--rose);margin:0 9px;font-size:17px;vertical-align:middle}
+  .hero .when{font-size:13px;color:var(--muted);margin-top:9px;line-height:1.7}
+  .dday-pill{display:inline-block;margin-top:13px;background:var(--ink);color:#fff;
+    font-size:12px;font-weight:700;letter-spacing:.05em;padding:6px 14px;border-radius:999px}
+  .quote{font-size:13.5px;color:#6a6258;text-align:center;line-height:1.9;padding:4px 6px 0}
+  .divider{height:1px;background:var(--line);margin:14px 0}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px}
+  .pill-ok{background:#e7f0ea;color:var(--ok)}
+  .pill-no{background:#f6e7e4;color:var(--danger)}
+  .pill-wait{background:#f3ece1;color:var(--warn)}
+  .pill-gold{background:#f4eedd;color:#9a7d3e}
+  .glist{display:flex;flex-direction:column;gap:8px}
+  .grow{border:1px solid var(--line);border-radius:11px;padding:11px 12px;background:#fcfbf9}
+  .grow .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .grow .nm{font-weight:700;font-size:14px}
+  .grow .meta{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .grow .amt{display:flex;align-items:center;gap:7px;margin-top:9px}
+  .grow .amt input{padding:7px 9px;font-size:13px}
+  .minibtn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 9px;
+    font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;color:var(--ink)}
+  .minibtn.on{background:var(--ok);color:#fff;border-color:var(--ok)}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .stat{background:#fbf8f3;border:1px solid var(--line);border-radius:11px;padding:11px 8px;text-align:center}
+  .stat .v{font-size:19px;font-weight:800;color:var(--primary-d)}
+  .stat .v.big{font-size:16px}
+  .stat .k{font-size:11px;color:var(--muted);margin-top:2px}
+  .seg2{display:flex;background:#efe9e0;border-radius:9px;padding:3px;margin:2px 0 4px}
+  .seg2 button{flex:1;border:0;background:transparent;padding:8px;border-radius:7px;
+    font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer}
+  .seg2 button.on{background:#fff;color:var(--primary-d);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .note{font-size:11.5px;color:var(--muted);line-height:1.7;background:#faf7f2;
+    border:1px dashed var(--line);border-radius:10px;padding:10px 11px;margin-top:10px}
+  .note b{color:var(--primary-d)}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:#fff;padding:11px 18px;border-radius:999px;font-size:13px;
+    font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:100;max-width:90%;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .empty{text-align:center;color:var(--muted);font-size:12.5px;padding:18px 6px}
+  .footer{text-align:center;font-size:10.5px;color:#a59b8c;padding:8px 18px 0;line-height:1.7}
+  .badge-add{width:100%;border:1px dashed var(--primary);background:#fbf6f1;color:var(--primary-d);
+    border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer}
+  .secthead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .secthead .t{font-size:13px;font-weight:800;letter-spacing:.02em}
+  .secthead .c{font-size:11px;color:var(--muted)}
+  .acct{display:flex;align-items:center;justify-content:space-between;background:#fbf8f3;
+    border:1px solid var(--line);border-radius:11px;padding:11px 12px;margin-top:8px}
+  .acct .b{font-size:13px}.acct .b small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+  /* 경조사 목록(앱 내 캘린더) */
+  .listhead{display:flex;align-items:baseline;justify-content:space-between;margin:2px 2px 12px}
+  .listhead .t{font-size:18px;font-weight:800;color:#4a443c}
+  .listhead .c{font-size:12px;color:var(--muted)}
+  .evcard{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);
+    border-radius:var(--radius);padding:13px;margin-bottom:10px;box-shadow:var(--shadow);cursor:pointer;transition:.12s}
+  .evcard:active{transform:scale(.99)}
+  .evcard .ic{font-size:24px;width:48px;height:48px;flex:none;display:flex;align-items:center;
+    justify-content:center;background:#f4eee4;border-radius:13px}
+  .evcard .info{flex:1;min-width:0}
+  .evcard .nm{font-weight:800;font-size:15px;color:#43403a}
+  .evcard .typ{font-size:10.5px;font-weight:700;color:var(--sage-d);margin-left:6px}
+  .evcard .dt{font-size:12px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .evcard .right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:none}
+  .evcard .dd{font-size:12px;font-weight:800;color:var(--primary-d);background:#f4eedd;padding:4px 9px;border-radius:999px;white-space:nowrap}
+  .evcard .chev{color:#cabfae;font-size:16px}
+  .backbtn{background:none;border:0;color:var(--primary-d);font-weight:700;font-size:13px;
+    cursor:pointer;padding:4px 0;margin-bottom:6px;display:inline-flex;align-items:center;gap:4px}
+  .lblnote{font-size:11px;color:var(--muted);margin-top:4px}
+</style>
+</head>
+<body>
+<div class="phone">
+  <header>
+    <div class="brand">
+      <div class="logo"><b class="serif">이음</b><span class="slogan">마음을 잇다</span></div>
+      <span class="dd" id="ddayTop"></span>
+    </div>
+    <div class="seg">
+      <button id="tabHost" onclick="setTab('host')">✍️ 호스트</button>
+      <button id="tabGuest" onclick="setTab('guest')">🎁 내 경조사</button>
+    </div>
+  </header>
+  <main id="app"></main>
+  <div class="footer">
+    이음은 자금을 보관·중개하지 않습니다. 송금은 토스/뱅킹 앱에서 직접 이루어집니다.<br/>
+    경조금 내역은 자가신고·호스트 수기 입력 기반(Tier 1)입니다.<br/>
+    <span style="opacity:.7">이음 prototype · v2 (경조사 캘린더 · 외부청첩장 연계)</span>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ======================= 설정 ======================= */
+const KAKAO_JS_KEY = ''; // developers.kakao.com JavaScript 키 (비우면 링크복사로 대체)
+try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
+
+const TYPES={
+  wedding:{icon:'💍', money:'축의금', join:['참석합니다','어려워요'], counts:true, sep:'♥'},
+  firstbday:{icon:'🎂', money:'축하금', join:['참석합니다','어려워요'], counts:true, sep:'·'},
+  memorial:{icon:'🕊️', money:'조의금', join:['조문합니다','어려워요'], counts:false, sep:''}
+};
+const BANKS=['카카오뱅크','토스뱅크','국민','신한','우리','하나','농협','기업','SC제일','새마을금고'];
+const RELATIONS=['가족','친척','친구','직장','선후배','기타'];
+
+/* ======================= 상태 ======================= */
+const LS='ieum_v2';
+let _id=1; const uid=p=>(p||'x')+(_id++)+'_'+Math.floor(performance.now());
+function mkGuest(name,relation,side){return {id:uid('g'),name,relation,side:side||0,
+  rsvp:{status:null,count:1,meal:true}, report:{amount:null}, ledger:{amount:null,confirmed:false}, unregistered:false};}
+
+function seed(){
+  return {
+    events:[
+      { id:'e1', role:'host', type:'wedding',
+        partyA:'김민준', partyB:'이서연', subtitle:'저희 결혼합니다',
+        date:'2026-10-17', time:'13:00', venue:'더채플 앳 청담', address:'서울 강남구 청담동 123-4',
+        message:'서로 마주보며 다져온 사랑을\n이제 함께 한곳을 바라보며\n걸어가고자 합니다.',
+        externalUrl:'',
+        accounts:[ {label:'신랑측', bank:'카카오뱅크', number:'3333-01-1234567', holder:'김민준'},
+                   {label:'신부측', bank:'토스뱅크', number:'1000-12-3456789', holder:'이서연'} ],
+        guests:[ mkGuest('박지훈','친구',0), mkGuest('최수아','직장',1), mkGuest('정해린','가족',1) ] },
+      { id:'e2', role:'guest', type:'wedding',
+        partyA:'박서준', partyB:'김지우', subtitle:'결혼합니다',
+        date:'2026-09-05', time:'12:00', venue:'그랜드 워커힐 서울', address:'서울 광진구 워커힐로 177',
+        message:'두 사람이 사랑으로 만나\n새로운 가정을 이룹니다.',
+        externalUrl:'https://www.barunsoncard.com',
+        accounts:[ {label:'신랑측', bank:'국민', number:'123-45-6789012', holder:'박서준'},
+                   {label:'신부측', bank:'신한', number:'110-234-567890', holder:'김지우'} ],
+        guests:[] },
+      { id:'e3', role:'guest', type:'memorial',
+        partyA:'故 김정호', partyB:'', subtitle:'삼가 고인의 명복을 빕니다',
+        date:'2026-07-03', time:'09:00', venue:'서울추모공원 빈소 3호', address:'서울 서초구 원지동 산4',
+        message:'장례에 마음 보태주셔서 감사합니다.\n상주 김민수',
+        externalUrl:'',
+        accounts:[ {label:'상주측', bank:'농협', number:'302-1234-5678-91', holder:'김민수'} ],
+        guests:[] }
+    ],
+    ui:{ tab:'host', hostEventId:'e1', guestView:'list', currentEventId:null,
+         guestSession:{name:'', acctIdx:0} }
+  };
+}
+let S=load();
+function load(){ try{const r=localStorage.getItem(LS); if(r)return JSON.parse(r);}catch(e){} return seed(); }
+function save(){ localStorage.setItem(LS, JSON.stringify(S)); }
+function reset(){ if(confirm('데모 데이터를 초기화할까요?')){ localStorage.removeItem(LS); S=seed(); render(); toast('초기화했어요'); } }
+
+/* ======================= 유틸 ======================= */
+const $=s=>document.querySelector(s);
+const won=n=>'₩'+(Number(n)||0).toLocaleString('ko-KR');
+const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
+const cfg=ev=>TYPES[ev.type]||TYPES.wedding;
+function evName(ev){const c=cfg(ev);return ev.partyB?`${esc(ev.partyA)} <span>${c.sep}</span> ${esc(ev.partyB)}`:esc(ev.partyA);}
+function evNamePlain(ev){const c=cfg(ev);return ev.partyB?`${ev.partyA} ${c.sep} ${ev.partyB}`:ev.partyA;}
+function dateText(ev){if(!ev.date)return '';const d=new Date(ev.date+'T'+(ev.time||'00:00'));
+  const w=['일','월','화','수','목','금','토'];
+  return `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 (${w[d.getDay()]}) ${ev.time||''}`;}
+function dday(ev){if(!ev.date)return '';const t=new Date();t.setHours(0,0,0,0);
+  const d=new Date(ev.date+'T00:00');const n=Math.round((d-t)/86400000);
+  return n>0?`D-${n}`:n===0?'D-DAY':`D+${-n}`;}
+function copy(text){if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).catch(()=>fbCopy(text));}else fbCopy(text);}
+function fbCopy(text){const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(ta);}
+const hostEvent=()=>S.events.find(e=>e.id===S.ui.hostEventId);
+const curEvent=()=>S.events.find(e=>e.id===S.ui.currentEventId);
+
+/* ======================= 탭/내비 ======================= */
+function setTab(t){S.ui.tab=t;save();render();}
+function openEvent(id){S.ui.currentEventId=id;S.ui.guestView='detail';S.ui.guestSession.acctIdx=0;save();render();window.scrollTo(0,0);}
+function backToList(){S.ui.guestView='list';save();render();window.scrollTo(0,0);}
+
+/* ======================= 청첩장 공유 ======================= */
+function shareEvent(ev){
+  const link = ev.externalUrl ? ev.externalUrl : location.href.split('#')[0];
+  const text=`${evNamePlain(ev)} ${ev.subtitle}\n${dateText(ev)}\n${ev.venue}`;
+  const ready=window.Kakao&&Kakao.isInitialized&&Kakao.isInitialized();
+  if(ready){
+    try{ Kakao.Share.sendDefault({objectType:'feed',
+      content:{title:`${evNamePlain(ev)} ${ev.subtitle}`, description:`${dateText(ev)} · ${ev.venue}`,
+        imageUrl:'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=800',
+        link:{mobileWebUrl:link,webUrl:link}},
+      buttons:[{title:'청첩장 보기',link:{mobileWebUrl:link,webUrl:link}}]}); return; }catch(e){}
+  }
+  if(navigator.share){ navigator.share({title:'모바일 청첩장',text,url:link}).catch(()=>{}); return; }
+  copy(text+'\n'+link);
+  toast(ev.externalUrl?'청첩장 링크를 복사했어요':'카카오 키 미설정 → 내용을 복사했어요');
+}
+function openExternal(ev){
+  if(ev.externalUrl){ window.open(ev.externalUrl,'_blank'); }
+  else toast('호스트가 외부 청첩장 링크를 입력하면 여기서 열립니다');
+}
+
+/* ======================= 캘린더 ======================= */
+function icsStamp(d,t){const dt=new Date(d+'T'+(t||'00:00')+':00+09:00');return dt.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');}
+function vevent(ev,hours){
+  const start=icsStamp(ev.date,ev.time);
+  const e=new Date(ev.date+'T'+(ev.time||'00:00')+':00+09:00');e.setHours(e.getHours()+(hours||2));
+  const end=e.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+  return ['BEGIN:VEVENT','UID:'+uid('ics')+'@ieum','DTSTAMP:'+start,'DTSTART:'+start,'DTEND:'+end,
+    'SUMMARY:'+evNamePlain(ev)+' '+cfg(ev).money.replace('금',''),'LOCATION:'+(ev.venue+' '+ev.address),
+    'DESCRIPTION:'+(ev.message||'').replace(/\n/g,' '),
+    'BEGIN:VALARM','TRIGGER:-P1D','ACTION:DISPLAY','DESCRIPTION:'+evNamePlain(ev),'END:VALARM','END:VEVENT'].join('\r\n');
+}
+function downloadICS(content,fname){const blob=new Blob([content],{type:'text/calendar;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();a.remove();}
+function saveICS(ev){
+  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//ieum//ko','CALSCALE:GREGORIAN',vevent(ev,3),'END:VCALENDAR'].join('\r\n');
+  downloadICS(ics,'ieum-event.ics');toast('캘린더에 저장했어요 (.ics)');
+}
+function saveAllICS(){
+  const body=S.events.map(e=>vevent(e,3)).join('\r\n');
+  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//ieum//ko','CALSCALE:GREGORIAN',body,'END:VCALENDAR'].join('\r\n');
+  downloadICS(ics,'ieum-all.ics');toast(`경조사 ${S.events.length}건을 캘린더로 내보냈어요`);
+}
+function googleCal(ev){
+  const start=icsStamp(ev.date,ev.time);const e=new Date(ev.date+'T'+(ev.time||'00:00')+':00+09:00');e.setHours(e.getHours()+3);
+  const end=e.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+  const u='https://calendar.google.com/calendar/render?action=TEMPLATE'
+    +'&text='+encodeURIComponent(evNamePlain(ev)+' '+cfg(ev).money.replace('금',''))
+    +'&dates='+start+'/'+end+'&location='+encodeURIComponent(ev.venue+' '+ev.address)
+    +'&details='+encodeURIComponent((ev.message||'').replace(/\n/g,' '));
+  window.open(u,'_blank');
+}
+
+/* ======================= 송금 ======================= */
+function tossLink(acc){const num=(acc.number||'').replace(/[^0-9]/g,'');return `supertoss://send?bank=${encodeURIComponent(acc.bank)}&accountNo=${num}`;}
+function sendMoney(acc){let ok=false;try{window.location.href=tossLink(acc);ok=true;}catch(e){}
+  setTimeout(()=>toast(ok?'토스가 설치된 폰에서 송금화면이 열립니다':'계좌번호를 복사해 직접 송금하세요'),400);}
+function copyAcct(acc){copy(`${acc.bank} ${acc.number} ${acc.holder}`);toast('계좌번호를 복사했어요');}
+
+function soon(name){toast(`「${name}」 — 추후/프리미엄 기능`);}
+
+/* ======================= 렌더 ======================= */
+function render(){
+  const he=hostEvent();
+  $('#ddayTop').textContent = S.ui.tab==='host' ? (he?dday(he):'') : '';
+  $('#tabHost').classList.toggle('on',S.ui.tab==='host');
+  $('#tabGuest').classList.toggle('on',S.ui.tab==='guest');
+  $('#app').innerHTML = S.ui.tab==='host' ? hostView()
+    : (S.ui.guestView==='detail' ? guestDetail() : guestList());
+}
+
+/* ---------- 호스트 ---------- */
+function hostView(){
+  const ev=hostEvent(); const c=cfg(ev); const led=ledgerStats(ev);
+  return `
+  <div class="card">
+    <h3>① 청첩장 정보</h3>
+    <p class="sub">정보를 입력하면 캘린더·공유·송금에 그대로 반영됩니다.</p>
+    <div class="row">
+      <div><label>신랑</label><input value="${esc(ev.partyA)}" onchange="updEv('partyA',this.value)"></div>
+      <div><label>신부</label><input value="${esc(ev.partyB)}" onchange="updEv('partyB',this.value)"></div>
+    </div>
+    <div class="row">
+      <div><label>예식 날짜</label><input type="date" value="${ev.date}" onchange="updEv('date',this.value)"></div>
+      <div><label>시간</label><input type="time" value="${ev.time}" onchange="updEv('time',this.value)"></div>
+    </div>
+    <label>예식장</label><input value="${esc(ev.venue)}" onchange="updEv('venue',this.value)">
+    <label>주소</label><input value="${esc(ev.address)}" onchange="updEv('address',this.value)">
+    <label>인사말</label><textarea rows="3" onchange="updEv('message',this.value)">${esc(ev.message)}</textarea>
+  </div>
+
+  <div class="card">
+    <h3>② 모바일 청첩장 링크 연계</h3>
+    <p class="sub">전문업체에서 제작한 청첩장 링크를 붙여넣으면, 그 청첩장으로 발송됩니다. 이음은 캘린더·송금·정산을 함께 얹어줍니다.</p>
+    <label>외부 청첩장 URL</label>
+    <input placeholder="https://... (바른손/더카드 등 제작 링크)" value="${esc(ev.externalUrl)}" onchange="updEv('externalUrl',this.value)">
+    <p class="lblnote">${ev.externalUrl?'✓ 연결됨 — 공유 시 이 링크로 열립니다':'미입력 시 이음 기본 청첩장 화면으로 공유됩니다'}</p>
+    <div class="stack" style="margin-top:12px">
+      <button class="btn btn-kakao" onclick="shareEvent(hostEvent())">💬 카카오톡으로 청첩장 보내기</button>
+      ${ev.externalUrl?'<button class="btn btn-line" onclick="openExternal(hostEvent())">🔗 연결된 청첩장 미리보기</button>':''}
+    </div>
+    <div class="note">💡 카카오톡 <b>공유(Kakao Share)</b> — 내 톡에서 바로 전송, 검수·쿼터 없음. 실제 전송은 카카오 JS 키 설정 시 작동(데모는 링크복사).</div>
+  </div>
+
+  <div class="card">
+    <h3>축의금 받을 계좌</h3>
+    <p class="sub">하객은 이 계좌로 '딥링크 송금화면'을 통해 직접 보냅니다. 이음은 자금을 만지지 않습니다.</p>
+    ${ev.accounts.map((a,i)=>acctEditor(i,a)).join('')}
+  </div>
+
+  <div class="card">
+    <div class="secthead"><div class="t">③ 정산 장부 (Tier 1)</div><div class="c">하객 ${ev.guests.length}명</div></div>
+    <p class="sub">하객 자가신고 + 호스트 수기 매칭. 자금 흐름과 무관한 '읽기 전용' 장부입니다.</p>
+    <div class="stats">
+      <div class="stat"><div class="v">${led.attend}</div><div class="k">참석 응답</div></div>
+      <div class="stat"><div class="v">${led.heads}</div><div class="k">총 참석 인원</div></div>
+      <div class="stat"><div class="v big">${won(led.confirmed)}</div><div class="k">확정 ${c.money}</div></div>
+    </div>
+    <div class="note" style="margin-top:10px">자가신고 합계 ${won(led.reported)} · 확정 ${won(led.confirmed)} · 미확정 ${led.pending}건${led.unreg?` · 미매칭 ${led.unreg}건`:''}</div>
+    <div class="secthead" style="margin:16px 0 4px"><div class="t">하객 명단 · 매칭</div></div>
+    <div class="glist">
+      ${ev.guests.filter(x=>!x.unregistered).map(x=>rowHost(ev,x)).join('')||'<div class="empty">하객을 추가해 주세요</div>'}
+    </div>
+    <button class="badge-add" style="margin-top:10px" onclick="addGuest()">+ 하객 추가</button>
+    ${ev.guests.some(x=>x.unregistered)?`
+      <div class="secthead" style="margin:18px 0 6px"><div class="t" style="color:var(--warn)">미매칭 풀 · 신규 입금</div><div class="c">명단에 없던 입금</div></div>
+      <div class="glist">${ev.guests.filter(x=>x.unregistered).map(x=>rowHost(ev,x)).join('')}</div>`:''}
+  </div>
+
+  <div class="card">
+    <h3>부가 기능</h3>
+    <p class="sub">이번 프로토타입에서는 버튼만 활성화했습니다.</p>
+    <div class="stack">
+      <button class="btn btn-disabled" onclick="soon('축의금 엑셀 다운로드')">📊 축의금 엑셀 다운로드 <span class="lock">· 프리미엄 ₩9,900</span></button>
+      <button class="btn btn-disabled" onclick="soon('감사 인사 단체문자 세팅')">✉️ 감사 인사 단체문자 세팅 <span class="lock">· 프리미엄</span></button>
+      <button class="btn btn-disabled" onclick="soon('청첩모임 만들기')">🍽️ 청첩모임 만들기 <span class="lock">· 추후</span></button>
+    </div>
+    <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="reset()">데모 데이터 초기화</button>
+  </div>`;
+}
+function acctEditor(i,a){
+  return `<div style="margin-top:10px">
+    <label style="margin:0">${esc(a.label)}</label>
+    <div class="row" style="margin-top:5px">
+      <div style="max-width:40%"><select onchange="updAcct(${i},'bank',this.value)">
+        ${BANKS.map(b=>`<option ${b===a.bank?'selected':''}>${b}</option>`).join('')}</select></div>
+      <div><input placeholder="계좌번호" value="${esc(a.number)}" onchange="updAcct(${i},'number',this.value)"></div>
+    </div>
+    <input style="margin-top:6px" placeholder="예금주" value="${esc(a.holder)}" onchange="updAcct(${i},'holder',this.value)"></div>`;
+}
+function rowHost(ev,x){
+  const r=x.rsvp,st=r.status;
+  const pill=st==='yes'?`<span class="pill pill-ok">참석 ${r.count}명</span>`:st==='no'?`<span class="pill pill-no">불참</span>`:`<span class="pill pill-wait">미응답</span>`;
+  const rep=x.report.amount!=null?`<span class="pill pill-gold">자가신고 ${won(x.report.amount)}</span>`:'';
+  const sideLabel=ev.accounts[x.side]?ev.accounts[x.side].label:'';
+  return `<div class="grow">
+    <div class="top">
+      <div><div class="nm">${esc(x.name)} <span style="font-weight:400;color:var(--muted);font-size:11px">· ${sideLabel} ${esc(x.relation)}</span></div>
+        <div class="meta" style="margin-top:5px">${pill} ${rep}</div></div>
+      ${x.unregistered?`<button class="minibtn" onclick="promote('${x.id}')">명단으로</button>`:`<button class="minibtn" onclick="delGuest('${x.id}')" style="color:var(--danger)">삭제</button>`}
+    </div>
+    <div class="amt">
+      <input type="number" inputmode="numeric" placeholder="확정 금액" value="${x.ledger.amount??''}" onchange="updLedger('${x.id}',this.value)">
+      <button class="minibtn ${x.ledger.confirmed?'on':''}" onclick="toggleConfirm('${x.id}')">${x.ledger.confirmed?'✓ 확정':'확정'}</button>
+      ${x.report.amount!=null&&x.ledger.amount==null?`<button class="minibtn" onclick="useReport('${x.id}')">신고액 적용</button>`:''}
+    </div></div>`;
+}
+
+/* ---------- 하객: 경조사 목록(앱 내 캘린더) ---------- */
+function guestList(){
+  const evs=[...S.events].sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  const upcoming=evs.filter(e=>new Date(e.date+'T'+(e.time||'00:00'))>=new Date(new Date().toDateString())).length;
+  return `
+  <div class="listhead"><div class="t serif">내 경조사</div><div class="c">다가오는 일정 ${upcoming}건</div></div>
+  <p class="sub" style="margin:-6px 2px 14px;color:var(--muted)">받은 청첩장·부고를 한곳에서 관리하세요. 카드를 누르면 청첩장 확인과 송금으로 이어집니다.</p>
+  ${evs.map(ev=>{const c=cfg(ev);return `
+    <div class="evcard" onclick="openEvent('${ev.id}')">
+      <div class="ic">${c.icon}</div>
+      <div class="info">
+        <div class="nm">${evNamePlain(ev)}<span class="typ">${ev.type==='memorial'?'부고':ev.type==='firstbday'?'돌잔치':'결혼'}</span></div>
+        <div class="dt">${dateText(ev)} · ${esc(ev.venue)}</div>
+      </div>
+      <div class="right"><span class="dd">${dday(ev)}</span><span class="chev">›</span></div>
+    </div>`;}).join('')}
+  <button class="btn btn-sage" style="margin-top:6px" onclick="saveAllICS()">📅 전체 일정 내 캘린더로 저장</button>
+  <div class="note">💡 이 목록이 이음의 <b>경조사 캘린더</b>입니다. 여러 결혼식·부고를 한눈에 보고, 각 일정을 휴대폰 기본 캘린더로도 내보낼 수 있어요.</div>`;
+}
+
+/* ---------- 하객: 상세(청첩장 + 송금) ---------- */
+function guestDetail(){
+  const ev=curEvent(); if(!ev){S.ui.guestView='list';return guestList();}
+  const c=cfg(ev); const nm=S.ui.guestSession.name; const me=nm?ev.guests.find(x=>x.name===nm):null;
+  const idx=S.ui.guestSession.acctIdx||0; const acc=ev.accounts[idx]||ev.accounts[0];
+  return `
+  <button class="backbtn" onclick="backToList()">‹ 내 경조사</button>
+  <div class="hero">
+    <div class="lead">${ev.type==='memorial'?'In memoriam':"You're invited"}</div>
+    <div class="names serif">${evName(ev)}</div>
+    <div class="when">${dateText(ev)}<br/>${esc(ev.venue)}</div>
+    <div class="dday-pill">${dday(ev)}</div>
+  </div>
+  <div class="card">
+    <p class="quote serif">${esc(ev.message).replace(/\n/g,'<br/>')}</p>
+    <div class="divider"></div>
+    <button class="btn ${ev.externalUrl?'btn-primary':'btn-ghost'}" onclick="openExternal(curEvent())">
+      🔗 ${ev.externalUrl?'청첩장 전체보기 (전문업체)':'청첩장 보기 (외부 링크 미연결)'}</button>
+    <div class="stack" style="margin-top:9px">
+      <button class="btn btn-sage" onclick="saveICS(curEvent())">📅 캘린더에 저장 (.ics)</button>
+      <button class="btn btn-ghost" onclick="googleCal(curEvent())">🗓️ 구글 캘린더에 추가</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>${ev.type==='memorial'?'조문 의사':'참석 의사 (RSVP)'}</h3>
+    <p class="sub">${ev.type==='memorial'?'상주에게 마음을 전합니다.':'신랑·신부에게 참석 여부를 알려주세요.'}</p>
+    <label>성함</label>
+    <input id="gname" placeholder="이름을 입력하세요" value="${esc(nm)}" onchange="setGuestName(this.value)">
+    <label>${ev.type==='memorial'?'조문 여부':'참석 여부'}</label>
+    <div class="seg2">
+      <button class="${me&&me.rsvp.status==='yes'?'on':''}" onclick="rsvp('yes')">${c.join[0]}</button>
+      <button class="${me&&me.rsvp.status==='no'?'on':''}" onclick="rsvp('no')">${c.join[1]}</button>
+    </div>
+    ${c.counts&&me&&me.rsvp.status==='yes'?`
+    <div class="row" style="margin-top:8px">
+      <div><label>참석 인원</label><input type="number" min="1" value="${me.rsvp.count}" onchange="rsvpField('count',this.value)"></div>
+      <div><label>식사</label><select onchange="rsvpField('meal',this.value)">
+        <option value="1" ${me.rsvp.meal?'selected':''}>예정</option><option value="0" ${!me.rsvp.meal?'selected':''}>안 함</option>
+      </select></div></div>`:''}
+    ${me?`<div class="note" style="margin-top:10px">✓ ${esc(me.name)}님 응답이 호스트 장부에 전달되었습니다.</div>`:''}
+  </div>
+
+  <div class="card">
+    <h3>마음 전하기 (${c.money})</h3>
+    <p class="sub">버튼을 누르면 송금화면이 열립니다. 이음은 자금을 거치지 않습니다.</p>
+    ${ev.accounts.length>1?`<div class="seg2">${ev.accounts.map((a,i)=>`<button class="${i===idx?'on':''}" onclick="setAcct(${i})">${esc(a.label)}</button>`).join('')}</div>`:''}
+    <div class="acct"><div class="b">${esc(acc.bank)} ${esc(acc.number)}<small>예금주 ${esc(acc.holder)}</small></div>
+      <button class="minibtn" onclick="copyAcct(curEvent().accounts[${idx}])">복사</button></div>
+    <div class="stack" style="margin-top:10px">
+      <button class="btn btn-toss" onclick="sendMoney(curEvent().accounts[${idx}])">송금화면 열기 (토스)</button>
+      <button class="btn btn-ghost" onclick="copyAcct(curEvent().accounts[${idx}])">계좌번호 복사 후 직접 송금</button>
+    </div>
+    <div class="divider"></div>
+    <h3 style="font-size:13px">보내셨나요? (자가 기록)</h3>
+    <p class="sub" style="margin-bottom:8px">금액을 남기면 호스트의 정산 장부에 '자가신고'로 반영됩니다.</p>
+    <div class="row">
+      <input id="repamt" type="number" inputmode="numeric" placeholder="보낸 금액" value="${me&&me.report.amount!=null?me.report.amount:''}">
+      <button class="btn btn-primary btn-sm" style="max-width:42%" onclick="reportSent()">보냈어요 ✓</button>
+    </div>
+    ${me&&me.report.amount!=null?`<div class="note" style="margin-top:10px">✓ ${won(me.report.amount)} 자가신고 완료 — 호스트 장부에 '미확인'으로 기록됨.</div>`:''}
+  </div>
+  <div class="card">
+    <button class="btn btn-disabled" onclick="soon('비대면 답례품 보내기')">🎁 답례품 보내기 (참석 못하는 분) <span class="lock">· 추후</span></button>
+  </div>`;
+}
+
+/* ======================= 액션 ======================= */
+function updEv(k,v){hostEvent()[k]=v;save();if(k==='date'||k==='time')$('#ddayTop').textContent=dday(hostEvent());}
+function updAcct(i,f,v){hostEvent().accounts[i][f]=v;save();}
+function addGuest(){const n=prompt('하객 이름');if(!n)return;const ev=hostEvent();
+  const side=ev.accounts.length>1?(confirm(ev.accounts[0].label+'인가요? (취소='+ev.accounts[1].label+')')?0:1):0;
+  ev.guests.push(mkGuest(n,'친구',side));save();render();toast(n+'님 추가');}
+function delGuest(id){const ev=hostEvent();ev.guests=ev.guests.filter(x=>x.id!==id);save();render();}
+function updLedger(id,v){const x=hostEvent().guests.find(g=>g.id===id);if(!x)return;x.ledger.amount=v===''?null:Number(v);save();render();}
+function toggleConfirm(id){const x=hostEvent().guests.find(g=>g.id===id);if(!x)return;
+  if(x.ledger.amount==null){toast('확정 금액을 먼저 입력하세요');return;}x.ledger.confirmed=!x.ledger.confirmed;save();render();}
+function useReport(id){const x=hostEvent().guests.find(g=>g.id===id);if(!x)return;x.ledger.amount=x.report.amount;save();render();toast('자가신고액을 확정칸에 넣었어요');}
+function promote(id){const x=hostEvent().guests.find(g=>g.id===id);if(!x)return;x.unregistered=false;save();render();toast('명단으로 옮겼어요');}
+
+function setGuestName(v){S.ui.guestSession.name=v.trim();save();render();}
+function setAcct(i){S.ui.guestSession.acctIdx=i;save();render();}
+function rsvp(status){const ev=curEvent();const nm=S.ui.guestSession.name||($('#gname')&&$('#gname').value.trim());
+  if(!nm){toast('성함을 먼저 입력하세요');return;}S.ui.guestSession.name=nm;
+  let x=ev.guests.find(g=>g.name===nm);if(!x){x=mkGuest(nm,'친구',S.ui.guestSession.acctIdx||0);x.unregistered=true;ev.guests.push(x);}
+  x.rsvp.status=status;save();render();toast(status==='yes'?'전달했어요':'전달했어요');}
+function rsvpField(f,v){const ev=curEvent();const x=ev.guests.find(g=>g.name===S.ui.guestSession.name);if(!x)return;
+  x.rsvp[f]=f==='count'?Math.max(1,Number(v)):(f==='meal'?v==='1':v);save();render();}
+function reportSent(){const ev=curEvent();const nm=S.ui.guestSession.name||($('#gname')&&$('#gname').value.trim());
+  if(!nm){toast('성함을 먼저 입력하세요');return;}const amt=Number($('#repamt').value);if(!amt){toast('금액을 입력하세요');return;}
+  S.ui.guestSession.name=nm;let x=ev.guests.find(g=>g.name===nm);
+  if(!x){x=mkGuest(nm,'친구',S.ui.guestSession.acctIdx||0);x.unregistered=true;ev.guests.push(x);}
+  x.report.amount=amt;save();render();toast('자가신고 완료 — 호스트 장부에 반영됨');}
+
+/* ======================= 집계 ======================= */
+function ledgerStats(ev){let attend=0,heads=0,reported=0,confirmed=0,pending=0,unreg=0;
+  ev.guests.forEach(x=>{if(x.rsvp.status==='yes'){attend++;heads+=x.rsvp.count||1;}
+    if(x.report.amount!=null)reported+=x.report.amount;
+    if(x.ledger.confirmed&&x.ledger.amount!=null)confirmed+=x.ledger.amount;
+    else if(x.report.amount!=null||x.rsvp.status==='yes')pending++;
+    if(x.unregistered)unreg++;});
+  return {attend,heads,reported,confirmed,pending,unreg};}
+
+render();
+
+/* PWA: 서비스 워커 등록 */
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('./service-worker.js?v=3').catch(()=>{});});}
+</script>
+</body>
+</html>

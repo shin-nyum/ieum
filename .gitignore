@@ -1,0 +1,6 @@
+cloudflared.exe
+tunnel.log
+*.log
+_chk*.html
+_c.html
+qr.png
