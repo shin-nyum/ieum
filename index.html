@@ -178,6 +178,32 @@
   .lc-d{font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.6}
   .lc-go{margin-top:13px;font-size:13px;font-weight:800;color:var(--primary-d)}
   .land-foot{text-align:center;font-size:11.5px;color:var(--muted);margin-top:18px;line-height:1.6}
+  .budget-net{display:flex;align-items:center;justify-content:space-between;margin-top:12px;
+    background:#f3ece0;border-radius:11px;padding:13px 14px;font-weight:700;font-size:14px;color:var(--primary-d)}
+  .budget-net b{font-size:19px}
+  /* 가계부·관계칩 */
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px;font-size:12.5px;
+    font-weight:700;color:var(--ink);cursor:pointer;font-family:inherit}
+  .chip.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .relrow{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+  .relrow .rl{width:42px;font-size:12px;font-weight:700;color:var(--ink);flex:none}
+  .relrow .bar{flex:1;height:9px;background:#f0e9dd;border-radius:5px;overflow:hidden}
+  .relrow .bar .fill{height:100%;background:var(--primary);border-radius:5px}
+  .relrow .rv,.calevrow .rv{font-size:12.5px;font-weight:800;color:var(--primary-d);min-width:62px;text-align:right;flex:none}
+  /* 추천기 */
+  .reco-cta{display:flex;align-items:center;gap:11px;cursor:pointer;background:#fbf6f1;border-color:var(--primary)}
+  .reco-cta .rc-ic{font-size:24px;flex:none}
+  .reco-cta .rc-tx{flex:1;min-width:0}
+  .reco-cta .rc-t{font-weight:800;font-size:15px;color:var(--primary-d)}
+  .reco-cta .rc-d{font-size:12px;color:var(--muted);margin-top:2px}
+  .reco-cta .rc-go{color:var(--primary-d);font-weight:800;font-size:18px;flex:none}
+  .reco-result{text-align:center;background:#fbf6f1;border:1px solid var(--line);border-radius:13px;padding:18px;margin-top:16px}
+  .reco-result .rr-k{font-size:12px;color:var(--muted);font-weight:700}
+  .reco-result .rr-v{font-size:33px;font-weight:800;color:var(--primary-d);margin-top:4px;letter-spacing:-.01em}
+  .rr-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:11px}
+  .rrc{font-size:12px;font-weight:700;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 11px}
+  .rrc.on{background:var(--primary);color:#fff;border-color:var(--primary)}
 </style>
 </head>
 <body>
@@ -196,7 +222,7 @@
   <div class="footer">
     이음은 자금을 보관·중개하지 않습니다. 송금은 토스/뱅킹 앱에서 직접 이루어집니다.<br/>
     경조금 내역은 자가신고·호스트 수기 입력 기반(Tier 1)입니다.<br/>
-    <span style="opacity:.7">이음 prototype · v4 (시작 화면 · 안정성 개선)</span>
+    <span style="opacity:.7">이음 prototype · v7 (축의금 추천기 · 가계부 · 직접추가)</span>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -238,14 +264,14 @@ function seed(){
         externalUrl:'https://www.barunsoncard.com',
         accounts:[ {label:'신랑측', bank:'국민', number:'123-45-6789012', holder:'박서준'},
                    {label:'신부측', bank:'신한', number:'110-234-567890', holder:'김지우'} ],
-        guests:[] },
+        myGift:100000, myRelation:'친구', guests:[] },
       { id:'e3', role:'guest', type:'memorial',
         partyA:'故 김정호', partyB:'', subtitle:'삼가 고인의 명복을 빕니다',
         date:'2026-07-03', time:'09:00', venue:'서울추모공원 빈소 3호', address:'서울 서초구 원지동 산4',
         message:'장례에 마음 보태주셔서 감사합니다.\n상주 김민수',
         externalUrl:'',
         accounts:[ {label:'상주측', bank:'농협', number:'302-1234-5678-91', holder:'김민수'} ],
-        guests:[] }
+        myGift:50000, myRelation:'직장', guests:[] }
     ],
     ui:{ entered:false, tab:'guest', hostEventId:'e1', guestView:'list', currentEventId:null,
          guestSession:{name:'', acctIdx:0} }
@@ -359,7 +385,11 @@ function render(){
   $('#tabHost').classList.toggle('on',S.ui.tab==='host');
   $('#tabGuest').classList.toggle('on',S.ui.tab==='guest');
   $('#app').innerHTML = S.ui.tab==='host' ? hostView()
-    : (S.ui.guestView==='detail' ? guestDetail() : guestList());
+    : S.ui.guestView==='import' ? importView()
+    : S.ui.guestView==='ledger' ? ledgerView()
+    : S.ui.guestView==='add' ? addView()
+    : S.ui.guestView==='reco' ? recoView()
+    : S.ui.guestView==='detail' ? guestDetail() : guestList();
 }
 
 /* ---------- 시작(진입) 화면 ---------- */
@@ -451,6 +481,8 @@ function hostView(){
       <div class="glist">${ev.guests.filter(x=>x.unregistered).map(x=>rowHost(ev,x)).join('')}</div>`:''}
   </div>
 
+  ${budgetCard(ev)}
+
   <div class="card">
     <h3>부가 기능</h3>
     <p class="sub">이번 프로토타입에서는 버튼만 활성화했습니다.</p>
@@ -492,11 +524,32 @@ function rowHost(ev,x){
 
 /* ---------- 하객: 경조사 목록(앱 내 캘린더) ---------- */
 function guestList(){
+  if(!S.events.length){ return `
+  <div class="listhead"><div class="t serif">내 경조사</div></div>
+  <div class="card" style="text-align:center;padding:30px 18px">
+    <div style="font-size:36px">🎁</div>
+    <div style="font-weight:800;font-size:16px;margin-top:8px">아직 등록된 경조사가 없어요</div>
+    <p class="sub" style="margin-top:6px;margin-bottom:0">받은 청첩장을 가져오거나 직접 추가해<br/>한곳에서 관리하세요.</p>
+    <div class="stack" style="margin-top:16px">
+      <button class="btn btn-primary" onclick="openImport()">📥 카카오톡 청첩장 가져오기</button>
+      <button class="btn btn-ghost" onclick="openAdd()">＋ 직접 추가</button>
+    </div>
+  </div>`; }
   const evs=[...S.events].sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
   const upcoming=evs.filter(e=>new Date(e.date+'T'+(e.time||'00:00'))>=new Date(new Date().toDateString())).length;
   return `
   <div class="listhead"><div class="t serif">내 경조사</div><div class="c">다가오는 일정 ${upcoming}건</div></div>
-  <p class="sub" style="margin:-6px 2px 14px;color:var(--muted)">받은 청첩장·부고를 한곳에서 관리하세요. 카드를 누르면 확인과 송금으로 이어집니다.</p>
+  ${ledgerSummaryCard()}
+  <div class="card reco-cta" onclick="openReco()">
+    <div class="rc-ic">💰</div>
+    <div class="rc-tx"><div class="rc-t">축의금 얼마 낼까?</div><div class="rc-d">관계·참석·식장으로 적정 금액 추천받기</div></div>
+    <div class="rc-go">›</div>
+  </div>
+  <p class="sub" style="margin:0 2px 12px;color:var(--muted)">받은 청첩장·부고를 한곳에서 관리하세요. 카드를 누르면 확인과 송금으로 이어집니다.</p>
+  <div class="row" style="margin-bottom:13px">
+    <button class="badge-add" style="margin:0" onclick="openImport()">📥 가져오기</button>
+    <button class="badge-add" style="margin:0" onclick="openAdd()">＋ 직접 추가</button>
+  </div>
   ${evs.map(ev=>{const c=cfg(ev);return `
     <div class="evcard" onclick="openEvent('${ev.id}')">
       <div class="ic">${c.icon}</div>
@@ -621,13 +674,15 @@ function guestDetail(){
       <button class="btn btn-ghost" onclick="copyAcct(curEvent().accounts[${idx}])">계좌번호 복사 후 직접 송금</button>
     </div>
     <div class="divider"></div>
-    <h3 style="font-size:13px">보내셨나요? (자가 기록)</h3>
-    <p class="sub" style="margin-bottom:8px">금액을 남기면 호스트의 정산 장부에 '자가신고'로 반영됩니다.</p>
+    <h3 style="font-size:13px">${c.money} 기록 <span style="font-weight:600;color:var(--muted);font-size:11px">· 내 가계부에 저장</span></h3>
+    <p class="sub" style="margin-bottom:8px">관계와 금액을 남기면 <b>내 경조사비 가계부</b>에 쌓이고, 호스트 장부에도 자가신고로 반영됩니다.</p>
+    <div class="chips" style="margin-bottom:9px">${['가족','친척','친구','직장','지인'].map(r=>`<button class="chip ${ev.myRelation===r?'on':''}" onclick="setMyRelation('${r}')">${r}</button>`).join('')}</div>
+    <button class="btn btn-line btn-sm" style="margin-bottom:9px" onclick="openReco(curEvent().id)">💰 얼마 낼지 추천받기</button>
     <div class="row">
-      <input id="repamt" type="number" inputmode="numeric" placeholder="보낸 금액" value="${me&&me.report.amount!=null?me.report.amount:''}">
-      <button class="btn btn-primary btn-sm" style="max-width:42%" onclick="reportSent()">보냈어요 ✓</button>
+      <input id="repamt" type="number" inputmode="numeric" placeholder="보낸 금액" value="${ev.myGift!=null?ev.myGift:(me&&me.report.amount!=null?me.report.amount:'')}">
+      <button class="btn btn-primary btn-sm" style="max-width:42%" onclick="reportSent()">기록 ✓</button>
     </div>
-    ${me&&me.report.amount!=null?`<div class="note" style="margin-top:10px">✓ ${won(me.report.amount)} 자가신고 완료 — 호스트 장부에 '미확인'으로 기록됨.</div>`:''}
+    ${ev.myGift!=null?`<div class="note" style="margin-top:10px">✓ ${won(ev.myGift)}${ev.myRelation?` (${esc(ev.myRelation)})`:''} 기록됨 — 내 가계부에 반영되었습니다.</div>`:''}
   </div>
   <div class="card">
     <button class="btn btn-disabled" onclick="soon('비대면 답례품 보내기')">🎁 답례품 보내기 (참석 못하는 분) <span class="lock">· 추후</span></button>
@@ -673,7 +728,7 @@ function reportSent(){const ev=curEvent();const nm=S.ui.guestSession.name||($('#
   if(!nm){toast('성함을 먼저 입력하세요');return;}const amt=Number($('#repamt').value);if(!amt){toast('금액을 입력하세요');return;}
   S.ui.guestSession.name=nm;let x=ev.guests.find(g=>g.name===nm);
   if(!x){x=mkGuest(nm,'친구',S.ui.guestSession.acctIdx||0);x.unregistered=true;ev.guests.push(x);}
-  x.report.amount=amt;save();render();toast('자가신고 완료 — 호스트 장부에 반영됨');}
+  x.report.amount=amt; ev.myGift=amt; save();render();toast('기록 완료 — 내 가계부에 반영됨');}
 
 /* ======================= 집계 ======================= */
 function ledgerStats(ev){let attend=0,heads=0,reported=0,confirmed=0,pending=0,unreg=0;
@@ -683,6 +738,257 @@ function ledgerStats(ev){let attend=0,heads=0,reported=0,confirmed=0,pending=0,u
     else if(x.report.amount!=null||x.rsvp.status==='yes')pending++;
     if(x.unregistered)unreg++;});
   return {attend,heads,reported,confirmed,pending,unreg};}
+
+/* ======================= 내 경조사비 가계부 (품앗이) ======================= */
+function myStats(){ let given=0,gaveCount=0,received=0,recvCount=0; const byRel={};
+  S.events.forEach(e=>{
+    if(e.role==='host'){ const c=ledgerStats(e).confirmed; if(c>0){received+=c;recvCount++;} }
+    else if(e.myGift>0){ given+=e.myGift; gaveCount++; const r=e.myRelation||'기타'; byRel[r]=(byRel[r]||0)+e.myGift; }
+  });
+  return {given,gaveCount,received,recvCount,net:received-given,byRel}; }
+function openLedger(){ S.ui.guestView='ledger'; save(); render(); window.scrollTo(0,0); }
+function setMyRelation(r){ const ev=curEvent(); if(ev){ ev.myRelation=r; save(); render(); } }
+function ledgerSummaryCard(){ const s=myStats(); const nc=s.net>=0?'var(--ok)':'var(--danger)';
+  return `<div class="card" style="cursor:pointer" onclick="openLedger()">
+    <div class="secthead"><div class="t">💰 내 경조사비 가계부</div><div class="c">자세히 ›</div></div>
+    <div class="stats">
+      <div class="stat"><div class="v">${won(s.given)}</div><div class="k">낸 경조사비 (${s.gaveCount})</div></div>
+      <div class="stat"><div class="v">${won(s.received)}</div><div class="k">받은 경조사비 (${s.recvCount})</div></div>
+      <div class="stat"><div class="v big" style="color:${nc}">${(s.net>=0?'+':'−')+won(Math.abs(s.net))}</div><div class="k">수지(받은−낸)</div></div>
+    </div>
+  </div>`; }
+function ledgerView(){ const s=myStats();
+  const gaveEvents=S.events.filter(e=>e.role!=='host'&&e.myGift>0).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const recvEvents=S.events.filter(e=>e.role==='host').map(e=>({e,c:ledgerStats(e).confirmed})).filter(x=>x.c>0);
+  const rel=Object.entries(s.byRel).sort((a,b)=>b[1]-a[1]); const mx=Math.max(1,...rel.map(x=>x[1]));
+  return `<button class="backbtn" onclick="backToList()">‹ 내 경조사</button>
+  <div class="listhead"><div class="t serif">경조사비 가계부</div></div>
+  <div class="card">
+    <div class="stats">
+      <div class="stat"><div class="v">${won(s.given)}</div><div class="k">낸 경조사비 (${s.gaveCount})</div></div>
+      <div class="stat"><div class="v">${won(s.received)}</div><div class="k">받은 경조사비 (${s.recvCount})</div></div>
+      <div class="stat"><div class="v big" style="color:${s.net>=0?'var(--ok)':'var(--danger)'}">${(s.net>=0?'+':'−')+won(Math.abs(s.net))}</div><div class="k">수지</div></div>
+    </div>
+    <div class="note">'품앗이'는 주고받는 마음입니다. 낸 내역과 받은 내역을 한눈에 보고 답례할 곳을 챙기세요.</div>
+  </div>
+  ${rel.length?`<div class="card"><div class="secthead"><div class="t">관계별 낸 경조사비</div></div>
+    ${rel.map(([r,v])=>`<div class="relrow"><span class="rl">${esc(r)}</span><div class="bar"><div class="fill" style="width:${Math.round(v/mx*100)}%"></div></div><span class="rv">${won(v)}</span></div>`).join('')}
+  </div>`:''}
+  <div class="card"><div class="secthead"><div class="t">낸 내역</div><div class="c">${gaveEvents.length}건</div></div>
+    <div class="glist">${gaveEvents.map(e=>{const c=cfg(e);return `<div class="calevrow" onclick="openEvent('${e.id}')"><span class="cic">${c.icon}</span><span class="cnm">${esc(evNamePlain(e))}<span style="color:var(--muted);font-weight:400;font-size:11px"> · ${esc(e.myRelation||'')}</span></span><span class="rv">${won(e.myGift)}</span><span class="cchev">›</span></div>`;}).join('')||'<div class="empty">아직 낸 내역이 없어요. 경조사를 열어 금액을 기록해 보세요.</div>'}</div>
+  </div>
+  ${recvEvents.length?`<div class="card"><div class="secthead"><div class="t">받은 내역 (내 행사)</div></div>
+    <div class="glist">${recvEvents.map(({e,c})=>{const cf=cfg(e);return `<div class="calevrow"><span class="cic">${cf.icon}</span><span class="cnm">${esc(evNamePlain(e))}</span><span class="rv" style="color:var(--ok)">${won(c)}</span></div>`;}).join('')}</div>
+  </div>`:''}`;
+}
+
+/* ======================= 경조사 직접 추가 ======================= */
+function gv(id){return (($('#'+id)||{}).value||'');}
+function openAdd(){ S.ui.guestView='add'; S.ui.addType='wedding'; S.ui.addRelation=''; S.ui.addDraft=null; save(); render(); window.scrollTo(0,0); }
+function captureAddDraft(){ S.ui.addDraft={ na:gv('na'), nb:gv('nb'), nd:gv('nd'), nt:gv('nt')||'12:00', nv:gv('nv') }; }
+function setAddType(t){ if(!TYPES[t])return; captureAddDraft(); S.ui.addType=t; render(); }
+function setAddRel(r){ captureAddDraft(); S.ui.addRelation=r; render(); }
+function saveNewEvent(){ const type=S.ui.addType||'wedding'; const isMem=type==='memorial';
+  const na=gv('na').trim(); if(!na){toast('이름을 입력하세요');return;} const nd=gv('nd'); if(!nd){toast('날짜를 입력하세요');return;}
+  const ev={ id:uid('e'), role:'guest', type, partyA:na, partyB:isMem?'':gv('nb').trim(),
+    subtitle:isMem?'삼가 고인의 명복을 빕니다':'결혼합니다',
+    date:nd, time:gv('nt')||'12:00', venue:gv('nv').trim(), address:'', message:'', externalUrl:'', myRelation:S.ui.addRelation||'',
+    accounts:isMem?[{label:'상주측',bank:'카카오뱅크',number:'',holder:''}]:[{label:'신랑측',bank:'카카오뱅크',number:'',holder:''},{label:'신부측',bank:'토스뱅크',number:'',holder:''}], guests:[] };
+  S.events.push(ev); S.ui.guestView='detail'; S.ui.currentEventId=ev.id; S.ui.addDraft=null; save(); render(); window.scrollTo(0,0); toast('경조사를 추가했어요'); }
+function addView(){ const type=S.ui.addType||'wedding'; const c=TYPES[type]; const isMem=type==='memorial'; const dr=S.ui.addDraft||{};
+  return `<button class="backbtn" onclick="backToList()">‹ 내 경조사</button>
+  <div class="listhead"><div class="t serif">경조사 직접 추가</div></div>
+  <div class="card">
+    <label>유형</label>
+    <div class="seg2">${['wedding','hwahon','memorial'].map(t=>`<button class="${type===t?'on':''}" onclick="setAddType('${t}')">${TYPES[t].icon} ${TYPES[t].label}</button>`).join('')}</div>
+    <div class="row" style="margin-top:8px">
+      <div><label>${c.nameA}</label><input id="na" value="${esc(dr.na||'')}" placeholder="${c.nameA}"></div>
+      ${!isMem?`<div><label>${c.nameB}</label><input id="nb" value="${esc(dr.nb||'')}" placeholder="${c.nameB}"></div>`:''}
+    </div>
+    <div class="row"><div><label>${c.dateL}</label><input id="nd" type="date" value="${dr.nd||''}"></div>
+      <div><label>시간</label><input id="nt" type="time" value="${dr.nt||'12:00'}"></div></div>
+    <label>${c.venueL}</label><input id="nv" value="${esc(dr.nv||'')}" placeholder="${c.venueL}">
+    <label>나와의 관계 <span style="font-weight:600;color:var(--muted)">(가계부용)</span></label>
+    <div class="chips">${['가족','친척','친구','직장','지인'].map(r=>`<button class="chip ${S.ui.addRelation===r?'on':''}" onclick="setAddRel('${r}')">${r}</button>`).join('')}</div>
+    <button class="btn btn-sage" style="margin-top:14px" onclick="saveNewEvent()">＋ 추가</button>
+  </div>`;
+}
+
+/* ======================= 축의금/조의금 추천기 (킬러) ======================= */
+const RECO_CHIPS=[30000,50000,70000,100000,150000,200000,300000,500000];
+const RECO_TABLE={
+  wedding:[
+    {label:'잘 모르는 사이·청첩장만', no:50000, yes:50000, close:50000},
+    {label:'지인·동창', no:50000, yes:100000, close:100000},
+    {label:'직장 동료·상사', no:50000, yes:100000, close:150000},
+    {label:'친구', no:50000, yes:100000, close:150000},
+    {label:'친한 친구·절친', no:100000, yes:150000, close:200000},
+    {label:'친척(이모·삼촌·사촌)', no:100000, yes:150000, close:200000, low:true},
+    {label:'가까운 친척·조카', no:150000, yes:200000, close:300000, low:true},
+    {label:'형제자매·직계가족', no:300000, yes:500000, close:500000, low:true},
+  ],
+  memorial:[
+    {label:'직장 동료·지인', base:50000, close:50000},
+    {label:'직장 상사·친한 동료', base:50000, close:100000},
+    {label:'친구', base:50000, close:100000},
+    {label:'친한 친구·절친', base:100000, close:150000},
+    {label:'먼 친척', base:50000, close:50000},
+    {label:'가까운 친척', base:150000, close:200000, low:true},
+    {label:'직계가족', base:500000, close:500000, low:true},
+  ],
+  bday:[
+    {label:'직장·지인', no:30000, yes:50000, close:50000},
+    {label:'친구', no:30000, yes:70000, close:100000},
+    {label:'친척', no:50000, yes:70000, close:100000},
+    {label:'형제자매', no:100000, yes:150000, close:200000},
+  ]
+};
+function recoState(){ if(!S.ui.reco) S.ui.reco={kind:'wedding', rel:2, attending:true, venue:'normal', close:false, ctxEventId:null}; return S.ui.reco; }
+function recommend(){ const r=recoState(); const row=(RECO_TABLE[r.kind]||[])[r.rel]; if(!row) return {amount:50000};
+  let amt;
+  if(r.kind==='memorial'){ amt = r.close ? (row.close||row.base) : row.base; }
+  else { amt = r.attending ? (r.close?row.close:row.yes) : row.no; if(r.kind==='wedding' && r.venue==='hotel') amt+=50000; }
+  return {amount:amt, low:row.low, label:row.label}; }
+function openReco(ctxId){ recoState(); const ev=ctxId?S.events.find(e=>e.id===ctxId):null;
+  if(ev){ S.ui.reco.kind = ev.type==='memorial'?'memorial':'wedding'; S.ui.reco.ctxEventId=ev.id;
+    if(ev.myRelation){ const idx=RECO_TABLE[S.ui.reco.kind].findIndex(x=>x.label.includes(ev.myRelation)); if(idx>=0)S.ui.reco.rel=idx; } }
+  else S.ui.reco.ctxEventId=null;
+  S.ui.guestView='reco'; save(); render(); window.scrollTo(0,0); }
+function recoSet(k,v){ const r=recoState(); r[k]=v; if(k==='kind'&&r.rel>=(RECO_TABLE[v]||[]).length)r.rel=0; save(); render(); }
+function recoApply(){ const r=recoState(); const {amount}=recommend();
+  if(r.ctxEventId){ const ev=S.events.find(e=>e.id===r.ctxEventId);
+    if(ev){ ev.myGift=amount; if(!ev.myRelation){ ev.myRelation=(RECO_TABLE[r.kind][r.rel].label.split(/[·(]/)[0]); }
+      S.ui.guestView='detail'; S.ui.currentEventId=ev.id; save(); render(); window.scrollTo(0,0); toast(won(amount)+' 기록했어요'); return; } }
+  copy(won(amount)); toast(won(amount)+' 복사 — 추천 금액'); }
+function recoShare(){ const r=recoState(); const {amount,label}=recommend(); const kindL=r.kind==='memorial'?'조의금':r.kind==='bday'?'축하금':'축의금';
+  const att=r.kind==='memorial'?'':((r.attending?'참석':'불참')+' · ');
+  const text=`${label} · ${att}${kindL} ${won(amount)} 추천\n— 이음(마음을 잇다)에서 계산했어요`;
+  const url=location.href.split('?')[0].split('#')[0];
+  if(navigator.share){ navigator.share({title:'이음 경조사비 추천',text,url}).catch(()=>{}); }
+  else { copy(text+'\n'+url); toast('추천 결과를 복사했어요 — 친구에게 붙여넣기'); } }
+function recoView(){ const r=recoState(); const rows=RECO_TABLE[r.kind]; const res=recommend();
+  const kindL=r.kind==='memorial'?'조의금':r.kind==='bday'?'축하금':'축의금';
+  const tabs=[['wedding','💍 결혼'],['memorial','🕊️ 부고'],['bday','🎂 돌잔치']];
+  return `<button class="backbtn" onclick="backToList()">‹ 내 경조사</button>
+  <div class="listhead"><div class="t serif">경조사비 얼마?</div></div>
+  <div class="card">
+    <div class="seg2">${tabs.map(([k,l])=>`<button class="${r.kind===k?'on':''}" onclick="recoSet('kind','${k}')">${l}</button>`).join('')}</div>
+    ${r.kind!=='memorial'?`<label style="margin-top:13px">참석 여부</label>
+    <div class="seg2"><button class="${r.attending?'on':''}" onclick="recoSet('attending',true)">참석</button><button class="${!r.attending?'on':''}" onclick="recoSet('attending',false)">불참 (봉투만)</button></div>`:''}
+    <label style="margin-top:13px">관계</label>
+    <div class="chips">${rows.map((row,i)=>`<button class="chip ${r.rel===i?'on':''}" onclick="recoSet('rel',${i})">${row.label}</button>`).join('')}</div>
+    <div class="chips" style="margin-top:8px"><button class="chip ${r.close?'on':''}" onclick="recoSet('close',${!r.close})">💛 특히 가까운 사이</button></div>
+    ${r.kind==='wedding'?`<label style="margin-top:13px">예식장 등급</label>
+    <div class="seg2"><button class="${r.venue==='normal'?'on':''}" onclick="recoSet('venue','normal')">일반 웨딩홀</button><button class="${r.venue==='hotel'?'on':''}" onclick="recoSet('venue','hotel')">호텔·프리미엄</button></div>`:''}
+    <div class="reco-result">
+      <div class="rr-k">추천 ${kindL}</div>
+      <div class="rr-v">${won(res.amount)}</div>
+      <div class="rr-chips">${RECO_CHIPS.filter(c=>c<=Math.max(res.amount*2,200000)).map(c=>`<span class="rrc ${c===res.amount?'on':''}">${(c/10000)}만</span>`).join('')}</div>
+    </div>
+    ${res.low?`<div class="note">⚠️ 친척·가족 금액은 정해진 기준이 없어요. <b>권장 범위</b>이니 가족과 상의해 정하세요.</div>`:`<div class="note">💡 ${r.kind==='memorial'?'조의금은 <b>5만원</b>이 가장 보편적이에요(김영란법 경조사비 한도와도 일치).':'<b>5만·10만</b>이 가장 보편적이에요. 4·6·8만은 피하는 게 관례예요(홀수 선호).'}</div>`}
+    <div class="stack" style="margin-top:12px">
+      <button class="btn btn-primary" onclick="recoApply()">${r.ctxEventId?'이 금액으로 기록':'금액 복사'}</button>
+      <button class="btn btn-kakao" onclick="recoShare()">💬 결과 공유 (친구에게도 추천)</button>
+    </div>
+    <div class="note" style="background:none;border:none;text-align:center;padding:6px 0 0">관계·참석·식장 기준 2024~2026 통념 · 참고용</div>
+  </div>`;
+}
+
+/* ======================= 청첩장 가져오기 (공유/붙여넣기) ======================= */
+function openImport(){ S.ui.guestView='import'; S.ui.importParsed=null; save(); render(); window.scrollTo(0,0); }
+function closeImport(){ S.ui.guestView='list'; S.ui.importText=''; S.ui.importParsed=null; save(); render(); }
+function analyzeImport(){ const t=$('#impText').value; S.ui.importText=t;
+  if(!t.trim()){ toast('내용을 붙여넣어 주세요'); return; }
+  const p=parseInvite(t); S.ui.importParsed=p; save(); render();
+  toast((p.date||p.venue||p.names)?'정보를 찾았어요 — 확인해 주세요':'자동 인식이 어려워요 — 직접 입력해 주세요'); }
+function addImported(){
+  const names=($('#ip_names').value||'').split(/[♥❤♡·]|그리고/).map(s=>s.trim()).filter(Boolean);
+  const ev={ id:uid('e'), role:'guest', type:'wedding', partyA:names[0]||'', partyB:names[1]||'', subtitle:'결혼합니다',
+    date:$('#ip_date').value||'', time:$('#ip_time').value||'12:00', venue:$('#ip_venue').value||'', address:'', message:'',
+    externalUrl:$('#ip_url').value||'',
+    accounts:[{label:'신랑측',bank:'카카오뱅크',number:'',holder:''},{label:'신부측',bank:'토스뱅크',number:'',holder:''}], guests:[] };
+  S.events.push(ev); S.ui.guestView='detail'; S.ui.currentEventId=ev.id; S.ui.importText=''; S.ui.importParsed=null;
+  save(); render(); window.scrollTo(0,0); toast('내 경조사에 추가했어요'); }
+function parseInvite(text){
+  const res={names:'',date:'',time:'',venue:'',url:''};
+  const um=text.match(/https?:\/\/[^\s]+/); if(um) res.url=um[0];
+  let y,mo,d, m=text.match(/(20\d{2})\s*[년.\-\/]\s*(\d{1,2})\s*[월.\-\/]\s*(\d{1,2})/);
+  if(m){ y=+m[1]; mo=+m[2]; d=+m[3]; }
+  else if(m=text.match(/(\d{1,2})\s*월\s*(\d{1,2})\s*일/)){ mo=+m[1]; d=+m[2]; }
+  else if(m=text.match(/\b(\d{1,2})[\/.](\d{1,2})\b/)){ mo=+m[1]; d=+m[2]; }
+  if(mo&&d&&mo>=1&&mo<=12&&d>=1&&d<=31){ if(!y){ const now=new Date(); y=now.getFullYear();
+      if(new Date(y,mo-1,d) < new Date(now.toDateString())) y++; }
+    res.date=y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0'); }
+  let hh,mm=0,pm=false,am=false, tm=text.match(/(오전|오후)?\s*(\d{1,2})\s*시\s*(\d{1,2})?\s*분?/);
+  if(tm){ if(tm[1]==='오후')pm=true; if(tm[1]==='오전')am=true; hh=+tm[2]; if(tm[3])mm=+tm[3]; }
+  else if(tm=text.match(/\b(\d{1,2}):(\d{2})\b/)){ hh=+tm[1]; mm=+tm[2]; }
+  if(hh!=null){ if(pm&&hh<12)hh+=12; if(am&&hh===12)hh=0; if(hh>=0&&hh<=23) res.time=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0'); }
+  let nm=text.match(/([가-힣]{2,4})\s*[♥❤♡💕&,·]\s*([가-힣]{2,4})/);
+  if(!nm) nm=text.match(/신랑\s*[:：]?\s*([가-힣]{2,4})[\s\S]{0,24}신부\s*[:：]?\s*([가-힣]{2,4})/);
+  if(nm) res.names=nm[1]+' ♥ '+nm[2];
+  const vk=/(웨딩|컨벤션|호텔|예식장|홀|가든|하우스|채플|파티움|아트홀|타워|클럽|더라움|루체|아펠가모|메리어트|그랜드|워커힐|라마다|롯데|신라|반얀트리|스퀘어|컨벤션센터)/;
+  for(const ln of text.split(/[\n\r]+/)){ if(vk.test(ln)){ res.venue=ln.trim().slice(0,40); break; } }
+  return res;
+}
+function importView(){
+  const t=S.ui.importText||'', p=S.ui.importParsed;
+  return `<button class="backbtn" onclick="closeImport()">‹ 내 경조사</button>
+  <div class="card">
+    <h3>청첩장 가져오기</h3>
+    <p class="sub">카카오톡으로 받은 청첩장 메시지나 링크를 붙여넣으면, 이음이 날짜·장소·이름을 자동으로 찾아드립니다.</p>
+    <textarea id="impText" rows="5" placeholder="카톡 청첩장 메시지를 길게 눌러 복사 → 여기에 붙여넣기&#10;예) 김민준 ♥ 이서연 결혼합니다 / 2026년 10월 17일 토요일 오후 1시 / 더채플 앳 청담 / https://...">${esc(t)}</textarea>
+    <button class="btn btn-primary" style="margin-top:10px" onclick="analyzeImport()">🔍 붙여넣기 분석</button>
+    <div class="note">💡 카카오톡 메시지를 앱이 <b>직접 읽을 수는 없습니다</b>(카카오 정책). 대신 ① 메시지 <b>복사 → 붙여넣기</b>, 또는 ② (안드로이드) 청첩장 링크 <b>공유 → 이음</b>으로 보내면 자동으로 들어옵니다.</div>
+  </div>
+  ${p?`<div class="card">
+    <h3>찾은 정보 · 확인 후 추가</h3>
+    <p class="sub">자동으로 채운 값입니다. 틀린 곳은 직접 고쳐주세요.</p>
+    <label>이름</label><input id="ip_names" value="${esc(p.names)}" placeholder="예: 김민준 ♥ 이서연">
+    <div class="row"><div><label>날짜</label><input id="ip_date" type="date" value="${p.date}"></div>
+      <div><label>시간</label><input id="ip_time" type="time" value="${p.time}"></div></div>
+    <label>장소</label><input id="ip_venue" value="${esc(p.venue)}">
+    <label>청첩장 링크</label><input id="ip_url" value="${esc(p.url)}" placeholder="https://...">
+    <button class="btn btn-sage" style="margin-top:13px" onclick="addImported()">＋ 내 경조사에 추가</button>
+  </div>`:''}`;
+}
+
+/* ======================= 예상 하객·예산 계산기 ======================= */
+function planVals(ev){ const pl=ev.plan||{};
+  return { sent:+pl.sent||0, rate:pl.rate!=null?+pl.rate:60, meal:pl.meal!=null?+pl.meal:60000, gift:pl.gift!=null?+pl.gift:80000 }; }
+function planInput(k,v){ const ev=hostEvent(); if(!ev.plan)ev.plan={}; ev.plan[k]=v===''?null:Number(v); save(); recalcBudget(); }
+function recalcBudget(){ const ev=hostEvent(); if(!ev)return; const {sent,rate,meal,gift}=planVals(ev);
+  const g=Math.round(sent*rate/100), income=g*gift, mc=g*meal, net=income-mc;
+  const set=(id,val)=>{const el=document.getElementById(id); if(el)el.textContent=val;};
+  set('bd-guests',g); set('bd-income',won(income)); set('bd-meal',won(mc)); set('bd-net',won(net)); }
+function budgetCard(ev){ const c=cfg(ev), pl=ev.plan||{}, {sent,rate,meal,gift}=planVals(ev), led=ledgerStats(ev);
+  const g=Math.round(sent*rate/100), income=g*gift, mc=g*meal, net=income-mc;
+  return `<div class="card">
+    <div class="secthead"><div class="t">④ 예상 ${c.counts?'하객':'조문'}·예산 계산기</div></div>
+    <p class="sub">보낸 ${c.doc} 수와 참석률로 예상 인원·예산을 시뮬레이션합니다.</p>
+    <div class="row">
+      <div><label>보낸 ${c.doc} 수</label><input type="number" inputmode="numeric" value="${pl.sent??''}" placeholder="예: 200" oninput="planInput('sent',this.value)"></div>
+      <div><label>예상 참석률(%)</label><input type="number" inputmode="numeric" value="${pl.rate??60}" oninput="planInput('rate',this.value)"></div>
+    </div>
+    <div class="row">
+      <div><label>1인 식대(원)</label><input type="number" inputmode="numeric" value="${pl.meal??60000}" oninput="planInput('meal',this.value)"></div>
+      <div><label>1인 예상 ${c.money}(원)</label><input type="number" inputmode="numeric" value="${pl.gift??80000}" oninput="planInput('gift',this.value)"></div>
+    </div>
+    <div class="stats" style="margin-top:12px">
+      <div class="stat"><div class="v" id="bd-guests">${g}</div><div class="k">예상 ${c.counts?'참석':'조문'} 인원</div></div>
+      <div class="stat"><div class="v big" id="bd-income">${won(income)}</div><div class="k">예상 ${c.money}</div></div>
+      <div class="stat"><div class="v big" id="bd-meal">${won(mc)}</div><div class="k">예상 식대</div></div>
+    </div>
+    <div class="budget-net">예상 정산(순) <b id="bd-net">${won(net)}</b></div>
+    <div class="note">현재 실제 ${c.counts?'참석':'조문'} 응답 <b>${led.attend}명</b> · 확정 ${c.money} <b>${won(led.confirmed)}</b> — 응답이 쌓일수록 예측이 정확해집니다.</div>
+  </div>`;
+}
+
+/* ======================= 공유받기 (PWA Share Target) ======================= */
+(function(){ try{ const q=new URLSearchParams(location.search);
+  const shared=[q.get('shared_text'),q.get('shared_url'),q.get('shared_title')].filter(Boolean).join('\n');
+  if(shared){ S.ui.entered=true; S.ui.tab='guest'; S.ui.guestView='import'; S.ui.importText=shared; S.ui.importParsed=parseInvite(shared); save();
+    history.replaceState(null,'',location.pathname); }
+}catch(e){} })();
 
 render();
 
