@@ -27,7 +27,7 @@
     font-size:15px;line-height:1.55}
   .serif{font-family:"Nanum Myeongjo",Georgia,"Apple SD Gothic Neo",serif}
   .phone{max-width:430px;margin:0 auto;min-height:100vh;background:var(--bg);
-    box-shadow:0 0 40px rgba(0,0,0,.12);position:relative;padding-bottom:60px}
+    box-shadow:0 0 40px rgba(0,0,0,.12);position:relative;padding-bottom:80px}
   header{position:sticky;top:0;z-index:30;background:rgba(243,239,232,.92);
     backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:10px 14px}
   .brand{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -224,6 +224,29 @@
   .env-sub{font-size:13px;color:var(--muted);margin-top:6px;letter-spacing:.1em}
   .env-row{display:flex;gap:11px;align-items:flex-start;font-size:12.5px;color:var(--ink);line-height:1.6;margin-bottom:10px}
   .env-k{flex:none;width:40px;font-weight:800;color:var(--primary-d)}
+  /* 하단 탭 내비 */
+  .bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:40;
+    display:flex;background:rgba(252,250,246,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);
+    padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+  .bnav button{flex:1;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;
+    padding:5px 0;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;font-family:inherit;border-radius:10px}
+  .bnav button .bn-ic{font-size:20px;line-height:1;filter:grayscale(.4);opacity:.7}
+  .bnav button.on{color:var(--primary-d)}
+  .bnav button.on .bn-ic{filter:none;opacity:1}
+  /* 더보기 */
+  .more-item{display:flex;align-items:center;gap:13px;width:100%;border:0;background:transparent;
+    padding:13px 12px;cursor:pointer;font-family:inherit;text-align:left;border-bottom:1px solid var(--line)}
+  .more-item:last-child{border-bottom:0}
+  .more-item .mi-ic{font-size:21px;width:30px;text-align:center;flex:none}
+  .more-item .mi-tx{flex:1;display:flex;flex-direction:column}
+  .more-item .mi-t{font-size:14px;font-weight:700;color:var(--ink)}
+  .more-item .mi-d{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .more-item .mi-go{color:#cabfae;font-size:18px;font-weight:700}
+  /* 품앗이 균형 */
+  .bal{font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .bal.pos{background:#e7f0ea;color:var(--ok)}
+  .bal.neg{background:#f6e7e4;color:var(--danger)}
+  .bal.even{background:#f3ece1;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -233,17 +256,18 @@
       <div class="logo" onclick="goLanding()" style="cursor:pointer"><b class="serif">이음</b><span class="slogan">마음을 잇다</span></div>
       <span class="dd" id="ddayTop"></span>
     </div>
-    <div class="seg" id="tabbar">
-      <button id="tabHost" onclick="setTab('host')">✍️ 호스트</button>
-      <button id="tabGuest" onclick="setTab('guest')">🎁 내 경조사</button>
-    </div>
   </header>
   <main id="app"></main>
   <div class="footer">
     이음은 자금을 보관·중개하지 않습니다. 송금은 토스/뱅킹 앱에서 직접 이루어집니다.<br/>
-    경조금 내역은 자가신고·호스트 수기 입력 기반(Tier 1)입니다.<br/>
-    <span style="opacity:.7">이음 prototype · v8 (리마인더·알림 · 연간리포트 · 봉투문구)</span>
+    <span style="opacity:.7">이음 prototype · v9 (품앗이 노트 · 그룹합산 · 하단탭 정리)</span>
   </div>
+  <nav class="bnav" id="bottomnav" style="display:none">
+    <button data-g="home" onclick="setGuestTab('list')"><span class="bn-ic">🗓️</span>경조사</button>
+    <button data-g="ledger" onclick="setGuestTab('ledger')"><span class="bn-ic">💰</span>가계부</button>
+    <button data-g="reco" onclick="setGuestTab('reco')"><span class="bn-ic">🧮</span>추천</button>
+    <button data-g="more" onclick="setGuestTab('more')"><span class="bn-ic">⋯</span>더보기</button>
+  </nav>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -293,6 +317,11 @@ function seed(){
         accounts:[ {label:'상주측', bank:'농협', number:'302-1234-5678-91', holder:'김민수'} ],
         myGift:50000, myRelation:'직장', guests:[] }
     ],
+    people:[
+      { id:'p1', name:'박서준', relation:'친구', items:[ {id:'pi1', dir:'gave', amount:100000, label:'결혼식', date:'2026-09-05'} ] },
+      { id:'p2', name:'이수민', relation:'친구', items:[ {id:'pi2', dir:'received', amount:100000, label:'내 결혼식 때', date:'2024-05-11'}, {id:'pi3', dir:'gave', amount:50000, label:'돌잔치', date:'2025-08-20'} ] },
+      { id:'p3', name:'김태영', relation:'직장', items:[ {id:'pi4', dir:'received', amount:50000, label:'내 결혼식 때', date:'2024-05-11'} ] }
+    ],
     ui:{ entered:false, tab:'guest', hostEventId:'e1', guestView:'list', currentEventId:null,
          guestSession:{name:'', acctIdx:0} }
   };
@@ -300,7 +329,7 @@ function seed(){
 let S=load();
 function load(){ try{const r=localStorage.getItem(LS); if(r){ const o=JSON.parse(r); const d=seed();
   o.ui={...d.ui, ...(o.ui||{})}; o.ui.guestSession={...d.ui.guestSession, ...((o.ui&&o.ui.guestSession)||{})};
-  if(!Array.isArray(o.events)) o.events=d.events; return o; } }catch(e){} return seed(); }
+  if(!Array.isArray(o.events)) o.events=d.events; if(!Array.isArray(o.people)) o.people=d.people; return o; } }catch(e){} return seed(); }
 function save(){ localStorage.setItem(LS, JSON.stringify(S)); }
 function reset(){ if(confirm('데모 데이터를 초기화할까요?')){ localStorage.removeItem(LS); S=seed(); render(); toast('초기화했어요'); } }
 
@@ -392,25 +421,25 @@ function soon(name){toast(`「${name}」 — 추후/프리미엄 기능`);}
 
 /* ======================= 렌더 ======================= */
 function render(){
-  const tb=document.getElementById('tabbar');
-  if(!S.ui.entered){
-    if(tb) tb.style.display='none';
-    $('#ddayTop').textContent='';
-    $('#app').innerHTML=landingView();
-    return;
-  }
-  if(tb) tb.style.display='flex';
-  const he=hostEvent();
-  $('#ddayTop').textContent = S.ui.tab==='host' ? (he?dday(he):'') : '';
-  $('#tabHost').classList.toggle('on',S.ui.tab==='host');
-  $('#tabGuest').classList.toggle('on',S.ui.tab==='guest');
-  $('#app').innerHTML = S.ui.tab==='host' ? hostView()
-    : S.ui.guestView==='import' ? importView()
-    : S.ui.guestView==='ledger' ? ledgerView()
-    : S.ui.guestView==='add' ? addView()
-    : S.ui.guestView==='reco' ? recoView()
-    : S.ui.guestView==='envelope' ? envelopeView()
-    : S.ui.guestView==='detail' ? guestDetail() : guestList();
+  const bn=document.getElementById('bottomnav');
+  if(!S.ui.entered){ if(bn)bn.style.display='none'; $('#ddayTop').textContent=''; $('#app').innerHTML=landingView(); return; }
+  if(S.ui.tab==='host'){ if(bn)bn.style.display='none'; const he=hostEvent();
+    $('#ddayTop').textContent = he?dday(he):''; $('#app').innerHTML=hostView(); return; }
+  if(bn){ bn.style.display='flex'; }
+  $('#ddayTop').textContent='';
+  const v=S.ui.guestView;
+  $('#app').innerHTML =
+      v==='import' ? importView()
+    : v==='ledger' ? ledgerView()
+    : v==='add' ? addView()
+    : v==='reco' ? recoView()
+    : v==='envelope' ? envelopeView()
+    : v==='more' ? moreView()
+    : v==='group' ? groupView()
+    : v==='people' ? peopleView()
+    : v==='person' ? personView()
+    : v==='detail' ? guestDetail() : guestList();
+  updateBottomNav();
 }
 
 /* ---------- 시작(진입) 화면 ---------- */
@@ -444,6 +473,7 @@ function goLanding(){ S.ui.entered=false; save(); render(); window.scrollTo(0,0)
 function hostView(){
   const ev=hostEvent(); const c=cfg(ev); const led=ledgerStats(ev);
   return `
+  <button class="backbtn" onclick="backFromHost()">‹ 내 경조사</button>
   <div class="card">
     <h3>① 행사 정보</h3>
     <p class="sub">경조사 유형을 고르면 화면과 라벨이 자동으로 바뀝니다.</p>
@@ -561,13 +591,6 @@ function guestList(){
   return `
   <div class="listhead"><div class="t serif">내 경조사</div><div class="c">다가오는 일정 ${upcoming}건</div></div>
   ${reminderBanner()}
-  ${ledgerSummaryCard()}
-  <div class="card reco-cta" onclick="openReco()">
-    <div class="rc-ic">💰</div>
-    <div class="rc-tx"><div class="rc-t">축의금 얼마 낼까?</div><div class="rc-d">관계·참석·식장으로 적정 금액 추천받기</div></div>
-    <div class="rc-go">›</div>
-  </div>
-  <p class="sub" style="margin:0 2px 12px;color:var(--muted)">받은 청첩장·부고를 한곳에서 관리하세요. 카드를 누르면 확인과 송금으로 이어집니다.</p>
   <div class="row" style="margin-bottom:13px">
     <button class="badge-add" style="margin:0" onclick="openImport()">📥 가져오기</button>
     <button class="badge-add" style="margin:0" onclick="openAdd()">＋ 직접 추가</button>
@@ -784,7 +807,7 @@ function ledgerView(){ const s=myStats();
   const gaveEvents=S.events.filter(e=>e.role!=='host'&&e.myGift>0).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const recvEvents=S.events.filter(e=>e.role==='host').map(e=>({e,c:ledgerStats(e).confirmed})).filter(x=>x.c>0);
   const rel=Object.entries(s.byRel).sort((a,b)=>b[1]-a[1]); const mx=Math.max(1,...rel.map(x=>x[1]));
-  return `<button class="backbtn" onclick="backToList()">‹ 내 경조사</button>
+  return `
   <div class="listhead"><div class="t serif">경조사비 가계부</div></div>
   <div class="card">
     <div class="stats">
@@ -793,6 +816,11 @@ function ledgerView(){ const s=myStats();
       <div class="stat"><div class="v big" style="color:${s.net>=0?'var(--ok)':'var(--danger)'}">${(s.net>=0?'+':'−')+won(Math.abs(s.net))}</div><div class="k">수지</div></div>
     </div>
     <div class="note">'품앗이'는 주고받는 마음입니다. 낸 내역과 받은 내역을 한눈에 보고 답례할 곳을 챙기세요.</div>
+  </div>
+  <div class="card reco-cta" onclick="openPeople()" style="border-color:var(--sage)">
+    <div class="rc-ic">🔁</div>
+    <div class="rc-tx"><div class="rc-t" style="color:var(--sage-d)">품앗이 노트</div><div class="rc-d">사람별 주고받은 경조사비 · 답례 챙기기</div></div>
+    <div class="rc-go" style="color:var(--sage-d)">›</div>
   </div>
   ${yearReportCard()}
   ${rel.length?`<div class="card"><div class="secthead"><div class="t">관계별 낸 경조사비</div></div>
@@ -804,6 +832,103 @@ function ledgerView(){ const s=myStats();
   ${recvEvents.length?`<div class="card"><div class="secthead"><div class="t">받은 내역 (내 행사)</div></div>
     <div class="glist">${recvEvents.map(({e,c})=>{const cf=cfg(e);return `<div class="calevrow"><span class="cic">${cf.icon}</span><span class="cnm">${esc(evNamePlain(e))}</span><span class="rv" style="color:var(--ok)">${won(c)}</span></div>`;}).join('')}</div>
   </div>`:''}`;
+}
+
+/* ======================= 하단 탭 내비 ======================= */
+function navGroup(v){ if(['ledger','people','person'].includes(v))return 'ledger'; if(v==='reco')return 'reco'; if(['more','group','envelope'].includes(v))return 'more'; return 'home'; }
+function setGuestTab(v){ S.ui.tab='guest'; S.ui.guestView=v; if(v==='reco'&&S.ui.reco)S.ui.reco.ctxEventId=null; save(); render(); window.scrollTo(0,0); }
+function updateBottomNav(){ const g=navGroup(S.ui.guestView); document.querySelectorAll('#bottomnav button').forEach(b=>b.classList.toggle('on', b.getAttribute('data-g')===g)); }
+function backFromHost(){ S.ui.tab='guest'; S.ui.guestView='list'; save(); render(); window.scrollTo(0,0); }
+
+/* ======================= 품앗이 노트 (사람 단위 상호주의) ======================= */
+function personStats(p){ let gave=0,recv=0; (p.items||[]).forEach(it=>{ if(it.dir==='gave')gave+=it.amount; else recv+=it.amount; }); return {gave,recv,net:gave-recv}; }
+function openPeople(){ S.ui.guestView='people'; save(); render(); window.scrollTo(0,0); }
+function openPerson(id){ S.ui.personId=id; S.ui.guestView='person'; save(); render(); window.scrollTo(0,0); }
+function addPerson(){ const n=prompt('이름'); if(!n)return; const r=prompt('관계 (가족/친척/친구/직장/지인)','친구')||'친구';
+  const p={id:uid('p'),name:n.trim(),relation:r.trim(),items:[]}; S.people.push(p); S.ui.personId=p.id; S.ui.guestView='person'; save(); render(); }
+function addPersonItem(dir){ const p=S.people.find(x=>x.id===S.ui.personId); if(!p)return;
+  const amt=Number(gv('pi_amt')); if(!amt){toast('금액을 입력하세요');return;}
+  p.items.push({id:uid('pi'),dir,amount:amt,label:gv('pi_label').trim()||'경조사',date:todayStr()}); save(); render(); toast(dir==='gave'?'낸 내역 추가':'받은 내역 추가'); }
+function delPersonItem(pid,iid){ const p=S.people.find(x=>x.id===pid); if(!p)return; p.items=p.items.filter(i=>i.id!==iid); save(); render(); }
+function balHint(net){ if(net>0) return `<span class="bal pos">받을 차례 +${won(net).slice(1)}</span>`;
+  if(net<0) return `<span class="bal neg">갚을 차례 ${won(Math.abs(net))}</span>`; return `<span class="bal even">균형</span>`; }
+function peopleView(){ const ppl=[...S.people].map(p=>({p,s:personStats(p)}));
+  return `<button class="backbtn" onclick="setGuestTab('ledger')">‹ 가계부</button>
+  <div class="listhead"><div class="t serif">품앗이 노트</div></div>
+  <p class="sub" style="margin:0 2px 12px">사람별로 주고받은 경조사비를 기록하면 <b>답례할 차례</b>를 놓치지 않아요.</p>
+  ${ppl.map(({p,s})=>`<div class="evcard" onclick="openPerson('${p.id}')">
+    <div class="ic" style="font-size:17px;font-weight:800;color:var(--primary-d)">${esc(p.name.slice(0,1))}</div>
+    <div class="info"><div class="nm">${esc(p.name)} <span class="typ">${esc(p.relation)}</span></div>
+      <div class="dt">낸 ${won(s.gave)} · 받은 ${won(s.recv)}</div></div>
+    <div class="right">${balHint(s.net)}<span class="chev">›</span></div>
+  </div>`).join('')||'<div class="empty">아직 등록한 사람이 없어요</div>'}
+  <button class="badge-add" style="margin-top:6px" onclick="addPerson()">＋ 사람 추가</button>`;
+}
+function personView(){ const p=S.people.find(x=>x.id===S.ui.personId); if(!p){S.ui.guestView='people';return peopleView();}
+  const s=personStats(p);
+  return `<button class="backbtn" onclick="openPeople()">‹ 품앗이 노트</button>
+  <div class="listhead"><div class="t serif">${esc(p.name)}</div><div class="c">${esc(p.relation)}</div></div>
+  <div class="card">
+    <div class="stats">
+      <div class="stat"><div class="v">${won(s.gave)}</div><div class="k">내가 낸</div></div>
+      <div class="stat"><div class="v">${won(s.recv)}</div><div class="k">받은</div></div>
+      <div class="stat"><div class="v big" style="color:${s.net>0?'var(--ok)':s.net<0?'var(--danger)':'var(--muted)'}">${(s.net>0?'+':s.net<0?'−':'')+won(Math.abs(s.net))}</div><div class="k">${s.net>0?'받을 차례':s.net<0?'갚을 차례':'균형'}</div></div>
+    </div>
+  </div>
+  <div class="card"><div class="secthead"><div class="t">주고받은 내역</div></div>
+    <div class="glist">${(p.items||[]).slice().reverse().map(it=>`<div class="calevrow">
+      <span class="cic">${it.dir==='gave'?'↗':'↙'}</span>
+      <span class="cnm">${esc(it.label)}<span style="color:var(--muted);font-weight:400;font-size:11px"> · ${it.date} · ${it.dir==='gave'?'내가 냄':'받음'}</span></span>
+      <span class="rv" style="color:${it.dir==='gave'?'var(--primary-d)':'var(--ok)'}">${it.dir==='gave'?'-':'+'}${won(it.amount).slice(1)}</span>
+      <button class="minibtn" style="color:var(--danger);padding:5px 8px" onclick="delPersonItem('${p.id}','${it.id}')">×</button>
+    </div>`).join('')||'<div class="empty">내역이 없어요</div>'}</div>
+    <div class="divider"></div>
+    <label style="margin-top:0">새 내역</label>
+    <div class="row"><input id="pi_label" placeholder="예: 결혼식, 돌잔치"><input id="pi_amt" type="number" inputmode="numeric" placeholder="금액"></div>
+    <div class="row" style="margin-top:9px"><button class="btn btn-line btn-sm" onclick="addPersonItem('gave')">내가 냄 ↗</button><button class="btn btn-sage btn-sm" onclick="addPersonItem('received')">받음 ↙</button></div>
+  </div>`;
+}
+
+/* ======================= 그룹 합산 축의 (N분의1) ======================= */
+function groupState(){ if(!S.ui.group) S.ui.group={mode:'total', total:300000, n:5, per:50000}; return S.ui.group; }
+function openGroup(){ groupState(); S.ui.guestView='group'; save(); render(); window.scrollTo(0,0); }
+function groupSet(k,v){ const g=groupState(); if(k==='mode'){g.mode=v;save();render();return;} g[k]=v===''?0:(Number(v)||0); save(); recalcGroup(); }
+function groupCalc(){ const g=groupState(); const n=Math.max(1,+g.n||1);
+  if(g.mode==='total'){ const per=Math.round((+g.total||0)/n/1000)*1000; return {n, per, total:+g.total||0}; }
+  const per=+g.per||0; return {n, per, total:per*n}; }
+function recalcGroup(){ const r=groupCalc(); const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  set('g-per',won(r.per)); set('g-total',won(r.total)); set('g-n',r.n+'명'); }
+function groupView(){ const g=groupState(); const r=groupCalc();
+  return `<button class="backbtn" onclick="setGuestTab('more')">‹ 더보기</button>
+  <div class="listhead"><div class="t serif">그룹 합산 축의</div></div>
+  <p class="sub" style="margin:0 2px 12px">직장팀·동호회가 함께 축의할 때 <b>1/N 분담액</b>을 계산해요. 각자 토스/계좌로 <b>개별 송금</b>합니다(이음은 돈을 모으지 않아요).</p>
+  <div class="card">
+    <div class="seg2"><button class="${g.mode==='total'?'on':''}" onclick="groupSet('mode','total')">총액 → 1인당</button><button class="${g.mode==='per'?'on':''}" onclick="groupSet('mode','per')">1인당 → 총액</button></div>
+    <div class="row" style="margin-top:11px">
+      ${g.mode==='total'?`<div><label>총 축의금</label><input type="number" inputmode="numeric" value="${g.total}" oninput="groupSet('total',this.value)"></div>`:`<div><label>1인당</label><input type="number" inputmode="numeric" value="${g.per}" oninput="groupSet('per',this.value)"></div>`}
+      <div><label>인원</label><input type="number" inputmode="numeric" value="${g.n}" oninput="groupSet('n',this.value)"></div>
+    </div>
+    <div class="stats" style="margin-top:13px">
+      <div class="stat"><div class="v big" id="g-per">${won(r.per)}</div><div class="k">1인당</div></div>
+      <div class="stat"><div class="v" id="g-n">${r.n}명</div><div class="k">인원</div></div>
+      <div class="stat"><div class="v big" id="g-total">${won(r.total)}</div><div class="k">총액</div></div>
+    </div>
+    <div class="note">각자 1인당 금액을 <b>본인 토스/계좌</b>로 직접 보내면 됩니다. 대표 1인이 모아 보내면 송금 한도·정산 부담이 생길 수 있어요.</div>
+  </div>`;
+}
+
+/* ======================= 더보기 ======================= */
+function moreItem(ic,t,d,fn){ return `<button class="more-item" onclick="${fn}"><span class="mi-ic">${ic}</span><span class="mi-tx"><span class="mi-t">${t}</span><span class="mi-d">${d}</span></span><span class="mi-go">›</span></button>`; }
+function moreView(){ return `
+  <div class="listhead"><div class="t serif">더보기</div></div>
+  <div class="card" style="padding:5px 4px">
+    ${moreItem('🧧','봉투 쓰는 법','경조사 유형별 문구·예절',"openEnvelope('')")}
+    ${moreItem('🧮','그룹 합산 축의','팀·모임 1/N 분담 계산','openGroup()')}
+    ${moreItem('🔔', S.ui.noti?'알림 켜짐 ✓':'알림 받기','다가오는 경조사 미리 알림','toggleNoti()')}
+    ${moreItem('✍️','호스트 — 내 행사 만들기','청첩장·정산·하객 관리',"setTab('host')")}
+    ${moreItem('↺','데이터 초기화','데모 데이터로 되돌리기','reset()')}
+  </div>
+  <p class="land-foot" style="margin-top:6px">이음 prototype · 마음을 잇다</p>`;
 }
 
 /* ======================= 리마인더 · 알림 ======================= */
@@ -854,19 +979,20 @@ function reportShare(y){ const gave=yearGave(y); const total=gave.reduce((s,e)=>
 const ENV={ wedding:{front:['祝 結婚','축 결혼'], alts:['祝 華婚 (축 화혼)']},
   hwahon:{front:['祝 華婚','축 화혼'], alts:['祝 結婚 (축 결혼)']},
   memorial:{front:['賻 儀','부의'], alts:['謹 弔 (근조)','弔 意 (조의)']} };
-function openEnvelope(id){ S.ui.envEventId=id; S.ui.guestView='envelope'; save(); render(); window.scrollTo(0,0); }
-function envelopeView(){ const ev=S.events.find(e=>e.id===S.ui.envEventId)||curEvent(); const type=ev?ev.type:'wedding';
-  const e=ENV[type]||ENV.wedding; const isMem=type==='memorial';
-  return `<button class="backbtn" onclick="backToList()">‹ 내 경조사</button>
+function openEnvelope(id){ const ev=id?S.events.find(e=>e.id===id):null; S.ui.envEventId=id||''; S.ui.envType=ev?ev.type:(S.ui.envType||'wedding'); S.ui.guestView='envelope'; save(); render(); window.scrollTo(0,0); }
+function envSetType(t){ S.ui.envType=t; render(); }
+function envelopeView(){ const type=S.ui.envType||'wedding'; const e=ENV[type]||ENV.wedding; const isMem=type==='memorial'; const eid=S.ui.envEventId;
+  return `<button class="backbtn" onclick="${eid?`openEvent('${eid}')`:`setGuestTab('more')`}">‹ ${eid?'돌아가기':'더보기'}</button>
   <div class="listhead"><div class="t serif">봉투 쓰는 법</div></div>
   <div class="card">
+    <div class="seg2" style="margin-bottom:14px">${['wedding','hwahon','memorial'].map(t=>`<button class="${type===t?'on':''}" onclick="envSetType('${t}')">${TYPES[t].icon} ${TYPES[t].label}</button>`).join('')}</div>
     <div class="env-card"><div class="env-front serif">${e.front[0]}</div><div class="env-sub">${e.front[1]}</div></div>
     <p class="sub" style="text-align:center;margin-top:11px">봉투 <b>앞면 중앙</b>에 세로로 적습니다${e.alts.length?`<br/>(또는 ${e.alts.join(', ')})`:''}.</p>
     <div class="divider"></div>
     <div class="env-row"><span class="env-k">뒷면</span><span>왼쪽 아래에 <b>이름</b>을 세로로, 옆에 <b>소속·관계</b>(예: ○○회사, 친구 일동)</span></div>
     <div class="env-row"><span class="env-k">지폐</span><span>인물(세종대왕)이 <b>봉투 앞면</b>을 향하고, 머리가 <b>위로</b> 가게 넣어요</span></div>
     <div class="env-row"><span class="env-k">금액</span><span>${isMem?'3·5·10만 등':'3·5·7·10·15·20만 등'} 홀수 단위 · <b>4만원</b>은 피해요(死 연상)</span></div>
-    <button class="btn btn-line" style="margin-top:14px" onclick="openReco(${ev?`'${ev.id}'`:''})">💰 적정 금액 추천받기</button>
+    <button class="btn btn-line" style="margin-top:14px" onclick="openReco(${eid?`'${eid}'`:''})">💰 적정 금액 추천받기</button>
   </div>`; }
 
 /* ======================= 경조사 직접 추가 ======================= */
@@ -956,7 +1082,7 @@ function recoShare(){ const r=recoState(); const {amount,label}=recommend(); con
 function recoView(){ const r=recoState(); const rows=RECO_TABLE[r.kind]; const res=recommend();
   const kindL=r.kind==='memorial'?'조의금':r.kind==='bday'?'축하금':'축의금';
   const tabs=[['wedding','💍 결혼'],['memorial','🕊️ 부고'],['bday','🎂 돌잔치']];
-  return `<button class="backbtn" onclick="backToList()">‹ 내 경조사</button>
+  return `${r.ctxEventId?`<button class="backbtn" onclick="openEvent('${r.ctxEventId}')">‹ 돌아가기</button>`:''}
   <div class="listhead"><div class="t serif">경조사비 얼마?</div></div>
   <div class="card">
     <div class="seg2">${tabs.map(([k,l])=>`<button class="${r.kind===k?'on':''}" onclick="recoSet('kind','${k}')">${l}</button>`).join('')}</div>
