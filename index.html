@@ -408,24 +408,58 @@ function openEvent(id){S.ui.currentEventId=id;S.ui.guestView='detail';S.ui.guest
 function backToList(){S.ui.guestView='list';save();render();window.scrollTo(0,0);}
 
 /* ======================= 청첩장 공유 ======================= */
+/* 행사 정보를 링크에 인코딩 → 단톡방 공유 시 각자 열면 그 청첩장이 뜨고, 각자 자기 이음에 담김(백엔드 없이 사용자 분리) */
+function b64urlEnc(str){ return btoa(unescape(encodeURIComponent(str))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function b64urlDec(str){ str=str.replace(/-/g,'+').replace(/_/g,'/'); while(str.length%4)str+='='; return decodeURIComponent(escape(atob(str))); }
+function encodeInvite(ev){ const o={t:ev.type,a:ev.partyA,b:ev.partyB,s:ev.subtitle,d:ev.date,ti:ev.time,v:ev.venue,ad:ev.address,m:ev.message,u:ev.externalUrl||'',
+  ac:(ev.accounts||[]).map(a=>({l:a.label,bk:a.bank,n:a.number,h:a.holder,k:a.kakaopay||''}))};
+  return b64urlEnc(JSON.stringify(o)); }
+function decodeInvite(code){ try{ const o=JSON.parse(b64urlDec(code));
+  return { id:uid('e'), role:'guest', type:o.t||'wedding', partyA:o.a||'', partyB:o.b||'', subtitle:o.s||'', date:o.d||'', time:o.ti||'12:00', venue:o.v||'', address:o.ad||'', message:o.m||'', externalUrl:o.u||'', invited:true,
+    accounts:(o.ac||[]).map(a=>({label:a.l,bank:a.bk,number:a.n,holder:a.h,kakaopay:a.k||''})), guests:[] }; }catch(e){ return null; } }
+function inviteLink(ev){ return location.href.split('#')[0].split('?')[0] + '#e=' + encodeInvite(ev); }
 function shareEvent(ev){
-  const link = ev.externalUrl ? ev.externalUrl : location.href.split('#')[0];
-  const text=`${evNamePlain(ev)} ${ev.subtitle}\n${dateText(ev)}\n${ev.venue}`;
+  const link = inviteLink(ev);
+  const text=`${evNamePlain(ev)} ${ev.subtitle}\n${dateText(ev)} · ${ev.venue}\n청첩장 확인·캘린더·축의금 보내기 ▸`;
   const ready=window.Kakao&&Kakao.isInitialized&&Kakao.isInitialized();
   if(ready){
     try{ Kakao.Share.sendDefault({objectType:'feed',
       content:{title:`${evNamePlain(ev)} ${ev.subtitle}`, description:`${dateText(ev)} · ${ev.venue}`,
         imageUrl:'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=800',
         link:{mobileWebUrl:link,webUrl:link}},
-      buttons:[{title:'청첩장 보기',link:{mobileWebUrl:link,webUrl:link}}]}); return; }catch(e){}
+      buttons:[{title:'청첩장 열기',link:{mobileWebUrl:link,webUrl:link}}]}); return; }catch(e){}
   }
-  if(navigator.share){ navigator.share({title:'모바일 청첩장',text,url:link}).catch(()=>{}); return; }
+  if(navigator.share){ navigator.share({title:`${evNamePlain(ev)} ${ev.subtitle}`,text,url:link}).catch(()=>{}); return; }
   copy(text+'\n'+link);
-  toast(ev.externalUrl?'청첩장 링크를 복사했어요':'카카오 키 미설정 → 내용을 복사했어요');
+  toast('청첩장 링크를 복사했어요 — 단톡방에 붙여넣으세요');
 }
 function openExternal(ev){
   if(ev.externalUrl){ window.open(ev.externalUrl,'_blank'); }
   else toast('호스트가 외부 청첩장 링크를 입력하면 여기서 열립니다');
+}
+/* 받은 청첩장(링크로 접속) 수락 화면 */
+function acceptInvite(){ const iv=S.ui.pendingInvite; if(!iv)return;
+  const dup=S.events.find(e=>e.partyA===iv.partyA&&e.partyB===iv.partyB&&e.date===iv.date&&e.venue===iv.venue);
+  if(dup){ S.ui.currentEventId=dup.id; } else { S.events.push(iv); S.ui.currentEventId=iv.id; }
+  S.ui.pendingInvite=null; S.ui.guestView='detail'; save(); render(); window.scrollTo(0,0); toast('내 경조사에 담았어요'); }
+function declineInvite(){ S.ui.pendingInvite=null; S.ui.guestView='list'; save(); render(); }
+function openInviteExternal(){ const iv=S.ui.pendingInvite; if(iv&&iv.externalUrl) window.open(iv.externalUrl,'_blank'); }
+function inviteView(){ const iv=S.ui.pendingInvite; if(!iv){ S.ui.guestView='list'; return guestList(); } const c=cfg(iv); const mem=iv.type==='memorial';
+  return `<div class="hero" style="margin-top:6px">
+    <div class="lead">${mem?'부고':'청첩장이 도착했어요'}</div>
+    <div class="names serif">${evName(iv)}</div>
+    <div class="when">${dateText(iv)}<br/>${esc(iv.venue)}</div>
+    <div class="dday-pill">${dday(iv)}</div>
+  </div>
+  <div class="card">
+    <p class="quote serif">${(esc(iv.message||'').replace(/\n/g,'<br/>'))||'귀한 걸음으로 함께해 주세요.'}</p>
+    <div class="stack" style="margin-top:8px">
+      <button class="btn btn-primary" onclick="acceptInvite()">${mem?'확인하고 내 경조사에 담기':'수락하고 내 경조사에 담기'}</button>
+      ${iv.externalUrl?`<button class="btn btn-line" onclick="openInviteExternal()">🔗 ${c.doc} 전체보기</button>`:''}
+      <button class="btn btn-ghost btn-sm" onclick="declineInvite()">나중에</button>
+    </div>
+    <div class="note">수락하면 이 경조사가 <b>내 이음</b>에만 저장돼요 (내 기기 · 다른 분과 분리). 이후 캘린더 저장·${c.money} 송금을 여기서 한 번에.</div>
+  </div>`;
 }
 
 /* ======================= 캘린더 ======================= */
@@ -492,7 +526,8 @@ function render(){
   $('#ddayTop').textContent='';
   const v=S.ui.guestView;
   $('#app').innerHTML =
-      v==='import' ? importView()
+      v==='invite' ? inviteView()
+    : v==='import' ? importView()
     : v==='ledger' ? ledgerView()
     : v==='add' ? addView()
     : v==='reco' ? recoView()
@@ -1433,6 +1468,16 @@ function budgetCard(ev){ const c=cfg(ev), pl=ev.plan||{}, {sent,rate,meal,gift}=
     <div class="note">현재 실제 ${c.counts?'참석':'조문'} 응답 <b>${led.attend}명</b> · 실수령 <b>${won(led.total)}</b> — 응답이 쌓일수록 예측이 정확해집니다.</div>
   </div>`;
 }
+
+/* ======================= 받은 청첩장 링크(#e=) 감지 → 각자 접속 (사용자 분리) ======================= */
+(function(){ try{ const m=(location.hash||'').match(/[#&]e=([^&]+)/);
+  if(m){ const iv=decodeInvite(m[1]);
+    if(iv){ S.ui.entered=true; S.ui.tab='guest';
+      const dup=S.events.find(e=>e.partyA===iv.partyA&&e.partyB===iv.partyB&&e.date===iv.date&&e.venue===iv.venue);
+      if(dup){ S.ui.currentEventId=dup.id; S.ui.guestView='detail'; }
+      else { S.ui.pendingInvite=iv; S.ui.guestView='invite'; }
+      save(); history.replaceState(null,'',location.pathname); } }
+}catch(e){} })();
 
 /* ======================= 공유받기 (PWA Share Target) ======================= */
 (function(){ try{ const q=new URLSearchParams(location.search);
