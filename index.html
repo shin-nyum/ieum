@@ -109,6 +109,12 @@
   .pill-gold{background:var(--dd-bg);color:#9a7d3e}
   .pill-app{background:#e6eef6;color:#4a6f9a}
   .pill-cash{background:#f1ece1;color:#8a7a4e}
+  .card-thumbs{display:flex;gap:8px;overflow-x:auto;padding:3px 1px 5px}
+  .card-thumb{flex:none;width:50px;height:64px;border-radius:11px;border:2px solid transparent;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+  .card-thumb.on{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary)}
+  .card-preview{border-radius:12px;overflow:hidden;border:1px solid var(--line);max-width:280px;margin:6px auto 0;box-shadow:var(--shadow)}
+  .card-preview svg{display:block;width:100%;height:auto}
   .glist{display:flex;flex-direction:column;gap:8px}
   .grow{border:1px solid var(--line);border-radius:11px;padding:11px 12px;background:var(--field)}
   .grow .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -289,7 +295,7 @@
   <main id="app"></main>
   <div class="footer">
     이음은 자금을 보관·중개하지 않습니다. 송금은 토스/뱅킹 앱에서 직접 이루어집니다.<br/>
-    <span style="opacity:.7">이음 prototype · v14 (토스 자동완성 · 카카오페이 · 계좌복사)</span>
+    <span style="opacity:.7">이음 · 마음을 잇다 · v1.0 · 모든 기능 무료</span>
   </div>
   <nav class="bnav" id="bottomnav" style="display:none">
     <button data-g="home" onclick="setGuestTab('list')"><span class="bn-ic">🗓️</span>경조사</button>
@@ -474,7 +480,7 @@ function payViaApp(method){ const ev=curEvent(); const nm=(S.ui.guestSession.nam
   else { copyAcct(acc); toast('계좌 복사됨 — 뱅킹앱에서 송금하세요'); }
   render(); }
 
-function soon(name){toast(`「${name}」 — 추후/프리미엄 기능`);}
+function soon(name){toast(`「${name}」 — 곧 추가될 기능이에요`);}
 
 /* ======================= 렌더 ======================= */
 function render(){
@@ -594,7 +600,7 @@ function hostView(){
   ${budgetCard(ev)}
 
   <div class="card">
-    <h3>프리미엄 · 부가 기능</h3>
+    <h3>부가 기능 <span style="font-weight:600;color:var(--ok);font-size:11px">· 모두 무료</span></h3>
     <p class="sub">정산이 끝나면 엑셀로 정리하고, 참석·축의한 분들께 감사 인사를 준비하세요.</p>
     <div class="stack">
       <button class="btn btn-ghost" onclick="exportLedgerCSV()">📊 축의금 엑셀(CSV) 내보내기</button>
@@ -950,7 +956,7 @@ function docView(){ const d=DOCS[S.ui.docKey]||DOCS.privacy;
   <div class="card"><p style="font-size:12.5px;line-height:1.95;color:var(--ink);white-space:pre-wrap;margin:0">${esc(d.b)}</p></div>`;
 }
 
-/* ======================= 프리미엄 실기능 ======================= */
+/* ======================= 부가 실기능 (무료) ======================= */
 function exportLedgerCSV(){ const ev=hostEvent(); const c=cfg(ev);
   const rows=[['이름','관계','측','응답','인원','금액','출처']];
   ev.guests.forEach(g=>{ const p=g.pay||{}; rows.push([ g.name, g.relation, (ev.accounts[g.side]||{}).label||'',
@@ -962,23 +968,92 @@ function exportLedgerCSV(){ const ev=hostEvent(); const c=cfg(ev);
   a.href=URL.createObjectURL(blob); a.download=`${evNamePlain(ev)}_정산장부.csv`; document.body.appendChild(a); a.click(); a.remove();
   toast('엑셀(CSV)로 내보냈어요'); }
 function openThanks(){ S.ui.hostSub='thanks'; S.ui.tab='host'; save(); render(); window.scrollTo(0,0); }
-function thanksMsg(ev,g){ const who=ev.partyB?`${ev.partyA}·${ev.partyB}`:ev.partyA;
-  const occ=cfg(ev).label==='부고'?'장례':cfg(ev).counts?'결혼식':'행사';
-  return `${g.name}님, ${occ}에 귀한 걸음과 따뜻한 마음 전해주셔서 진심으로 감사드립니다. 오래도록 기억하겠습니다. — ${who} 올림`; }
-function thanksView(){ const ev=hostEvent(); const recip=ev.guests.filter(g=>g.rsvp.status==='yes'||(g.pay&&g.pay.amount!=null));
+const CARDS=[
+  {bg:['#fde8ef','#f9d0df'], ink:'#7d4a5c', accent:'#e491ac', motif:'floral'},
+  {bg:['#efe9fb','#ddd0f3'], ink:'#5a4a86', accent:'#a48fd6', motif:'dots'},
+  {bg:['#e3f3f0','#c9e7df'], ink:'#3d6b62', accent:'#7cc2b4', motif:'leaf'},
+  {bg:['#fff2e2','#ffdcc0'], ink:'#8a5a3c', accent:'#f0a878', motif:'hearts'},
+  {bg:['#fffbe0','#f4edbf'], ink:'#7d6f38', accent:'#d8c56a', motif:'dots'},
+  {bg:['#e6f2fd','#cde3fb'], ink:'#3f5f86', accent:'#7db0e6', motif:'hearts'},
+  {bg:['#eef3ea','#dbe7d3'], ink:'#4f6045', accent:'#93ac7e', motif:'floral'},
+  {bg:['#ffeaec','#fbcfd4'], ink:'#8a4a50', accent:'#ef97a0', motif:'floral'},
+  {bg:['#faf3e2','#efe2c4'], ink:'#7a6238', accent:'#cdae74', motif:'leaf'},
+  {bg:['#f2efe9','#e3dacb'], ink:'#5f5647', accent:'#b0a189', motif:'dots'}
+];
+function motifRow(type,y,accent){ const xs=[130,222,315,408,500,593,685];
+  const sh=x=> type==='hearts'?`<path d="M${x} ${y+7} C${x-6} ${y-5},${x-22} ${y-3},${x-22} ${y+7} C${x-22} ${y+16},${x-10} ${y+20},${x} ${y+28} C${x+10} ${y+20},${x+22} ${y+16},${x+22} ${y+7} C${x+22} ${y-3},${x+6} ${y-5},${x} ${y+7} Z" fill="${accent}" opacity=".8"/>`
+   : type==='floral'?`<g fill="${accent}" opacity=".85">${[0,72,144,216,288].map(a=>`<circle cx="${(x+9*Math.cos(a*Math.PI/180)).toFixed(1)}" cy="${(y+9*Math.sin(a*Math.PI/180)).toFixed(1)}" r="6.5"/>`).join('')}</g><circle cx="${x}" cy="${y}" r="4" fill="#fff"/>`
+   : type==='leaf'?`<ellipse cx="${x}" cy="${y}" rx="6" ry="14" fill="${accent}" opacity=".78" transform="rotate(28 ${x} ${y})"/><ellipse cx="${x}" cy="${y}" rx="6" ry="14" fill="${accent}" opacity=".55" transform="rotate(-28 ${x} ${y})"/>`
+   : `<circle cx="${x}" cy="${y}" r="6" fill="${accent}" opacity=".7"/>`;
+  return `<g>${xs.map(sh).join('')}</g>`; }
+function wrapText(s,per){ const out=[]; (s||'').split('\n').forEach(para=>{ let line=''; para.split(' ').forEach(w=>{ if(line && [...(line+' '+w)].length>per){out.push(line);line=w;} else {line=line?line+' '+w:w;} }); if(line)out.push(line); }); return out.slice(0,7); }
+function cardSVG(idx,greeting,hostNames,photo){ const c=CARDS[idx]||CARDS[0];
+  const grad=`<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">${c.bg.map((col,i)=>`<stop offset="${i/(c.bg.length-1)}" stop-color="${col}"/>`).join('')}</linearGradient>`;
+  const lines=wrapText(greeting, photo?15:17); const baseY=photo?600:(500-lines.length*22);
+  const textLines=lines.map((ln,i)=>`<text x="400" y="${baseY+i*46}" text-anchor="middle" font-family="'Nanum Myeongjo','Apple SD Gothic Neo',serif" font-size="29" fill="${c.ink}">${esc(ln)}</text>`).join('');
+  const ph=photo?`<clipPath id="pc"><circle cx="400" cy="335" r="150"/></clipPath><image href="${photo}" x="250" y="185" width="300" height="300" preserveAspectRatio="xMidYMid slice" clip-path="url(#pc)"/><circle cx="400" cy="335" r="150" fill="none" stroke="${c.accent}" stroke-width="5"/>`:'';
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000"><defs>${grad}</defs>`+
+    `<rect width="800" height="1000" fill="url(#bg)"/>${motifRow(c.motif,120,c.accent)}`+
+    `<text x="400" y="${photo?165:180}" text-anchor="middle" font-family="'Nanum Myeongjo',serif" font-size="27" letter-spacing="7" fill="${c.accent}">감 사 합 니 다</text>`+
+    `${ph}${textLines}`+
+    `<text x="400" y="895" text-anchor="middle" font-family="'Nanum Myeongjo',serif" font-size="24" fill="${c.ink}">— ${esc(hostNames)} 올림</text>`+
+    `${motifRow(c.motif,945,c.accent)}</svg>`; }
+function svgToPngBlob(svg,w,h,cb){ try{ const img=new Image(); img.onload=()=>{ try{ const cv=document.createElement('canvas'); cv.width=w; cv.height=h; const ctx=cv.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); ctx.drawImage(img,0,0,w,h); cv.toBlob(cb,'image/png'); }catch(e){cb(null);} }; img.onerror=()=>cb(null); img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg); }catch(e){cb(null);} }
+function thankSamples(ev){ return cfg(ev).label==='부고'
+  ? ['{이름}님, 큰 슬픔 중에 함께해 주시고 위로해 주셔서 진심으로 감사드립니다. 덕분에 큰 힘이 되었습니다.',
+     '{이름}님, 바쁘신 중에도 걸음 해주셔서 감사합니다. 베풀어주신 마음 잊지 않겠습니다.',
+     '{이름}님, 따뜻한 위로에 깊이 감사드립니다. 남은 시간 잘 추스르겠습니다.']
+  : ['{이름}님, 귀한 걸음 해주시고 따뜻한 마음 전해주셔서 진심으로 감사드립니다. 오래도록 기억하겠습니다.',
+     '{이름}님, 바쁘신 중에도 함께해 주셔서 감사합니다. 받은 사랑 나누며 행복하게 잘 살겠습니다.',
+     '{이름}님, 먼 길 마다않고 축하해 주셔서 감사합니다. 좋은 일에 꼭 함께하겠습니다.',
+     '{이름}님, 소중한 마음 감사히 받았습니다. 늘 건강하고 행복하시길 바랍니다.']; }
+function cardState(ev){ if(!ev.thankCard)ev.thankCard={design:0,msg:''}; return ev.thankCard; }
+function hostSig(ev){ return ev.partyB?`${ev.partyA}·${ev.partyB}`:ev.partyA; }
+function personGreeting(ev,name){ const c=cardState(ev); const m=(c.msg&&c.msg.trim())?c.msg:thankSamples(ev)[0]; return m.replace(/\{이름\}/g, name||'○○'); }
+function setCardDesign(i){ cardState(hostEvent()).design=i; save(); render(); }
+function setCardMsg(v){ cardState(hostEvent()).msg=v; renderCardPreview(); }
+function useSample(i){ const ev=hostEvent(); cardState(ev).msg=thankSamples(ev)[i]; save(); render(); }
+function setCardPhoto(){ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+  inp.onchange=e=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{ S.ui.cardPhoto=r.result; render(); }; r.readAsDataURL(f); }; inp.click(); }
+function clearCardPhoto(){ S.ui.cardPhoto=null; render(); }
+function renderCardPreview(){ const el=document.getElementById('card-preview'); if(!el)return; const ev=hostEvent();
+  const rn=(ev.guests.find(g=>g.rsvp.status==='yes'||(g.pay&&g.pay.amount!=null))||{}).name||'○○';
+  el.innerHTML=cardSVG(cardState(ev).design, personGreeting(ev,rn), hostSig(ev), S.ui.cardPhoto); }
+function thanksView(){ const ev=hostEvent(); const c=cardState(ev); const samples=thankSamples(ev);
+  const recip=ev.guests.filter(g=>g.rsvp.status==='yes'||(g.pay&&g.pay.amount!=null));
+  const previewName=(recip[0]||{}).name||'○○';
   return `<button class="backbtn" onclick="backFromHost2()">‹ 호스트</button>
-  <div class="listhead"><div class="t serif">감사 인사 보내기</div></div>
-  <p class="sub" style="margin:0 2px 12px">참석·축의한 분들께 맞춤 인사를 준비했어요. <b>내 문자 앱</b>에서 직접 보냅니다 — 이음이 대신 발송하지 않습니다.</p>
-  ${recip.map(g=>{const m=thanksMsg(ev,g);return `<div class="card" style="padding:13px">
-    <div style="font-weight:800">${esc(g.name)} <span style="font-weight:400;color:var(--muted);font-size:11px">· ${esc(g.relation)}</span></div>
-    <p style="font-size:12.5px;line-height:1.75;color:var(--ink);margin:8px 0 11px">${esc(m)}</p>
-    <div class="row"><button class="btn btn-line btn-sm" onclick="copyThanks('${g.id}')">복사</button><button class="btn btn-sage btn-sm" onclick="smsThanks('${g.id}')">문자앱 열기</button></div>
-  </div>`;}).join('')||'<div class="empty">참석·축의한 분이 아직 없어요</div>'}
-  <div class="note">'텍스트만 세팅, 발송은 호스트 본인'이라 대량문자 사업자 규제를 받지 않아요. 인사말에 앱 홍보·링크는 넣지 마세요.</div>`;
+  <div class="listhead"><div class="t serif">감사 카드 보내기</div></div>
+  <p class="sub" style="margin:0 2px 12px">파스텔 카드에 사진·메시지를 담아 예쁜 감사 인사를 보내세요. <b>내 문자·카톡</b>으로 직접 전송해요.</p>
+  <div class="card">
+    <label>카드 디자인</label>
+    <div class="card-thumbs">${CARDS.map((cc,i)=>`<button class="card-thumb ${c.design===i?'on':''}" onclick="setCardDesign(${i})" style="background:linear-gradient(135deg,${cc.bg[0]},${cc.bg[cc.bg.length-1]})"><span style="color:${cc.accent}">♥</span></button>`).join('')}</div>
+    <label style="margin-top:13px">메시지 <span style="font-weight:600;color:var(--muted);font-size:11px">· {이름}은 하객 이름으로 바뀜</span></label>
+    <div class="chips" style="margin-bottom:8px">${samples.map((s,i)=>`<button class="chip" onclick="useSample(${i})">샘플 ${i+1}</button>`).join('')}</div>
+    <textarea rows="3" oninput="setCardMsg(this.value)" placeholder="직접 입력하거나 위 샘플을 골라보세요">${esc(c.msg)}</textarea>
+    <div class="row" style="margin-top:10px">
+      <button class="btn btn-ghost btn-sm" onclick="setCardPhoto()">📷 사진 ${S.ui.cardPhoto?'변경':'추가'}</button>
+      ${S.ui.cardPhoto?`<button class="btn btn-ghost btn-sm" onclick="clearCardPhoto()">사진 제거</button>`:''}
+    </div>
+  </div>
+  <div class="card">
+    <label>미리보기 (${esc(previewName)}님 예시)</label>
+    <div id="card-preview" class="card-preview">${cardSVG(c.design, personGreeting(ev,previewName), hostSig(ev), S.ui.cardPhoto)}</div>
+  </div>
+  <div class="card"><div class="secthead"><div class="t">받는 사람</div><div class="c">${recip.length}명</div></div>
+    <div class="glist">${recip.map(g=>`<div class="calevrow">
+      <span class="cnm">${esc(g.name)}<span style="color:var(--muted);font-weight:400;font-size:11px"> · ${esc(g.relation)}</span></span>
+      <button class="btn btn-sage btn-sm" style="max-width:120px" onclick="sendCard('${jsq(g.name)}')">카드 보내기</button>
+    </div>`).join('')||'<div class="empty">참석·축의한 분이 아직 없어요</div>'}</div>
+    <div class="note">이미지·문구만 만들고 발송은 호스트 본인이 하므로 대량문자 규제를 받지 않아요.</div>
+  </div>`;
 }
-function copyThanks(id){ const ev=hostEvent(); const g=ev.guests.find(x=>x.id===id); if(g){copy(thanksMsg(ev,g));toast('인사말을 복사했어요');} }
-function smsThanks(id){ const ev=hostEvent(); const g=ev.guests.find(x=>x.id===id); if(!g)return;
-  const body=encodeURIComponent(thanksMsg(ev,g)); try{ window.location.href='sms:?body='+body; }catch(e){ copy(thanksMsg(ev,g)); toast('문자앱을 열 수 없어 복사했어요'); } }
+function sendCard(name){ const ev=hostEvent(); const greeting=personGreeting(ev,name);
+  const svg=cardSVG(cardState(ev).design, greeting, hostSig(ev), S.ui.cardPhoto);
+  svgToPngBlob(svg,800,1000, blob=>{ if(!blob){ copy(greeting); toast('이미지 생성 실패 — 문구를 복사했어요'); return; }
+    const file=new File([blob],`감사카드_${name}.png`,{type:'image/png'});
+    try{ if(navigator.canShare && navigator.canShare({files:[file]})){ navigator.share({files:[file],text:greeting}).catch(()=>{}); return; } }catch(e){}
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`감사카드_${name}.png`; document.body.appendChild(a); a.click(); a.remove(); copy(greeting); toast('카드 이미지 저장 + 문구 복사 — 문자/카톡에 첨부하세요'); }); }
 function backFromHost2(){ S.ui.hostSub=null; save(); render(); window.scrollTo(0,0); }
 
 /* ======================= 하단 탭 내비 ======================= */
