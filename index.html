@@ -289,7 +289,7 @@
   <main id="app"></main>
   <div class="footer">
     이음은 자금을 보관·중개하지 않습니다. 송금은 토스/뱅킹 앱에서 직접 이루어집니다.<br/>
-    <span style="opacity:.7">이음 prototype · v13 (주고받은 사람 검색 · 용어 정리)</span>
+    <span style="opacity:.7">이음 prototype · v14 (토스 자동완성 · 카카오페이 · 계좌복사)</span>
   </div>
   <nav class="bnav" id="bottomnav" style="display:none">
     <button data-g="home" onclick="setGuestTab('list')"><span class="bn-ic">🗓️</span>경조사</button>
@@ -331,7 +331,7 @@ function seed(){
         date:'2026-10-17', time:'13:00', venue:'더채플 앳 청담', address:'서울 강남구 청담동 123-4',
         message:'서로 마주보며 다져온 사랑을\n이제 함께 한곳을 바라보며\n걸어가고자 합니다.',
         externalUrl:'',
-        accounts:[ {label:'신랑측', bank:'카카오뱅크', number:'3333-01-1234567', holder:'김민준'},
+        accounts:[ {label:'신랑측', bank:'카카오뱅크', number:'3333-01-1234567', holder:'김민준', kakaopay:'https://qr.kakaopay.com/demo-minjun'},
                    {label:'신부측', bank:'토스뱅크', number:'1000-12-3456789', holder:'이서연'} ],
         guests:[ mkGuest('박지훈','친구',0,{amount:100000,source:'app',method:'toss'}),
                  mkGuest('최수아','직장',1,{amount:50000,source:'manual',method:'cash'}),
@@ -341,7 +341,7 @@ function seed(){
         date:'2026-09-05', time:'12:00', venue:'그랜드 워커힐 서울', address:'서울 광진구 워커힐로 177',
         message:'두 사람이 사랑으로 만나\n새로운 가정을 이룹니다.',
         externalUrl:'https://www.barunsoncard.com',
-        accounts:[ {label:'신랑측', bank:'국민', number:'123-45-6789012', holder:'박서준'},
+        accounts:[ {label:'신랑측', bank:'국민', number:'123-45-6789012', holder:'박서준', kakaopay:'https://qr.kakaopay.com/demo-seojun'},
                    {label:'신부측', bank:'신한', number:'110-234-567890', holder:'김지우'} ],
         myGift:100000, myRelation:'친구', guests:[] },
       { id:'e3', role:'guest', type:'memorial',
@@ -467,6 +467,10 @@ function payViaApp(method){ const ev=curEvent(); const nm=(S.ui.guestSession.nam
   const acc=ev.accounts[S.ui.guestSession.acctIdx||0]||ev.accounts[0];
   if(method==='toss'){ let ok=false; try{ window.location.href=tossLink(acc,amt); ok=true; }catch(e){}
     if(!ok){ copyAcct(acc); } setTimeout(()=>toast(ok?'토스에 금액이 자동으로 채워져요':'토스를 열 수 없어 계좌를 복사했어요'),300); }
+  else if(method==='kakao'){ const link=acc.kakaopay;
+    if(link){ copy(`${acc.bank} ${acc.number} ${acc.holder}`); try{ window.location.href=link; }catch(e){ try{window.open(link,'_blank');}catch(e2){} }
+      setTimeout(()=>toast('카카오페이로 이동 — 금액을 입력해 보내세요'),300); }
+    else { copyAcct(acc); toast('카카오페이 링크가 없어 계좌를 복사했어요'); } }
   else { copyAcct(acc); toast('계좌 복사됨 — 뱅킹앱에서 송금하세요'); }
   render(); }
 
@@ -607,12 +611,14 @@ function acctEditor(i,a){
         ${BANKS.map(b=>`<option ${b===a.bank?'selected':''}>${b}</option>`).join('')}</select></div>
       <div><input placeholder="계좌번호" value="${esc(a.number)}" onchange="updAcct(${i},'number',this.value)"></div>
     </div>
-    <input style="margin-top:6px" placeholder="예금주" value="${esc(a.holder)}" onchange="updAcct(${i},'holder',this.value)"></div>`;
+    <input style="margin-top:6px" placeholder="예금주" value="${esc(a.holder)}" onchange="updAcct(${i},'holder',this.value)">
+    <input style="margin-top:6px" placeholder="카카오페이 송금링크 (선택 · qr.kakaopay.com/...)" value="${esc(a.kakaopay||'')}" onchange="updAcct(${i},'kakaopay',this.value)">
+    <p class="lblnote">카카오페이 앱 → 나에게 송금 → 링크 복사해 붙여넣으면 하객이 '카카오페이로 보내기'를 쓸 수 있어요.</p></div>`;
 }
 function rowHost(ev,x){
   const r=x.rsvp,st=r.status,c=cfg(ev); const p=x.pay||{};
   const pill=st==='yes'?`<span class="pill pill-ok">${c.counts?`참석 ${r.count}명`:'조문 예정'}</span>`:st==='no'?`<span class="pill pill-no">${c.counts?'불참':'조문 어려움'}</span>`:`<span class="pill pill-wait">미응답</span>`;
-  const src=p.amount!=null?(p.source==='app'?`<span class="pill pill-app">🔵 이음 송금</span>`:`<span class="pill pill-cash">${p.method==='cash'?'💵 현금':'✏️ 직접입력'}</span>`):'';
+  const src=p.amount!=null?(p.source==='app'?`<span class="pill pill-app">🔵 이음${p.method==='kakao'?'·카카오':p.method==='toss'?'·토스':''}</span>`:`<span class="pill pill-cash">${p.method==='cash'?'💵 현금':'✏️ 직접입력'}</span>`):'';
   const sideLabel=ev.accounts[x.side]?ev.accounts[x.side].label:'';
   return `<div class="grow">
     <div class="top">
@@ -763,7 +769,7 @@ function guestDetail(){
 
   <div class="card">
     <h3>마음 전하기 (${c.money})</h3>
-    <p class="sub">금액을 입력하고 보내면 토스에 <b>금액이 자동으로 채워져요</b> — 따로 확인할 필요 없어요.</p>
+    <p class="sub">금액을 입력하면 <b>토스는 금액이 자동완성</b>돼요. 카카오페이·다른 은행 앱은 계좌 복사로 간편하게 보낼 수 있어요.</p>
     ${ev.accounts.length>1?`<label>받는 분</label><div class="seg2">${ev.accounts.map((a,i)=>`<button class="${i===idx?'on':''}" onclick="setAcct(${i})">${esc(a.label)}</button>`).join('')}</div>`:''}
     <div class="acct" style="margin-top:8px"><div class="b">${esc(acc.bank)} ${esc(acc.number)}<small>예금주 ${esc(acc.holder)}</small></div>
       <button class="minibtn" onclick="copyAcct(curEvent().accounts[${idx}])">복사</button></div>
@@ -773,7 +779,8 @@ function guestDetail(){
     <button class="btn btn-line btn-sm" style="margin-top:9px" onclick="openReco(curEvent().id)">💰 얼마 낼지 추천받기</button>
     <div class="stack" style="margin-top:9px">
       <button class="btn btn-toss" onclick="payViaApp('toss')">토스로 송금 · 금액 자동완성</button>
-      <button class="btn btn-ghost" onclick="payViaApp('account')">계좌 복사 후 직접 송금</button>
+      ${acc.kakaopay?`<button class="btn btn-kakao" onclick="payViaApp('kakao')">카카오페이로 보내기</button>`:''}
+      <button class="btn btn-ghost" onclick="payViaApp('account')">계좌 복사 (모든 은행 앱)</button>
       <button class="btn btn-ghost btn-sm" onclick="openEnvelope(curEvent().id)">🧧 봉투 쓰는 법</button>
     </div>
     ${me&&me.pay&&me.pay.amount!=null?`<div class="note" style="margin-top:10px">✓ 이음으로 <b>${won(me.pay.amount)}</b> 보냄 기록 — 호스트 정산장부에 '이음 송금'으로 표시돼요.</div>`:''}
