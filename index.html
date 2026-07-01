@@ -260,7 +260,7 @@
   <main id="app"></main>
   <div class="footer">
     이음은 자금을 보관·중개하지 않습니다. 송금은 토스/뱅킹 앱에서 직접 이루어집니다.<br/>
-    <span style="opacity:.7">이음 prototype · v9 (품앗이 노트 · 그룹합산 · 하단탭 정리)</span>
+    <span style="opacity:.7">이음 prototype · v10 (설정·백업·약관 · 카카오키 · 프리미엄 실기능)</span>
   </div>
   <nav class="bnav" id="bottomnav" style="display:none">
     <button data-g="home" onclick="setGuestTab('list')"><span class="bn-ic">🗓️</span>경조사</button>
@@ -322,6 +322,7 @@ function seed(){
       { id:'p2', name:'이수민', relation:'친구', items:[ {id:'pi2', dir:'received', amount:100000, label:'내 결혼식 때', date:'2024-05-11'}, {id:'pi3', dir:'gave', amount:50000, label:'돌잔치', date:'2025-08-20'} ] },
       { id:'p3', name:'김태영', relation:'직장', items:[ {id:'pi4', dir:'received', amount:50000, label:'내 결혼식 때', date:'2024-05-11'} ] }
     ],
+    settings:{ name:'', kakaoKey:'', premium:true },
     ui:{ entered:false, tab:'guest', hostEventId:'e1', guestView:'list', currentEventId:null,
          guestSession:{name:'', acctIdx:0} }
   };
@@ -329,7 +330,8 @@ function seed(){
 let S=load();
 function load(){ try{const r=localStorage.getItem(LS); if(r){ const o=JSON.parse(r); const d=seed();
   o.ui={...d.ui, ...(o.ui||{})}; o.ui.guestSession={...d.ui.guestSession, ...((o.ui&&o.ui.guestSession)||{})};
-  if(!Array.isArray(o.events)) o.events=d.events; if(!Array.isArray(o.people)) o.people=d.people; return o; } }catch(e){} return seed(); }
+  if(!Array.isArray(o.events)) o.events=d.events; if(!Array.isArray(o.people)) o.people=d.people;
+  o.settings={...d.settings, ...(o.settings||{})}; return o; } }catch(e){} return seed(); }
 function save(){ localStorage.setItem(LS, JSON.stringify(S)); }
 function reset(){ if(confirm('데모 데이터를 초기화할까요?')){ localStorage.removeItem(LS); S=seed(); render(); toast('초기화했어요'); } }
 
@@ -424,7 +426,7 @@ function render(){
   const bn=document.getElementById('bottomnav');
   if(!S.ui.entered){ if(bn)bn.style.display='none'; $('#ddayTop').textContent=''; $('#app').innerHTML=landingView(); return; }
   if(S.ui.tab==='host'){ if(bn)bn.style.display='none'; const he=hostEvent();
-    $('#ddayTop').textContent = he?dday(he):''; $('#app').innerHTML=hostView(); return; }
+    $('#ddayTop').textContent = he?dday(he):''; $('#app').innerHTML = S.ui.hostSub==='thanks'?thanksView():hostView(); return; }
   if(bn){ bn.style.display='flex'; }
   $('#ddayTop').textContent='';
   const v=S.ui.guestView;
@@ -438,6 +440,8 @@ function render(){
     : v==='group' ? groupView()
     : v==='people' ? peopleView()
     : v==='person' ? personView()
+    : v==='settings' ? settingsView()
+    : v==='doc' ? docView()
     : v==='detail' ? guestDetail() : guestList();
   updateBottomNav();
 }
@@ -535,14 +539,13 @@ function hostView(){
   ${budgetCard(ev)}
 
   <div class="card">
-    <h3>부가 기능</h3>
-    <p class="sub">이번 프로토타입에서는 버튼만 활성화했습니다.</p>
+    <h3>프리미엄 · 부가 기능</h3>
+    <p class="sub">정산이 끝나면 엑셀로 정리하고, 참석·축의한 분들께 감사 인사를 준비하세요.</p>
     <div class="stack">
-      <button class="btn btn-disabled" onclick="soon('축의금 엑셀 다운로드')">📊 축의금 엑셀 다운로드 <span class="lock">· 프리미엄 ₩9,900</span></button>
-      <button class="btn btn-disabled" onclick="soon('감사 인사 단체문자 세팅')">✉️ 감사 인사 단체문자 세팅 <span class="lock">· 프리미엄</span></button>
+      <button class="btn btn-ghost" onclick="exportLedgerCSV()">📊 축의금 엑셀(CSV) 내보내기</button>
+      <button class="btn btn-ghost" onclick="openThanks()">✉️ 감사 인사 준비하기</button>
       <button class="btn btn-disabled" onclick="soon('청첩모임 만들기')">🍽️ 청첩모임 만들기 <span class="lock">· 추후</span></button>
     </div>
-    <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="reset()">데모 데이터 초기화</button>
   </div>`;
 }
 function acctEditor(i,a){
@@ -834,11 +837,103 @@ function ledgerView(){ const s=myStats();
   </div>`:''}`;
 }
 
+/* ======================= 설정 · 백업 · 약관 ======================= */
+function kakaoInit(){ try{ const k=(S.settings&&S.settings.kakaoKey)||KAKAO_JS_KEY; if(k&&window.Kakao&&!Kakao.isInitialized())Kakao.init(k); }catch(e){} }
+function openSettings(){ S.ui.guestView='settings'; save(); render(); window.scrollTo(0,0); }
+function setSetting(k,v){ if(!S.settings)S.settings={}; S.settings[k]=v; save(); if(k==='kakaoKey')kakaoInit(); }
+function settingsView(){ const st=S.settings||{};
+  return `<button class="backbtn" onclick="setGuestTab('more')">‹ 더보기</button>
+  <div class="listhead"><div class="t serif">설정</div></div>
+  <div class="card">
+    <label>내 이름</label><input value="${esc(st.name||'')}" placeholder="송금·기록에 표시돼요" onchange="setSetting('name',this.value)">
+    <label style="margin-top:12px">카카오 JavaScript 키 <span style="font-weight:600;color:var(--muted)">(선택)</span></label>
+    <input value="${esc(st.kakaoKey||'')}" placeholder="developers.kakao.com 앱의 JS 키" onchange="setSetting('kakaoKey',this.value)">
+    <p class="lblnote">${st.kakaoKey?'✓ 카카오톡 리치 공유가 켜졌어요':'키를 넣으면 카카오톡 리치 공유가 켜집니다. 비우면 기본 공유(문자·복사)로 작동해요.'}</p>
+  </div>
+  <div class="card" style="padding:5px 4px">
+    ${moreItem('⬇️','데이터 내보내기(백업)','내 경조사·가계부를 파일로 저장','exportData()')}
+    ${moreItem('⬆️','데이터 가져오기(복원)','백업 파일에서 되돌리기','importData()')}
+    ${moreItem('📄','개인정보 처리방침','이음은 정보를 서버로 수집하지 않아요',"openDoc('privacy')")}
+    ${moreItem('📃','이용약관','',"openDoc('terms')")}
+    ${moreItem('↺','데이터 초기화','데모 데이터로 되돌리기','reset()')}
+  </div>`;
+}
+function exportData(){ try{ const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='ieum-backup.json'; document.body.appendChild(a); a.click(); a.remove(); toast('백업 파일을 저장했어요'); }catch(e){toast('내보내기 실패')} }
+function importData(){ const inp=document.createElement('input'); inp.type='file'; inp.accept='application/json,.json';
+  inp.onchange=e=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const r=new FileReader();
+    r.onload=()=>{ try{ const o=JSON.parse(r.result); if(o&&Array.isArray(o.events)&&o.ui){ S=o; if(!S.people)S.people=[]; if(!S.settings)S.settings={}; save(); render(); toast('복원했어요'); } else toast('올바른 백업 파일이 아니에요'); }catch(err){ toast('파일을 읽지 못했어요'); } };
+    r.readAsText(f); };
+  inp.click(); }
+const DOCS={
+  privacy:{ t:'개인정보 처리방침', b:`이음(마음을 잇다)은 별도의 서버 없이 이용자의 기기에서만 동작하는 앱입니다.
+
+1. 수집·저장 항목
+   - 이용자가 입력한 경조사 정보, 계좌·금액, 사람(품앗이) 내역, 설정값
+   - 위 정보는 이용자 기기의 브라우저 저장소(localStorage)에만 저장되며, 이음 운영자를 포함한 외부로 전송·수집되지 않습니다.
+
+2. 제3자 서비스
+   - 송금은 토스·카카오페이·뱅킹 앱 등 이용자가 직접 실행하며, 이음은 자금·계좌에 접근하거나 중개하지 않습니다.
+   - 공유·캘린더 저장 시 카카오·구글 등 해당 서비스의 정책이 적용됩니다.
+
+3. 보관·파기
+   - 데이터는 이용자가 삭제(초기화)하거나 브라우저 저장소를 비우면 즉시 사라집니다.
+   - 하객 등 제3자의 정보를 입력할 경우, 이용자가 해당 정보의 관리 책임을 집니다.
+
+4. 문의: 앱 내 설정 화면` },
+  terms:{ t:'이용약관', b:`제1조(목적) 이음은 경조사 일정·정산·정보 제공을 돕는 관리 도구입니다.
+
+제2조(자금 비취급) 이음은 자금을 보관·예치·중개·이체하지 않습니다. 모든 송금은 이용자가 토스·뱅킹 등 외부 앱에서 직접 수행하며, 이음은 계좌정보를 화면에 표시하거나 송금 화면으로 연결하는 역할만 합니다.
+
+제3조(정보의 정확성) 축의금·조의금 추천 금액, 식대·예산 계산 등은 공개된 통념·설문을 참고한 '참고용' 정보이며, 실제 금액은 이용자가 관계·상황에 따라 판단합니다.
+
+제4조(책임의 한계) 이음은 이용자가 입력·표시한 계좌·금액·연락처의 정확성 및 이를 통한 송금 결과에 대해 책임지지 않습니다.
+
+제5조(제휴·광고 고지) 향후 제휴 링크가 포함될 경우, 관련 법령에 따라 대가성 여부를 명확히 표시합니다.` }
+};
+function openDoc(k){ S.ui.docKey=k; S.ui.guestView='doc'; save(); render(); window.scrollTo(0,0); }
+function docView(){ const d=DOCS[S.ui.docKey]||DOCS.privacy;
+  return `<button class="backbtn" onclick="openSettings()">‹ 설정</button>
+  <div class="listhead"><div class="t serif">${d.t}</div></div>
+  <div class="card"><p style="font-size:12.5px;line-height:1.95;color:var(--ink);white-space:pre-wrap;margin:0">${esc(d.b)}</p></div>`;
+}
+
+/* ======================= 프리미엄 실기능 ======================= */
+function exportLedgerCSV(){ const ev=hostEvent(); const c=cfg(ev);
+  const rows=[['이름','관계','측','응답','인원','자가신고','확정금액']];
+  ev.guests.forEach(g=>{ rows.push([ g.name, g.relation, (ev.accounts[g.side]||{}).label||'',
+    g.rsvp.status==='yes'?(c.counts?'참석':'조문'):g.rsvp.status==='no'?'불참':'미응답',
+    c.counts?(g.rsvp.count||''):'', g.report.amount??'', (g.ledger.confirmed?g.ledger.amount:'')??'' ]); });
+  const led=ledgerStats(ev); rows.push(['','','','','','','']); rows.push(['합계','','','','', led.reported, led.confirmed]);
+  const csv='﻿'+rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=`${evNamePlain(ev)}_정산장부.csv`; document.body.appendChild(a); a.click(); a.remove();
+  toast('엑셀(CSV)로 내보냈어요'); }
+function openThanks(){ S.ui.hostSub='thanks'; S.ui.tab='host'; save(); render(); window.scrollTo(0,0); }
+function thanksMsg(ev,g){ const who=ev.partyB?`${ev.partyA}·${ev.partyB}`:ev.partyA;
+  const occ=cfg(ev).label==='부고'?'장례':cfg(ev).counts?'결혼식':'행사';
+  return `${g.name}님, ${occ}에 귀한 걸음과 따뜻한 마음 전해주셔서 진심으로 감사드립니다. 오래도록 기억하겠습니다. — ${who} 올림`; }
+function thanksView(){ const ev=hostEvent(); const recip=ev.guests.filter(g=>g.rsvp.status==='yes'||g.report.amount!=null||(g.ledger&&g.ledger.confirmed));
+  return `<button class="backbtn" onclick="backFromHost2()">‹ 호스트</button>
+  <div class="listhead"><div class="t serif">감사 인사 보내기</div></div>
+  <p class="sub" style="margin:0 2px 12px">참석·축의한 분들께 맞춤 인사를 준비했어요. <b>내 문자 앱</b>에서 직접 보냅니다 — 이음이 대신 발송하지 않습니다.</p>
+  ${recip.map(g=>{const m=thanksMsg(ev,g);return `<div class="card" style="padding:13px">
+    <div style="font-weight:800">${esc(g.name)} <span style="font-weight:400;color:var(--muted);font-size:11px">· ${esc(g.relation)}</span></div>
+    <p style="font-size:12.5px;line-height:1.75;color:var(--ink);margin:8px 0 11px">${esc(m)}</p>
+    <div class="row"><button class="btn btn-line btn-sm" onclick="copyThanks('${g.id}')">복사</button><button class="btn btn-sage btn-sm" onclick="smsThanks('${g.id}')">문자앱 열기</button></div>
+  </div>`;}).join('')||'<div class="empty">참석·축의한 분이 아직 없어요</div>'}
+  <div class="note">'텍스트만 세팅, 발송은 호스트 본인'이라 대량문자 사업자 규제를 받지 않아요. 인사말에 앱 홍보·링크는 넣지 마세요.</div>`;
+}
+function copyThanks(id){ const ev=hostEvent(); const g=ev.guests.find(x=>x.id===id); if(g){copy(thanksMsg(ev,g));toast('인사말을 복사했어요');} }
+function smsThanks(id){ const ev=hostEvent(); const g=ev.guests.find(x=>x.id===id); if(!g)return;
+  const body=encodeURIComponent(thanksMsg(ev,g)); try{ window.location.href='sms:?body='+body; }catch(e){ copy(thanksMsg(ev,g)); toast('문자앱을 열 수 없어 복사했어요'); } }
+function backFromHost2(){ S.ui.hostSub=null; save(); render(); window.scrollTo(0,0); }
+
 /* ======================= 하단 탭 내비 ======================= */
-function navGroup(v){ if(['ledger','people','person'].includes(v))return 'ledger'; if(v==='reco')return 'reco'; if(['more','group','envelope'].includes(v))return 'more'; return 'home'; }
+function navGroup(v){ if(['ledger','people','person'].includes(v))return 'ledger'; if(v==='reco')return 'reco'; if(['more','group','envelope','settings','doc'].includes(v))return 'more'; return 'home'; }
 function setGuestTab(v){ S.ui.tab='guest'; S.ui.guestView=v; if(v==='reco'&&S.ui.reco)S.ui.reco.ctxEventId=null; save(); render(); window.scrollTo(0,0); }
 function updateBottomNav(){ const g=navGroup(S.ui.guestView); document.querySelectorAll('#bottomnav button').forEach(b=>b.classList.toggle('on', b.getAttribute('data-g')===g)); }
-function backFromHost(){ S.ui.tab='guest'; S.ui.guestView='list'; save(); render(); window.scrollTo(0,0); }
+function backFromHost(){ S.ui.tab='guest'; S.ui.guestView='list'; S.ui.hostSub=null; save(); render(); window.scrollTo(0,0); }
 
 /* ======================= 품앗이 노트 (사람 단위 상호주의) ======================= */
 function personStats(p){ let gave=0,recv=0; (p.items||[]).forEach(it=>{ if(it.dir==='gave')gave+=it.amount; else recv+=it.amount; }); return {gave,recv,net:gave-recv}; }
@@ -926,7 +1021,7 @@ function moreView(){ return `
     ${moreItem('🧮','그룹 합산 축의','팀·모임 1/N 분담 계산','openGroup()')}
     ${moreItem('🔔', S.ui.noti?'알림 켜짐 ✓':'알림 받기','다가오는 경조사 미리 알림','toggleNoti()')}
     ${moreItem('✍️','호스트 — 내 행사 만들기','청첩장·정산·하객 관리',"setTab('host')")}
-    ${moreItem('↺','데이터 초기화','데모 데이터로 되돌리기','reset()')}
+    ${moreItem('⚙️','설정','프로필 · 카카오 키 · 백업 · 약관','openSettings()')}
   </div>
   <p class="land-foot" style="margin-top:6px">이음 prototype · 마음을 잇다</p>`;
 }
@@ -1203,6 +1298,7 @@ function budgetCard(ev){ const c=cfg(ev), pl=ev.plan||{}, {sent,rate,meal,gift}=
     history.replaceState(null,'',location.pathname); }
 }catch(e){} })();
 
+kakaoInit();
 render();
 try{ if(S.ui.noti) fireDueNotis(); }catch(e){}
 
