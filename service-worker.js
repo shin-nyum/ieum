@@ -1,9 +1,10 @@
 // 네트워크 우선(network-first) — 온라인이면 항상 최신을 보여주고, 오프라인일 때만 캐시로 폴백
-const CACHE = 'ieum-v22';
+const CACHE = 'ieum-v23';
 const ASSETS = [
   './',
   './index.html',
   './memorial.html',
+  './privacy.html',
   './manifest.webmanifest',
   './og-image.png',
   './og-memorial.png',
