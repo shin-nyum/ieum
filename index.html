@@ -46,6 +46,8 @@
   html[data-theme="dark"] .pill-no,html[data-theme="dark"] .bal.neg{background:#3a2622}
   html[data-theme="dark"] .pill-wait{background:#34301f}
   html[data-theme="dark"] .bal.even{background:#302b24}
+  html[data-theme="dark"] .pill-app{background:#233240;color:#9dbbdd}
+  html[data-theme="dark"] .pill-cash{background:#332f24;color:#cbb888}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0;background:#e9e3d9;color:var(--ink);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic","맑은 고딕",sans-serif;
@@ -105,6 +107,8 @@
   .pill-no{background:#f6e7e4;color:var(--danger)}
   .pill-wait{background:#f3ece1;color:var(--warn)}
   .pill-gold{background:var(--dd-bg);color:#9a7d3e}
+  .pill-app{background:#e6eef6;color:#4a6f9a}
+  .pill-cash{background:#f1ece1;color:#8a7a4e}
   .glist{display:flex;flex-direction:column;gap:8px}
   .grow{border:1px solid var(--line);border-radius:11px;padding:11px 12px;background:var(--field)}
   .grow .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -285,7 +289,7 @@
   <main id="app"></main>
   <div class="footer">
     이음은 자금을 보관·중개하지 않습니다. 송금은 토스/뱅킹 앱에서 직접 이루어집니다.<br/>
-    <span style="opacity:.7">이음 prototype · v11 (다크모드 · 디자인 폴리시)</span>
+    <span style="opacity:.7">이음 prototype · v12 (송금 자동완성 · 수금 출처 · 현금 정산)</span>
   </div>
   <nav class="bnav" id="bottomnav" style="display:none">
     <button data-g="home" onclick="setGuestTab('list')"><span class="bn-ic">🗓️</span>경조사</button>
@@ -313,10 +317,11 @@ const BANKS=['카카오뱅크','토스뱅크','국민','신한','우리','하나
 const RELATIONS=['가족','친척','친구','직장','선후배','기타'];
 
 /* ======================= 상태 ======================= */
-const LS='ieum_v2';
+const LS='ieum_v3';
 let _id=1; const uid=p=>(p||'x')+Date.now().toString(36)+(_id++);
-function mkGuest(name,relation,side){return {id:uid('g'),name,relation,side:side||0,
-  rsvp:{status:null,count:1,meal:true}, report:{amount:null}, ledger:{amount:null,confirmed:false}, unregistered:false};}
+// pay: { amount, source:'app'|'manual', method:'toss'|'account'|'cash' }
+function mkGuest(name,relation,side,pay){return {id:uid('g'),name,relation,side:side||0,
+  rsvp:{status:null,count:1,meal:true}, pay:pay||{amount:null,source:null,method:null}, unregistered:false};}
 
 function seed(){
   return {
@@ -328,7 +333,9 @@ function seed(){
         externalUrl:'',
         accounts:[ {label:'신랑측', bank:'카카오뱅크', number:'3333-01-1234567', holder:'김민준'},
                    {label:'신부측', bank:'토스뱅크', number:'1000-12-3456789', holder:'이서연'} ],
-        guests:[ mkGuest('박지훈','친구',0), mkGuest('최수아','직장',1), mkGuest('정해린','가족',1) ] },
+        guests:[ mkGuest('박지훈','친구',0,{amount:100000,source:'app',method:'toss'}),
+                 mkGuest('최수아','직장',1,{amount:50000,source:'manual',method:'cash'}),
+                 mkGuest('정해린','가족',1) ] },
       { id:'e2', role:'guest', type:'wedding',
         partyA:'박서준', partyB:'김지우', subtitle:'결혼합니다',
         date:'2026-09-05', time:'12:00', venue:'그랜드 워커힐 서울', address:'서울 광진구 워커힐로 177',
@@ -448,10 +455,20 @@ function googleCal(ev){
 }
 
 /* ======================= 송금 ======================= */
-function tossLink(acc){const num=(acc.number||'').replace(/[^0-9]/g,'');return `supertoss://send?bank=${encodeURIComponent(acc.bank)}&accountNo=${num}`;}
-function sendMoney(acc){let ok=false;try{window.location.href=tossLink(acc);ok=true;}catch(e){}
-  setTimeout(()=>toast(ok?'토스가 설치된 폰에서 송금화면이 열립니다':'계좌번호를 복사해 직접 송금하세요'),400);}
+function tossLink(acc,amount){const num=(acc.number||'').replace(/[^0-9]/g,'');return `supertoss://send?bank=${encodeURIComponent(acc.bank)}&accountNo=${num}`+(amount?`&amount=${amount}`:'');}
 function copyAcct(acc){copy(`${acc.bank} ${acc.number} ${acc.holder}`);toast('계좌번호를 복사했어요');}
+function payViaApp(method){ const ev=curEvent(); const nm=(S.ui.guestSession.name||($('#gname')&&$('#gname').value.trim())||'').trim();
+  if(!nm){toast('성함을 먼저 입력하세요');return;}
+  const amt=Number($('#sendamt')&&$('#sendamt').value); if(!amt){toast('보낼 금액을 입력하세요');return;}
+  S.ui.guestSession.name=nm;
+  let x=ev.guests.find(g=>g.name===nm); if(!x){x=mkGuest(nm,ev.myRelation||'지인',S.ui.guestSession.acctIdx||0);x.unregistered=true;ev.guests.push(x);}
+  x.pay={amount:amt, source:'app', method};
+  ev.myGift=amt; save();
+  const acc=ev.accounts[S.ui.guestSession.acctIdx||0]||ev.accounts[0];
+  if(method==='toss'){ let ok=false; try{ window.location.href=tossLink(acc,amt); ok=true; }catch(e){}
+    if(!ok){ copyAcct(acc); } setTimeout(()=>toast(ok?'토스에 금액이 자동으로 채워져요':'토스를 열 수 없어 계좌를 복사했어요'),300); }
+  else { copyAcct(acc); toast('계좌 복사됨 — 뱅킹앱에서 송금하세요'); }
+  render(); }
 
 function soon(name){toast(`「${name}」 — 추후/프리미엄 기능`);}
 
@@ -552,19 +569,19 @@ function hostView(){
   </div>
 
   <div class="card">
-    <div class="secthead"><div class="t">③ 정산 장부 (Tier 1)</div><div class="c">하객 ${ev.guests.length}명</div></div>
-    <p class="sub">하객 자가신고 + 호스트 수기 매칭. 자금 흐름과 무관한 '읽기 전용' 장부입니다.</p>
+    <div class="secthead"><div class="t">③ 정산 장부</div><div class="c">하객 ${ev.guests.length}명</div></div>
+    <p class="sub">이음으로 받은 금액은 자동 표시되고, <b>현금·계좌 수령분</b>은 각 하객 칸에 직접 입력·정산하세요.</p>
     <div class="stats">
       <div class="stat"><div class="v">${led.attend}</div><div class="k">${c.counts?'참석 응답':'조문 응답'}</div></div>
-      <div class="stat"><div class="v">${led.heads}</div><div class="k">${c.counts?'총 참석 인원':'조문 인원'}</div></div>
-      <div class="stat"><div class="v big">${won(led.confirmed)}</div><div class="k">확정 ${c.money}</div></div>
+      <div class="stat"><div class="v">${led.paid}</div><div class="k">수금 인원</div></div>
+      <div class="stat"><div class="v big">${won(led.total)}</div><div class="k">총 ${c.money}</div></div>
     </div>
-    <div class="note" style="margin-top:10px">자가신고 합계 ${won(led.reported)} · 확정 ${won(led.confirmed)} · 미확정 ${led.pending}건${led.unreg?` · 미매칭 ${led.unreg}건`:''}</div>
+    <div class="note" style="margin-top:10px">🔵 이음 송금 ${won(led.appSum)} · ✏️ 현금·직접입력 ${won(led.manualSum)}</div>
     <div class="secthead" style="margin:16px 0 4px"><div class="t">하객 명단 · 매칭</div></div>
     <div class="glist">
       ${ev.guests.filter(x=>!x.unregistered).map(x=>rowHost(ev,x)).join('')||'<div class="empty">하객을 추가해 주세요</div>'}
     </div>
-    <button class="badge-add" style="margin-top:10px" onclick="addGuest()">+ 하객 추가</button>
+    <button class="badge-add" style="margin-top:10px" onclick="addGuest()">＋ 하객 추가 (현금·수기 포함)</button>
     ${ev.guests.some(x=>x.unregistered)?`
       <div class="secthead" style="margin:18px 0 6px"><div class="t" style="color:var(--warn)">미매칭 풀 · 신규 입금</div><div class="c">명단에 없던 입금</div></div>
       <div class="glist">${ev.guests.filter(x=>x.unregistered).map(x=>rowHost(ev,x)).join('')}</div>`:''}
@@ -593,20 +610,19 @@ function acctEditor(i,a){
     <input style="margin-top:6px" placeholder="예금주" value="${esc(a.holder)}" onchange="updAcct(${i},'holder',this.value)"></div>`;
 }
 function rowHost(ev,x){
-  const r=x.rsvp,st=r.status,c=cfg(ev);
+  const r=x.rsvp,st=r.status,c=cfg(ev); const p=x.pay||{};
   const pill=st==='yes'?`<span class="pill pill-ok">${c.counts?`참석 ${r.count}명`:'조문 예정'}</span>`:st==='no'?`<span class="pill pill-no">${c.counts?'불참':'조문 어려움'}</span>`:`<span class="pill pill-wait">미응답</span>`;
-  const rep=x.report.amount!=null?`<span class="pill pill-gold">자가신고 ${won(x.report.amount)}</span>`:'';
+  const src=p.amount!=null?(p.source==='app'?`<span class="pill pill-app">🔵 이음 송금</span>`:`<span class="pill pill-cash">${p.method==='cash'?'💵 현금':'✏️ 직접입력'}</span>`):'';
   const sideLabel=ev.accounts[x.side]?ev.accounts[x.side].label:'';
   return `<div class="grow">
     <div class="top">
       <div><div class="nm">${esc(x.name)} <span style="font-weight:400;color:var(--muted);font-size:11px">· ${sideLabel} ${esc(x.relation)}</span></div>
-        <div class="meta" style="margin-top:5px">${pill} ${rep}</div></div>
+        <div class="meta" style="margin-top:5px">${pill} ${src}</div></div>
       ${x.unregistered?`<button class="minibtn" onclick="promote('${x.id}')">명단으로</button>`:`<button class="minibtn" onclick="delGuest('${x.id}')" style="color:var(--danger)">삭제</button>`}
     </div>
     <div class="amt">
-      <input type="number" inputmode="numeric" placeholder="확정 금액" value="${x.ledger.amount??''}" onchange="updLedger('${x.id}',this.value)">
-      <button class="minibtn ${x.ledger.confirmed?'on':''}" onclick="toggleConfirm('${x.id}')">${x.ledger.confirmed?'✓ 확정':'확정'}</button>
-      ${x.report.amount!=null&&x.ledger.amount==null?`<button class="minibtn" onclick="useReport('${x.id}')">신고액 적용</button>`:''}
+      <input type="number" inputmode="numeric" placeholder="수금액(현금·계좌 직접입력)" value="${p.amount??''}" onchange="hostSetPay('${x.id}',this.value)">
+      <button class="minibtn ${p.method==='cash'?'on':''}" onclick="toggleCash('${x.id}')">현금</button>
     </div></div>`;
 }
 
@@ -747,25 +763,21 @@ function guestDetail(){
 
   <div class="card">
     <h3>마음 전하기 (${c.money})</h3>
-    <p class="sub">버튼을 누르면 송금화면이 열립니다. 이음은 자금을 거치지 않습니다.</p>
-    ${ev.accounts.length>1?`<div class="seg2">${ev.accounts.map((a,i)=>`<button class="${i===idx?'on':''}" onclick="setAcct(${i})">${esc(a.label)}</button>`).join('')}</div>`:''}
-    <div class="acct"><div class="b">${esc(acc.bank)} ${esc(acc.number)}<small>예금주 ${esc(acc.holder)}</small></div>
+    <p class="sub">금액을 입력하고 보내면 토스에 <b>금액이 자동으로 채워져요</b> — 따로 확인할 필요 없어요.</p>
+    ${ev.accounts.length>1?`<label>받는 분</label><div class="seg2">${ev.accounts.map((a,i)=>`<button class="${i===idx?'on':''}" onclick="setAcct(${i})">${esc(a.label)}</button>`).join('')}</div>`:''}
+    <div class="acct" style="margin-top:8px"><div class="b">${esc(acc.bank)} ${esc(acc.number)}<small>예금주 ${esc(acc.holder)}</small></div>
       <button class="minibtn" onclick="copyAcct(curEvent().accounts[${idx}])">복사</button></div>
-    <div class="stack" style="margin-top:10px">
-      <button class="btn btn-toss" onclick="sendMoney(curEvent().accounts[${idx}])">송금화면 열기 (토스)</button>
-      <button class="btn btn-ghost" onclick="copyAcct(curEvent().accounts[${idx}])">계좌번호 복사 후 직접 송금</button>
+    <label>보낼 금액</label>
+    <input id="sendamt" type="number" inputmode="numeric" placeholder="예: 100000" value="${me&&me.pay&&me.pay.amount!=null?me.pay.amount:''}">
+    <div class="chips" style="margin-top:8px">${['가족','친척','친구','직장','지인'].map(r=>`<button class="chip ${ev.myRelation===r?'on':''}" onclick="setMyRelation('${r}')">${r}</button>`).join('')}</div>
+    <button class="btn btn-line btn-sm" style="margin-top:9px" onclick="openReco(curEvent().id)">💰 얼마 낼지 추천받기</button>
+    <div class="stack" style="margin-top:9px">
+      <button class="btn btn-toss" onclick="payViaApp('toss')">토스로 송금 · 금액 자동완성</button>
+      <button class="btn btn-ghost" onclick="payViaApp('account')">계좌 복사 후 직접 송금</button>
       <button class="btn btn-ghost btn-sm" onclick="openEnvelope(curEvent().id)">🧧 봉투 쓰는 법</button>
     </div>
-    <div class="divider"></div>
-    <h3 style="font-size:13px">${c.money} 기록 <span style="font-weight:600;color:var(--muted);font-size:11px">· 내 가계부에 저장</span></h3>
-    <p class="sub" style="margin-bottom:8px">관계와 금액을 남기면 <b>내 경조사비 가계부</b>에 쌓이고, 호스트 장부에도 자가신고로 반영됩니다.</p>
-    <div class="chips" style="margin-bottom:9px">${['가족','친척','친구','직장','지인'].map(r=>`<button class="chip ${ev.myRelation===r?'on':''}" onclick="setMyRelation('${r}')">${r}</button>`).join('')}</div>
-    <button class="btn btn-line btn-sm" style="margin-bottom:9px" onclick="openReco(curEvent().id)">💰 얼마 낼지 추천받기</button>
-    <div class="row">
-      <input id="repamt" type="number" inputmode="numeric" placeholder="보낸 금액" value="${ev.myGift!=null?ev.myGift:(me&&me.report.amount!=null?me.report.amount:'')}">
-      <button class="btn btn-primary btn-sm" style="max-width:42%" onclick="reportSent()">기록 ✓</button>
-    </div>
-    ${ev.myGift!=null?`<div class="note" style="margin-top:10px">✓ ${won(ev.myGift)}${ev.myRelation?` (${esc(ev.myRelation)})`:''} 기록됨 — 내 가계부에 반영되었습니다.</div>`:''}
+    ${me&&me.pay&&me.pay.amount!=null?`<div class="note" style="margin-top:10px">✓ 이음으로 <b>${won(me.pay.amount)}</b> 보냄 기록 — 호스트 정산장부에 '이음 송금'으로 표시돼요.</div>`:''}
+    <div class="note">이음은 자금을 거치지 않습니다. 실제 송금은 토스/뱅킹 앱에서 이뤄져요.</div>
   </div>
   <div class="card">
     <button class="btn btn-disabled" onclick="soon('비대면 답례품 보내기')">🎁 답례품 보내기 (참석 못하는 분) <span class="lock">· 추후</span></button>
@@ -793,10 +805,13 @@ function addGuest(){const n=prompt('하객 이름');if(!n)return;const ev=hostEv
   const side=ev.accounts.length>1?(confirm(ev.accounts[0].label+'인가요? (취소='+ev.accounts[1].label+')')?0:1):0;
   ev.guests.push(mkGuest(n,'친구',side));save();render();toast(n+'님 추가');}
 function delGuest(id){const ev=hostEvent();ev.guests=ev.guests.filter(x=>x.id!==id);save();render();}
-function updLedger(id,v){const x=hostEvent().guests.find(g=>g.id===id);if(!x)return;x.ledger.amount=v===''?null:Number(v);save();render();}
-function toggleConfirm(id){const x=hostEvent().guests.find(g=>g.id===id);if(!x)return;
-  if(x.ledger.amount==null){toast('확정 금액을 먼저 입력하세요');return;}x.ledger.confirmed=!x.ledger.confirmed;save();render();}
-function useReport(id){const x=hostEvent().guests.find(g=>g.id===id);if(!x)return;x.ledger.amount=x.report.amount;save();render();toast('자가신고액을 확정칸에 넣었어요');}
+function hostSetPay(id,v){const x=hostEvent().guests.find(g=>g.id===id);if(!x)return; const amt=v===''?null:Number(v);
+  if(!x.pay)x.pay={amount:null,source:null,method:null}; x.pay.amount=amt;
+  if(amt==null){x.pay.source=null;x.pay.method=null;}
+  else if(x.pay.source!=='app'){x.pay.source='manual'; if(!x.pay.method)x.pay.method='manual';}
+  save();render();}
+function toggleCash(id){const x=hostEvent().guests.find(g=>g.id===id);if(!x)return; if(!x.pay)x.pay={amount:null,source:null,method:null};
+  if(x.pay.method==='cash'){x.pay.method='manual';} else {x.pay.method='cash'; x.pay.source='manual';} save();render();}
 function promote(id){const x=hostEvent().guests.find(g=>g.id===id);if(!x)return;x.unregistered=false;save();render();toast('명단으로 옮겼어요');}
 
 function setGuestName(v){S.ui.guestSession.name=v.trim();save();render();}
@@ -807,25 +822,17 @@ function rsvp(status){const ev=curEvent();const nm=S.ui.guestSession.name||($('#
   x.rsvp.status=status;save();render();toast(status==='yes'?'전달했어요':'전달했어요');}
 function rsvpField(f,v){const ev=curEvent();const x=ev.guests.find(g=>g.name===S.ui.guestSession.name);if(!x)return;
   x.rsvp[f]=f==='count'?Math.max(1,Number(v)):(f==='meal'?v==='1':v);save();render();}
-function reportSent(){const ev=curEvent();const nm=S.ui.guestSession.name||($('#gname')&&$('#gname').value.trim());
-  if(!nm){toast('성함을 먼저 입력하세요');return;}const amt=Number($('#repamt').value);if(!amt){toast('금액을 입력하세요');return;}
-  S.ui.guestSession.name=nm;let x=ev.guests.find(g=>g.name===nm);
-  if(!x){x=mkGuest(nm,'친구',S.ui.guestSession.acctIdx||0);x.unregistered=true;ev.guests.push(x);}
-  x.report.amount=amt; ev.myGift=amt; save();render();toast('기록 완료 — 내 가계부에 반영됨');}
 
 /* ======================= 집계 ======================= */
-function ledgerStats(ev){let attend=0,heads=0,reported=0,confirmed=0,pending=0,unreg=0;
+function ledgerStats(ev){let attend=0,heads=0,total=0,appSum=0,manualSum=0,paid=0;
   ev.guests.forEach(x=>{if(x.rsvp.status==='yes'){attend++;heads+=x.rsvp.count||1;}
-    if(x.report.amount!=null)reported+=x.report.amount;
-    if(x.ledger.confirmed&&x.ledger.amount!=null)confirmed+=x.ledger.amount;
-    else if(x.report.amount!=null||x.rsvp.status==='yes')pending++;
-    if(x.unregistered)unreg++;});
-  return {attend,heads,reported,confirmed,pending,unreg};}
+    const p=x.pay||{}; if(p.amount>0){total+=p.amount;paid++; if(p.source==='app')appSum+=p.amount; else manualSum+=p.amount;}});
+  return {attend,heads,total,appSum,manualSum,paid};}
 
 /* ======================= 내 경조사비 가계부 (품앗이) ======================= */
 function myStats(){ let given=0,gaveCount=0,received=0,recvCount=0; const byRel={};
   S.events.forEach(e=>{
-    if(e.role==='host'){ const c=ledgerStats(e).confirmed; if(c>0){received+=c;recvCount++;} }
+    if(e.role==='host'){ const c=ledgerStats(e).total; if(c>0){received+=c;recvCount++;} }
     else if(e.myGift>0){ given+=e.myGift; gaveCount++; const r=e.myRelation||'기타'; byRel[r]=(byRel[r]||0)+e.myGift; }
   });
   return {given,gaveCount,received,recvCount,net:received-given,byRel}; }
@@ -938,11 +945,11 @@ function docView(){ const d=DOCS[S.ui.docKey]||DOCS.privacy;
 
 /* ======================= 프리미엄 실기능 ======================= */
 function exportLedgerCSV(){ const ev=hostEvent(); const c=cfg(ev);
-  const rows=[['이름','관계','측','응답','인원','자가신고','확정금액']];
-  ev.guests.forEach(g=>{ rows.push([ g.name, g.relation, (ev.accounts[g.side]||{}).label||'',
+  const rows=[['이름','관계','측','응답','인원','수금액','출처']];
+  ev.guests.forEach(g=>{ const p=g.pay||{}; rows.push([ g.name, g.relation, (ev.accounts[g.side]||{}).label||'',
     g.rsvp.status==='yes'?(c.counts?'참석':'조문'):g.rsvp.status==='no'?'불참':'미응답',
-    c.counts?(g.rsvp.count||''):'', g.report.amount??'', (g.ledger.confirmed?g.ledger.amount:'')??'' ]); });
-  const led=ledgerStats(ev); rows.push(['','','','','','','']); rows.push(['합계','','','','', led.reported, led.confirmed]);
+    c.counts?(g.rsvp.count||''):'', p.amount??'', p.amount!=null?(p.source==='app'?'이음송금':(p.method==='cash'?'현금':'직접입력')):'' ]); });
+  const led=ledgerStats(ev); rows.push(['','','','','','','']); rows.push(['합계','','','','', led.total, `이음 ${led.appSum}/직접 ${led.manualSum}`]);
   const csv='﻿'+rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\r\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a');
   a.href=URL.createObjectURL(blob); a.download=`${evNamePlain(ev)}_정산장부.csv`; document.body.appendChild(a); a.click(); a.remove();
@@ -951,7 +958,7 @@ function openThanks(){ S.ui.hostSub='thanks'; S.ui.tab='host'; save(); render();
 function thanksMsg(ev,g){ const who=ev.partyB?`${ev.partyA}·${ev.partyB}`:ev.partyA;
   const occ=cfg(ev).label==='부고'?'장례':cfg(ev).counts?'결혼식':'행사';
   return `${g.name}님, ${occ}에 귀한 걸음과 따뜻한 마음 전해주셔서 진심으로 감사드립니다. 오래도록 기억하겠습니다. — ${who} 올림`; }
-function thanksView(){ const ev=hostEvent(); const recip=ev.guests.filter(g=>g.rsvp.status==='yes'||g.report.amount!=null||(g.ledger&&g.ledger.confirmed));
+function thanksView(){ const ev=hostEvent(); const recip=ev.guests.filter(g=>g.rsvp.status==='yes'||(g.pay&&g.pay.amount!=null));
   return `<button class="backbtn" onclick="backFromHost2()">‹ 호스트</button>
   <div class="listhead"><div class="t serif">감사 인사 보내기</div></div>
   <p class="sub" style="margin:0 2px 12px">참석·축의한 분들께 맞춤 인사를 준비했어요. <b>내 문자 앱</b>에서 직접 보냅니다 — 이음이 대신 발송하지 않습니다.</p>
@@ -1325,7 +1332,7 @@ function budgetCard(ev){ const c=cfg(ev), pl=ev.plan||{}, {sent,rate,meal,gift}=
       <div class="stat"><div class="v big" id="bd-meal">${won(mc)}</div><div class="k">예상 식대</div></div>
     </div>
     <div class="budget-net">예상 정산(순) <b id="bd-net">${won(net)}</b></div>
-    <div class="note">현재 실제 ${c.counts?'참석':'조문'} 응답 <b>${led.attend}명</b> · 확정 ${c.money} <b>${won(led.confirmed)}</b> — 응답이 쌓일수록 예측이 정확해집니다.</div>
+    <div class="note">현재 실제 ${c.counts?'참석':'조문'} 응답 <b>${led.attend}명</b> · 실수금 <b>${won(led.total)}</b> — 응답이 쌓일수록 예측이 정확해집니다.</div>
   </div>`;
 }
 
