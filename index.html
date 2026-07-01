@@ -6,7 +6,7 @@
 <title>이음 — 마음을 잇다</title>
 <meta property="og:type" content="website" />
 <meta property="og:title" content="이음 — 마음을 잇다" />
-<meta property="og:description" content="경조사, 이제 한 곳에서. 청첩장 확인·캘린더 저장·축의금 송금까지 무료." />
+<meta property="og:description" content="경조사, 이제 한 곳에서. 청첩장 확인·캘린더 저장·축의금 송금까지." />
 <meta property="og:image" content="https://shin-nyum.github.io/ieum/og-image.png" />
 <meta property="og:url" content="https://shin-nyum.github.io/ieum/" />
 <meta name="twitter:card" content="summary_large_image" />
@@ -303,7 +303,7 @@
   <main id="app"></main>
   <div class="footer">
     이음은 자금을 보관·중개하지 않습니다. 송금은 토스/뱅킹 앱에서 직접 이루어집니다.<br/>
-    <span style="opacity:.7">이음 · 마음을 잇다 · v1.0 · 모든 기능 무료</span>
+    <span style="opacity:.7">이음 · 마음을 잇다 · v1.0</span>
   </div>
   <nav class="bnav" id="bottomnav" style="display:none">
     <button data-g="home" onclick="setGuestTab('list')"><span class="bn-ic">🗓️</span>경조사</button>
@@ -425,21 +425,24 @@ function encodeInvite(ev){ const o={t:ev.type,a:ev.partyA,b:ev.partyB,s:ev.subti
 function decodeInvite(code){ try{ const o=JSON.parse(b64urlDec(code));
   return { id:uid('e'), role:'guest', type:o.t||'wedding', partyA:o.a||'', partyB:o.b||'', subtitle:o.s||'', date:o.d||'', time:o.ti||'12:00', venue:o.v||'', address:o.ad||'', message:o.m||'', externalUrl:o.u||'', invited:true,
     accounts:(o.ac||[]).map(a=>({label:a.l,bank:a.bk,number:a.n,holder:a.h,kakaopay:a.k||''})), guests:[] }; }catch(e){ return null; } }
-function inviteLink(ev){ return location.href.split('#')[0].split('?')[0] + '#e=' + encodeInvite(ev); }
+function inviteLink(ev){ const base=location.href.split('#')[0].split('?')[0]; const dir=base.replace(/[^/]*$/,'');
+  const page = ev.type==='memorial' ? dir+'memorial.html' : base;  /* 부고는 조의용 썸네일 페이지로 */
+  return page + '#e=' + encodeInvite(ev); }
 function shareEvent(ev){
-  const link = inviteLink(ev);
-  const text=`${evNamePlain(ev)} ${ev.subtitle}\n${dateText(ev)} · ${ev.venue}\n청첩장 확인·캘린더·축의금 보내기 ▸`;
+  const link = inviteLink(ev); const c=cfg(ev); const mem=ev.type==='memorial';
+  const ogImg = ev.shareImg || (mem ? 'https://shin-nyum.github.io/ieum/og-memorial.png' : 'https://shin-nyum.github.io/ieum/og-image.png');
+  const text=`${evNamePlain(ev)} ${ev.subtitle}\n${dateText(ev)} · ${ev.venue}\n${mem?'부고 확인·조의 전하기':'청첩장 확인·캘린더·축의금 보내기'} ▸`;
   const ready=window.Kakao&&Kakao.isInitialized&&Kakao.isInitialized();
   if(ready){
     try{ Kakao.Share.sendDefault({objectType:'feed',
       content:{title:`${evNamePlain(ev)} ${ev.subtitle}`, description:`${dateText(ev)} · ${ev.venue}`,
-        imageUrl:(ev.shareImg||'https://shin-nyum.github.io/ieum/og-image.png'),
+        imageUrl:ogImg,
         link:{mobileWebUrl:link,webUrl:link}},
-      buttons:[{title:'청첩장 열기',link:{mobileWebUrl:link,webUrl:link}}]}); return; }catch(e){}
+      buttons:[{title:`${c.doc} 열기`,link:{mobileWebUrl:link,webUrl:link}}]}); return; }catch(e){}
   }
   if(navigator.share){ navigator.share({title:`${evNamePlain(ev)} ${ev.subtitle}`,text,url:link}).catch(()=>{}); return; }
   copy(text+'\n'+link);
-  toast('청첩장 링크를 복사했어요 — 단톡방에 붙여넣으세요');
+  toast(`${c.doc} 링크를 복사했어요 — 단톡방에 붙여넣으세요`);
 }
 /* 외부 모바일청첩장 링크를 그대로 공유 → 그 청첩장의 썸네일이 카카오톡에 뜸 */
 function shareExternal(ev){ if(!ev.externalUrl){ toast('연결된 모바일청첩장이 없어요'); return; }
@@ -648,7 +651,7 @@ function hostView(){
   ${budgetCard(ev)}
 
   <div class="card">
-    <h3>부가 기능 <span style="font-weight:600;color:var(--ok);font-size:11px">· 모두 무료</span></h3>
+    <h3>부가 기능</h3>
     <p class="sub">정산이 끝나면 엑셀로 정리하고, 참석·축의한 분들께 감사 인사를 준비하세요.</p>
     <div class="stack">
       <button class="btn btn-ghost" onclick="exportLedgerCSV()">📊 축의금 엑셀(CSV) 내보내기</button>
