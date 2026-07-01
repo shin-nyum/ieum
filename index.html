@@ -19,8 +19,33 @@
     --line:#e7e0d5; --primary:#a87f6a; --primary-d:#8f6852;
     --sage:#7f9080; --sage-d:#5f7060; --rose:#c08497; --gold:#bfa06a;
     --ok:#5b8c6e; --warn:#c98a4b; --danger:#bd6a5a;
+    --tint:#fbf8f3; --tint2:#fbf6f1; --field:#fcfbf9; --seg-bg:#efe9e0; --ic-bg:#f4eee4; --dd-bg:#f4eedd; --note-bg:#faf7f2;
     --radius:14px; --shadow:0 6px 24px rgba(57,52,46,.08);
   }
+  html[data-theme="dark"]{
+    --bg:#201d19; --card:#2a2621; --ink:#ece5da; --muted:#a69c8e; --line:#39332c;
+    --primary:#c69c82; --primary-d:#dcb89e; --sage:#94a594; --sage-d:#b0c3b0; --rose:#d09aaa; --gold:#cfb47d;
+    --ok:#84b695; --warn:#daa86a; --danger:#df9181;
+    --tint:#322d27; --tint2:#37302a; --field:#322d27; --seg-bg:#38322b; --ic-bg:#38312a; --dd-bg:#38312a; --note-bg:#2f2a24;
+    --shadow:0 6px 24px rgba(0,0,0,.28);
+  }
+  html[data-theme="dark"] body{background:#16130f}
+  html[data-theme="dark"] header{background:rgba(32,29,25,.92)}
+  html[data-theme="dark"] .bnav{background:rgba(42,38,33,.96)}
+  html[data-theme="dark"] .seg{background:#38322b}
+  html[data-theme="dark"] .btn-ghost{background:#37312a}
+  html[data-theme="dark"] .btn-line,html[data-theme="dark"] .minibtn,html[data-theme="dark"] .calnav,html[data-theme="dark"] .rrc,html[data-theme="dark"] .chip,html[data-theme="dark"] .rm-noti,html[data-theme="dark"] .seg2 button.on{background:#322d27}
+  html[data-theme="dark"] .btn-disabled{background:#302b25;color:#7d746a}
+  html[data-theme="dark"] .calday.ev{background:#38312a}
+  html[data-theme="dark"] .relrow .bar{background:#38312a}
+  html[data-theme="dark"] .budget-net{background:#37302a}
+  html[data-theme="dark"] .remind{background:#2f2a24;border-color:#3a342c}
+  html[data-theme="dark"] .hero{background:#2a2621}
+  html[data-theme="dark"] .dday-pill,html[data-theme="dark"] .toast{background:#e8e1d5;color:#201d19}
+  html[data-theme="dark"] .pill-ok,html[data-theme="dark"] .bal.pos{background:#20342a}
+  html[data-theme="dark"] .pill-no,html[data-theme="dark"] .bal.neg{background:#3a2622}
+  html[data-theme="dark"] .pill-wait{background:#34301f}
+  html[data-theme="dark"] .bal.even{background:#302b24}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0;background:#e9e3d9;color:var(--ink);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic","맑은 고딕",sans-serif;
@@ -46,7 +71,7 @@
   .card .sub{color:var(--muted);font-size:12px;margin:0 0 12px}
   label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;font-weight:600}
   input,select,textarea{width:100%;padding:10px 11px;border:1px solid var(--line);
-    border-radius:10px;font-size:14px;background:#fcfbf9;color:var(--ink);font-family:inherit}
+    border-radius:10px;font-size:14px;background:var(--field);color:var(--ink);font-family:inherit}
   input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)}
   .row{display:flex;gap:8px}.row>*{flex:1}
   .btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;
@@ -79,9 +104,9 @@
   .pill-ok{background:#e7f0ea;color:var(--ok)}
   .pill-no{background:#f6e7e4;color:var(--danger)}
   .pill-wait{background:#f3ece1;color:var(--warn)}
-  .pill-gold{background:#f4eedd;color:#9a7d3e}
+  .pill-gold{background:var(--dd-bg);color:#9a7d3e}
   .glist{display:flex;flex-direction:column;gap:8px}
-  .grow{border:1px solid var(--line);border-radius:11px;padding:11px 12px;background:#fcfbf9}
+  .grow{border:1px solid var(--line);border-radius:11px;padding:11px 12px;background:var(--field)}
   .grow .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
   .grow .nm{font-weight:700;font-size:14px}
   .grow .meta{font-size:11.5px;color:var(--muted);margin-top:2px}
@@ -91,15 +116,15 @@
     font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;color:var(--ink)}
   .minibtn.on{background:var(--ok);color:#fff;border-color:var(--ok)}
   .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  .stat{background:#fbf8f3;border:1px solid var(--line);border-radius:11px;padding:11px 8px;text-align:center}
+  .stat{background:var(--tint);border:1px solid var(--line);border-radius:11px;padding:11px 8px;text-align:center}
   .stat .v{font-size:19px;font-weight:800;color:var(--primary-d)}
   .stat .v.big{font-size:16px}
   .stat .k{font-size:11px;color:var(--muted);margin-top:2px}
-  .seg2{display:flex;background:#efe9e0;border-radius:9px;padding:3px;margin:2px 0 4px}
+  .seg2{display:flex;background:var(--seg-bg);border-radius:9px;padding:3px;margin:2px 0 4px}
   .seg2 button{flex:1;border:0;background:transparent;padding:8px;border-radius:7px;
     font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer}
   .seg2 button.on{background:#fff;color:var(--primary-d);box-shadow:0 1px 3px rgba(0,0,0,.08)}
-  .note{font-size:11.5px;color:var(--muted);line-height:1.7;background:#faf7f2;
+  .note{font-size:11.5px;color:var(--muted);line-height:1.7;background:var(--note-bg);
     border:1px dashed var(--line);border-radius:10px;padding:10px 11px;margin-top:10px}
   .note b{color:var(--primary-d)}
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
@@ -108,12 +133,12 @@
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .empty{text-align:center;color:var(--muted);font-size:12.5px;padding:18px 6px}
   .footer{text-align:center;font-size:10.5px;color:#a59b8c;padding:8px 18px 0;line-height:1.7}
-  .badge-add{width:100%;border:1px dashed var(--primary);background:#fbf6f1;color:var(--primary-d);
+  .badge-add{width:100%;border:1px dashed var(--primary);background:var(--tint2);color:var(--primary-d);
     border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer}
   .secthead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
   .secthead .t{font-size:13px;font-weight:800;letter-spacing:.02em}
   .secthead .c{font-size:11px;color:var(--muted)}
-  .acct{display:flex;align-items:center;justify-content:space-between;background:#fbf8f3;
+  .acct{display:flex;align-items:center;justify-content:space-between;background:var(--tint);
     border:1px solid var(--line);border-radius:11px;padding:11px 12px;margin-top:8px}
   .acct .b{font-size:13px}.acct .b small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
   /* 경조사 목록(앱 내 캘린더) */
@@ -124,13 +149,13 @@
     border-radius:var(--radius);padding:13px;margin-bottom:10px;box-shadow:var(--shadow);cursor:pointer;transition:.12s}
   .evcard:active{transform:scale(.99)}
   .evcard .ic{font-size:24px;width:48px;height:48px;flex:none;display:flex;align-items:center;
-    justify-content:center;background:#f4eee4;border-radius:13px}
+    justify-content:center;background:var(--ic-bg);border-radius:13px}
   .evcard .info{flex:1;min-width:0}
   .evcard .nm{font-weight:800;font-size:15px;color:#43403a}
   .evcard .typ{font-size:10.5px;font-weight:700;color:var(--sage-d);margin-left:6px}
   .evcard .dt{font-size:12px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .evcard .right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:none}
-  .evcard .dd{font-size:12px;font-weight:800;color:var(--primary-d);background:#f4eedd;padding:4px 9px;border-radius:999px;white-space:nowrap}
+  .evcard .dd{font-size:12px;font-weight:800;color:var(--primary-d);background:var(--dd-bg);padding:4px 9px;border-radius:999px;white-space:nowrap}
   .evcard .chev{color:#cabfae;font-size:16px}
   .backbtn{background:none;border:0;color:var(--primary-d);font-weight:700;font-size:13px;
     cursor:pointer;padding:4px 0;margin-bottom:6px;display:inline-flex;align-items:center;gap:4px}
@@ -154,12 +179,12 @@
   .calsel{margin-top:12px;border-top:1px solid var(--line);padding-top:11px}
   .calseltt{font-size:12px;font-weight:800;color:var(--primary-d);margin-bottom:8px}
   .calevrow{display:flex;align-items:center;gap:9px;padding:9px 10px;border:1px solid var(--line);
-    border-radius:10px;background:#fcfbf9;cursor:pointer;margin-bottom:6px}
+    border-radius:10px;background:var(--field);cursor:pointer;margin-bottom:6px}
   .calevrow .cic{font-size:17px}.calevrow .cnm{flex:1;font-weight:700;font-size:13px}
   .calevrow .ctag{font-size:10.5px;color:var(--sage-d);font-weight:700}
   .calevrow .cchev{color:#cabfae}
   .caladd{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted)}
-  .addtype{border:1px solid var(--primary);background:#fbf6f1;color:var(--primary-d);border-radius:9px;
+  .addtype{border:1px solid var(--primary);background:var(--tint2);color:var(--primary-d);border-radius:9px;
     padding:8px 11px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit}
   /* 시작(진입) 화면 */
   .landing{padding:6px 4px 20px}
@@ -171,7 +196,7 @@
   .land-card{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--card);
     border-radius:var(--radius);padding:20px;cursor:pointer;box-shadow:var(--shadow);transition:.12s;font-family:inherit}
   .land-card:active{transform:scale(.99)}
-  .land-card.primary{border:1.5px solid var(--primary);background:#fbf6f1}
+  .land-card.primary{border:1.5px solid var(--primary);background:var(--tint2)}
   .lc-ic{font-size:30px;line-height:1}
   .lc-t{font-size:18px;font-weight:800;color:#43403a;margin-top:9px}
   .land-card.primary .lc-t{color:var(--primary-d)}
@@ -192,13 +217,13 @@
   .relrow .bar .fill{height:100%;background:var(--primary);border-radius:5px}
   .relrow .rv,.calevrow .rv{font-size:12.5px;font-weight:800;color:var(--primary-d);min-width:62px;text-align:right;flex:none}
   /* 추천기 */
-  .reco-cta{display:flex;align-items:center;gap:11px;cursor:pointer;background:#fbf6f1;border-color:var(--primary)}
+  .reco-cta{display:flex;align-items:center;gap:11px;cursor:pointer;background:var(--tint2);border-color:var(--primary)}
   .reco-cta .rc-ic{font-size:24px;flex:none}
   .reco-cta .rc-tx{flex:1;min-width:0}
   .reco-cta .rc-t{font-weight:800;font-size:15px;color:var(--primary-d)}
   .reco-cta .rc-d{font-size:12px;color:var(--muted);margin-top:2px}
   .reco-cta .rc-go{color:var(--primary-d);font-weight:800;font-size:18px;flex:none}
-  .reco-result{text-align:center;background:#fbf6f1;border:1px solid var(--line);border-radius:13px;padding:18px;margin-top:16px}
+  .reco-result{text-align:center;background:var(--tint2);border:1px solid var(--line);border-radius:13px;padding:18px;margin-top:16px}
   .reco-result .rr-k{font-size:12px;color:var(--muted);font-weight:700}
   .reco-result .rr-v{font-size:33px;font-weight:800;color:var(--primary-d);margin-top:4px;letter-spacing:-.01em}
   .rr-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:11px}
@@ -212,14 +237,14 @@
     padding:5px 11px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit}
   .rm-noti.on{background:var(--ok);color:#fff;border-color:var(--ok)}
   .rm-ev{display:flex;align-items:center;gap:11px;cursor:pointer}
-  .rm-ic{font-size:22px;width:42px;height:42px;flex:none;display:flex;align-items:center;justify-content:center;background:#f4eee4;border-radius:11px}
+  .rm-ic{font-size:22px;width:42px;height:42px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--ic-bg);border-radius:11px}
   .rm-info{flex:1;min-width:0}
   .rm-nm{font-weight:800;font-size:14px}.rm-tag{font-size:10px;color:var(--sage-d);font-weight:700;margin-left:4px}
   .rm-dt{font-size:11.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .rm-dd{font-size:13px;font-weight:800;color:#fff;background:var(--danger);padding:5px 10px;border-radius:999px;flex:none}
   .rm-more{font-size:11.5px;color:var(--muted);margin-top:9px;text-align:center}
   /* 봉투 */
-  .env-card{background:#fbf8f3;border:1px solid var(--line);border-radius:13px;padding:26px 18px;text-align:center}
+  .env-card{background:var(--tint);border:1px solid var(--line);border-radius:13px;padding:26px 18px;text-align:center}
   .env-front{font-size:30px;font-weight:800;color:#3a352e;letter-spacing:.12em}
   .env-sub{font-size:13px;color:var(--muted);margin-top:6px;letter-spacing:.1em}
   .env-row{display:flex;gap:11px;align-items:flex-start;font-size:12.5px;color:var(--ink);line-height:1.6;margin-bottom:10px}
@@ -260,7 +285,7 @@
   <main id="app"></main>
   <div class="footer">
     이음은 자금을 보관·중개하지 않습니다. 송금은 토스/뱅킹 앱에서 직접 이루어집니다.<br/>
-    <span style="opacity:.7">이음 prototype · v10 (설정·백업·약관 · 카카오키 · 프리미엄 실기능)</span>
+    <span style="opacity:.7">이음 prototype · v11 (다크모드 · 디자인 폴리시)</span>
   </div>
   <nav class="bnav" id="bottomnav" style="display:none">
     <button data-g="home" onclick="setGuestTab('list')"><span class="bn-ic">🗓️</span>경조사</button>
@@ -273,7 +298,10 @@
 
 <script>
 /* ======================= 설정 ======================= */
-const KAKAO_JS_KEY = ''; // developers.kakao.com JavaScript 키 (비우면 링크복사로 대체)
+// [운영자 설정] 앱 전체가 공유하는 카카오 JS 키 1개. developers.kakao.com에서 앱 생성 →
+// 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
+// (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
+const KAKAO_JS_KEY = '';
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -333,7 +361,13 @@ function load(){ try{const r=localStorage.getItem(LS); if(r){ const o=JSON.parse
   if(!Array.isArray(o.events)) o.events=d.events; if(!Array.isArray(o.people)) o.people=d.people;
   o.settings={...d.settings, ...(o.settings||{})}; return o; } }catch(e){} return seed(); }
 function save(){ localStorage.setItem(LS, JSON.stringify(S)); }
-function reset(){ if(confirm('데모 데이터를 초기화할까요?')){ localStorage.removeItem(LS); S=seed(); render(); toast('초기화했어요'); } }
+function reset(){ if(confirm('데모 데이터를 초기화할까요?')){ localStorage.removeItem(LS); S=seed(); applyTheme(); render(); toast('초기화했어요'); } }
+function applyTheme(){ const t=(S.ui&&S.ui.theme)||'auto';
+  const dark = t==='dark' || (t==='auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.dataset.theme = dark?'dark':'light';
+  const m=document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute('content', dark?'#201d19':'#a87f6a'); }
+function setTheme(t){ S.ui.theme=t; save(); applyTheme(); render(); }
+try{ if(window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{ if(((S.ui&&S.ui.theme)||'auto')==='auto') applyTheme(); }); }catch(e){}
 
 /* ======================= 유틸 ======================= */
 const $=s=>document.querySelector(s);
@@ -846,9 +880,13 @@ function settingsView(){ const st=S.settings||{};
   <div class="listhead"><div class="t serif">설정</div></div>
   <div class="card">
     <label>내 이름</label><input value="${esc(st.name||'')}" placeholder="송금·기록에 표시돼요" onchange="setSetting('name',this.value)">
-    <label style="margin-top:12px">카카오 JavaScript 키 <span style="font-weight:600;color:var(--muted)">(선택)</span></label>
-    <input value="${esc(st.kakaoKey||'')}" placeholder="developers.kakao.com 앱의 JS 키" onchange="setSetting('kakaoKey',this.value)">
-    <p class="lblnote">${st.kakaoKey?'✓ 카카오톡 리치 공유가 켜졌어요':'키를 넣으면 카카오톡 리치 공유가 켜집니다. 비우면 기본 공유(문자·복사)로 작동해요.'}</p>
+    <label style="margin-top:12px">화면 테마</label>
+    <div class="seg2">
+      <button class="${(S.ui.theme||'auto')==='auto'?'on':''}" onclick="setTheme('auto')">자동</button>
+      <button class="${S.ui.theme==='light'?'on':''}" onclick="setTheme('light')">밝게</button>
+      <button class="${S.ui.theme==='dark'?'on':''}" onclick="setTheme('dark')">어둡게</button>
+    </div>
+    <p class="lblnote">공유는 카카오톡/문자 등 기기 기본 공유로 자동 작동해요. (카카오 리치 공유는 운영자가 배포 시 설정합니다)</p>
   </div>
   <div class="card" style="padding:5px 4px">
     ${moreItem('⬇️','데이터 내보내기(백업)','내 경조사·가계부를 파일로 저장','exportData()')}
@@ -1058,7 +1096,7 @@ function yearGave(y){ return S.events.filter(e=>e.role!=='host'&&e.myGift>0&&(e.
 function yearReportCard(){ const y=new Date().getFullYear(); const gave=yearGave(y); if(!gave.length) return '';
   const total=gave.reduce((s,e)=>s+e.myGift,0); const byType={};
   gave.forEach(e=>{const l=cfg(e).label; byType[l]=(byType[l]||0)+e.myGift;});
-  return `<div class="card" style="background:#fbf6f1;border-color:var(--primary)">
+  return `<div class="card" style="background:var(--tint2);border-color:var(--primary)">
     <div class="secthead"><div class="t">📤 ${y}년 내 경조사비</div><button class="minibtn" onclick="reportShare(${y})">공유</button></div>
     <div style="text-align:center;padding:8px 0 4px"><div style="font-size:29px;font-weight:800;color:var(--primary-d)">${won(total)}</div>
       <div class="sub" style="margin:3px 0 0">${gave.length}건 · ${Object.entries(byType).map(([k,v])=>`${k} ${won(v)}`).join(' · ')}</div></div>
@@ -1298,6 +1336,7 @@ function budgetCard(ev){ const c=cfg(ev), pl=ev.plan||{}, {sent,rate,meal,gift}=
     history.replaceState(null,'',location.pathname); }
 }catch(e){} })();
 
+applyTheme();
 kakaoInit();
 render();
 try{ if(S.ui.noti) fireDueNotis(); }catch(e){}
