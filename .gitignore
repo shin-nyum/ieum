@@ -5,3 +5,4 @@ _chk*.html
 _c.html
 qr.png
 deploy/
+make_og.py

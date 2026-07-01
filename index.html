@@ -4,6 +4,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>이음 — 마음을 잇다</title>
+<meta property="og:type" content="website" />
+<meta property="og:title" content="이음 — 마음을 잇다" />
+<meta property="og:description" content="경조사, 이제 한 곳에서. 청첩장 확인·캘린더 저장·축의금 송금까지 무료." />
+<meta property="og:image" content="https://shin-nyum.github.io/ieum/og-image.png" />
+<meta property="og:url" content="https://shin-nyum.github.io/ieum/" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="이음 — 마음을 잇다" />
+<meta name="twitter:image" content="https://shin-nyum.github.io/ieum/og-image.png" />
 <link rel="manifest" href="manifest.webmanifest" />
 <meta name="theme-color" content="#a87f6a" />
 <meta name="mobile-web-app-capable" content="yes" />
@@ -425,7 +433,7 @@ function shareEvent(ev){
   if(ready){
     try{ Kakao.Share.sendDefault({objectType:'feed',
       content:{title:`${evNamePlain(ev)} ${ev.subtitle}`, description:`${dateText(ev)} · ${ev.venue}`,
-        imageUrl:'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=800',
+        imageUrl:(ev.shareImg||'https://shin-nyum.github.io/ieum/og-image.png'),
         link:{mobileWebUrl:link,webUrl:link}},
       buttons:[{title:'청첩장 열기',link:{mobileWebUrl:link,webUrl:link}}]}); return; }catch(e){}
   }
@@ -433,6 +441,11 @@ function shareEvent(ev){
   copy(text+'\n'+link);
   toast('청첩장 링크를 복사했어요 — 단톡방에 붙여넣으세요');
 }
+/* 외부 모바일청첩장 링크를 그대로 공유 → 그 청첩장의 썸네일이 카카오톡에 뜸 */
+function shareExternal(ev){ if(!ev.externalUrl){ toast('연결된 모바일청첩장이 없어요'); return; }
+  const text=`${evNamePlain(ev)} ${ev.subtitle}\n${dateText(ev)} · ${ev.venue}`;
+  if(navigator.share){ navigator.share({title:`${evNamePlain(ev)} ${ev.subtitle}`,text,url:ev.externalUrl}).catch(()=>{}); return; }
+  copy(ev.externalUrl); toast('청첩장 링크를 복사했어요'); }
 function openExternal(ev){
   if(ev.externalUrl){ window.open(ev.externalUrl,'_blank'); }
   else toast('호스트가 외부 청첩장 링크를 입력하면 여기서 열립니다');
@@ -601,10 +614,10 @@ function hostView(){
     <input placeholder="https://... (바른손/더카드 등 제작 링크)" value="${esc(ev.externalUrl)}" onchange="updEv('externalUrl',this.value)">
     <p class="lblnote">${ev.externalUrl?'✓ 연결됨 — 공유 시 이 링크로 열립니다':'미입력 시 이음 기본 화면으로 공유됩니다'}</p>
     <div class="stack" style="margin-top:12px">
-      <button class="btn btn-kakao" onclick="shareEvent(hostEvent())">💬 카카오톡으로 ${c.doc} 보내기</button>
-      ${ev.externalUrl?`<button class="btn btn-line" onclick="openExternal(hostEvent())">🔗 연결된 ${c.doc} 미리보기</button>`:''}
+      <button class="btn btn-kakao" onclick="shareEvent(hostEvent())">💬 이음으로 보내기 (썸네일 + 캘린더·송금)</button>
+      ${ev.externalUrl?`<button class="btn btn-line" onclick="shareExternal(hostEvent())">🖼️ 청첩장 그대로 보내기 (청첩장 썸네일)</button>`:''}
     </div>
-    <div class="note">💡 카카오톡 <b>공유(Kakao Share)</b> — 내 톡에서 바로 전송, 검수·쿼터 없음. 실제 전송은 카카오 JS 키 설정 시 작동(데모는 링크복사).</div>
+    <div class="note">💡 <b>이음으로 보내기</b>: 단톡방에 링크를 뿌리면 각자 열어 '수락'하고, 캘린더 저장·${c.money} 송금까지 각자 진행해요(이음 썸네일 표시).${ev.externalUrl?` <b>청첩장 그대로 보내기</b>는 연결한 모바일청첩장의 원본 썸네일이 뜨는 대신 이음 기능은 빠집니다.`:' 모바일청첩장을 연결하면 원본 썸네일로도 보낼 수 있어요.'}</div>
   </div>
 
   <div class="card">
