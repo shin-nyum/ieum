@@ -1707,13 +1707,86 @@ function closeImport(){ S.ui.guestView='list'; S.ui.importText=''; S.ui.importPa
 function analyzeImport(){ const t=$('#impText').value; S.ui.importText=t;
   if(!t.trim()){ toast('내용을 붙여넣어 주세요'); return; }
   const p=parseInvite(t); S.ui.importParsed=p; save(); render();
+  // URL만 있는 청첩장(요즘 대부분): 페이지에 접속해 이름·날짜·장소·계좌까지 자동 추출
+  if(p.url && (!p.names || !p.date || !p.venue || !(p.accounts&&p.accounts.length))){ fetchImportUrl(); return; }
   toast((p.date||p.venue||p.names)?'정보를 찾았어요 — 확인해 주세요':'자동 인식이 어려워요 — 직접 입력해 주세요'); }
+
+/* ---- 청첩장 URL 자동 분석: 서버가 없어 공개 CORS 프록시를 경유해 HTML을 읽음 ---- */
+const INVITE_PROXIES=[
+  u=>'https://corsproxy.io/?url='+encodeURIComponent(u),
+  u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
+  u=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u)
+];
+async function fetchInviteHtml(url){
+  for(const mk of INVITE_PROXIES){
+    try{ const ctl=new AbortController(); const tm=setTimeout(()=>ctl.abort(),9000);
+      const r=await fetch(mk(url),{signal:ctl.signal}); clearTimeout(tm);
+      if(!r.ok) continue; const t=await r.text();
+      if(t && t.length>300) return t;
+    }catch(e){}
+  }
+  return null;
+}
+function parseInviteHtml(html, url){
+  const doc=new DOMParser().parseFromString(html,'text/html');
+  const meta=n=>{const m=doc.querySelector(`meta[property="${n}"],meta[name="${n}"]`);return (m&&m.getAttribute('content'))||'';};
+  const ogT=meta('og:title'), ogD=meta('og:description'), twT=meta('twitter:title'), twD=meta('twitter:description');
+  let ogImg=meta('og:image'); try{ if(ogImg) ogImg=new URL(ogImg, url).href; }catch(e){ ogImg=''; }
+  const title=(doc.querySelector('title')||{}).textContent||'';
+  doc.querySelectorAll('script,style,noscript,svg').forEach(e=>e.remove());
+  const body=((doc.body&&doc.body.textContent)||'').replace(/[ \t ]+/g,' ').slice(0,30000);
+  const all=[ogT,ogD,twT,twD,title,body].filter(Boolean).join('\n');
+  const p=parseInvite(all); p.url=url; if(ogImg&&/^https:/.test(ogImg)) p.img=ogImg;
+  // 계좌 검출: 은행명 + 계좌번호 패턴 (주변 문맥으로 예금주·신랑/신부측 추정)
+  const acctRe=/(카카오뱅크|토스뱅크|케이뱅크|국민|신한|우리|하나|농협|기업|SC제일|새마을금고|우체국|수협|신협|씨티|부산|대구|광주|경남|전북|제주)\s*(?:은행)?\s*[:：]?\s*(\d[\d\- ]{7,20}\d)/g;
+  p.accounts=[]; const seen=new Set(); let m;
+  while((m=acctRe.exec(all)) && p.accounts.length<4){
+    const num=m[2].replace(/\s+/g,''); const digits=num.replace(/-/g,'');
+    if(digits.length<10||digits.length>14||seen.has(digits)) continue; seen.add(digits);
+    // 문맥: back=앞(측 라벨은 보통 앞에), fwd=뒤(예금주는 보통 번호 뒤에) — 이웃 계좌 줄 오염 방지
+    const back=all.slice(Math.max(0,m.index-40), m.index);
+    const fwd=all.slice(m.index, m.index+m[0].length+60);
+    let holder=(fwd.match(/예금주\s*[:：]?\s*([가-힣]{2,4})/)||[])[1]||'';
+    if(!holder){ holder=(back.match(/([가-힣]{2,4})\s*$/)||[])[1]||''; }
+    if(/신랑|신부|어머니|아버지|혼주|계좌|은행|전하실/.test(holder)) holder='';
+    const label=/신부|장모|장인/.test(back)?'신부측':/신랑/.test(back)?'신랑측':(p.accounts.length===0?'신랑측':'신부측');
+    p.accounts.push({label, bank:m[1], number:num, holder});
+  }
+  return p;
+}
+let _impFetching=false;
+async function fetchImportUrl(){
+  const base=S.ui.importParsed; if(!base||!base.url||_impFetching) return;
+  _impFetching=true; S.ui.importFetching=true; render();
+  try{
+    const html=await fetchInviteHtml(base.url);
+    const cur=S.ui.importParsed; // 사용자가 화면을 떠났으면 중단
+    if(!cur || cur.url!==base.url){ return; }
+    if(!html){ toast('청첩장 페이지를 읽지 못했어요 — 아래에서 직접 입력해 주세요'); return; }
+    const add=parseInviteHtml(html, base.url);
+    // 붙여넣은 텍스트에서 찾은 값이 우선, 빈 곳만 URL 분석값으로 채움
+    ['names','date','time','venue'].forEach(k=>{ if(!cur[k]&&add[k]) cur[k]=add[k]; });
+    if(add.img) cur.img=add.img;
+    if(add.accounts&&add.accounts.length) cur.accounts=add.accounts;
+    save();
+    const got=[cur.names&&'이름',cur.date&&'날짜',cur.venue&&'장소',(cur.accounts&&cur.accounts.length)&&`계좌 ${cur.accounts.length}개`].filter(Boolean);
+    toast(got.length?`청첩장에서 ${got.join('·')}을 가져왔어요`:'페이지에서 정보를 찾지 못했어요 — 직접 입력해 주세요');
+  } finally { _impFetching=false; S.ui.importFetching=false; render(); }
+}
 function addImported(){
   const names=($('#ip_names').value||'').split(/[♥❤♡·]|그리고/).map(s=>s.trim()).filter(Boolean);
+  // 계좌 입력칸(자동 검출값 포함)에서 읽기 — 번호가 있는 행만 채택
+  const accounts=[];
+  for(let i=0;i<2;i++){
+    const num=gv('ip_num'+i).trim(); if(!num) continue;
+    accounts.push({ label:i===0?'신랑측':'신부측', bank:gv('ip_bank'+i)||'카카오뱅크', number:num, holder:gv('ip_hold'+i).trim() });
+  }
+  if(!accounts.length){ accounts.push({label:'신랑측',bank:'카카오뱅크',number:'',holder:''},{label:'신부측',bank:'토스뱅크',number:'',holder:''}); }
+  const p=S.ui.importParsed||{};
   const ev={ id:uid('e'), role:'guest', type:'wedding', partyA:names[0]||'', partyB:names[1]||'', subtitle:'결혼합니다',
     date:$('#ip_date').value||'', time:$('#ip_time').value||'12:00', venue:$('#ip_venue').value||'', address:'', message:'',
-    externalUrl:$('#ip_url').value||'',
-    accounts:[{label:'신랑측',bank:'카카오뱅크',number:'',holder:''},{label:'신부측',bank:'토스뱅크',number:'',holder:''}], guests:[] };
+    externalUrl:$('#ip_url').value||'', shareImg:p.img||'',
+    accounts, guests:[] };
   S.events.push(ev); S.ui.guestView='detail'; S.ui.currentEventId=ev.id; S.ui.importText=''; S.ui.importParsed=null;
   save(); render(); window.scrollTo(0,0); toast('내 경조사에 추가했어요'); }
 function parseInvite(text){
@@ -1732,22 +1805,37 @@ function parseInvite(text){
   if(hh!=null){ if(pm&&hh<12)hh+=12; if(am&&hh===12)hh=0; if(hh>=0&&hh<=23) res.time=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0'); }
   let nm=text.match(/([가-힣]{2,4})\s*[♥❤♡💕&,·]\s*([가-힣]{2,4})/);
   if(!nm) nm=text.match(/신랑\s*[:：]?\s*([가-힣]{2,4})[\s\S]{0,24}신부\s*[:：]?\s*([가-힣]{2,4})/);
+  const badNm=/^(부고|삼가|결혼|화혼|혼인|안내|예식|모바일|청첩장|초대장|초대|감사|마음|오전|오후|본식|피로연|장소|일시|축하)$/;
+  if(nm && (badNm.test(nm[1])||badNm.test(nm[2]))) nm=null;
   if(nm) res.names=nm[1]+' ♥ '+nm[2];
   const vk=/(웨딩|컨벤션|호텔|예식장|홀|가든|하우스|채플|파티움|아트홀|타워|클럽|더라움|루체|아펠가모|메리어트|그랜드|워커힐|라마다|롯데|신라|반얀트리|스퀘어|컨벤션센터)/;
   for(const ln of text.split(/[\n\r]+/)){ if(vk.test(ln)){ res.venue=ln.trim().slice(0,40); break; } }
   return res;
 }
+function importAcctRow(i,a){ const banks=[...BANKS]; if(a&&a.bank&&!banks.includes(a.bank)) banks.unshift(a.bank);
+  return `<label style="margin-top:${i?10:8}px">${i===0?'신랑측':'신부측'} 계좌 ${a&&a.number?'<span style="color:var(--ok);font-weight:600;font-size:11px">· 자동 검출</span>':'<span style="font-weight:400;color:var(--muted)">(선택)</span>'}</label>
+  <div class="row">
+    <div style="max-width:34%"><select id="ip_bank${i}">${banks.map(b=>`<option ${a&&a.bank===b?'selected':''}>${b}</option>`).join('')}</select></div>
+    <div><input id="ip_num${i}" placeholder="계좌번호" value="${esc(a?a.number:'')}"></div>
+  </div>
+  <input id="ip_hold${i}" style="margin-top:6px" placeholder="예금주" value="${esc(a?a.holder:'')}">`; }
 function importView(){
   const t=S.ui.importText||'', p=S.ui.importParsed;
+  const accs=(p&&p.accounts)||[];
   return `<button class="backbtn" onclick="closeImport()">‹ 내 경조사</button>
   <div class="card">
     <h3>청첩장 가져오기</h3>
-    <p class="sub">카카오톡으로 받은 청첩장 메시지나 링크를 붙여넣으면, 이음이 날짜·장소·이름을 자동으로 찾아드립니다.</p>
-    <textarea id="impText" rows="5" placeholder="카톡 청첩장 메시지를 길게 눌러 복사 → 여기에 붙여넣기&#10;예) 김민준 ♥ 이서연 결혼합니다 / 2026년 10월 17일 토요일 오후 1시 / 더채플 앳 청담 / https://...">${esc(t)}</textarea>
-    <button class="btn btn-primary" style="margin-top:10px" onclick="analyzeImport()">🔍 붙여넣기 분석</button>
-    <div class="note">💡 카카오톡 메시지를 앱이 <b>직접 읽을 수는 없습니다</b>(카카오 정책). 대신 ① 메시지 <b>복사 → 붙여넣기</b>, 또는 ② (안드로이드) 청첩장 링크 <b>공유 → 이음</b>으로 보내면 자동으로 들어옵니다.</div>
+    <p class="sub">청첩장 메시지나 <b>링크만</b> 붙여넣어도 돼요 — 이음이 페이지에 접속해 이름·날짜·장소·계좌를 자동으로 찾아드립니다.</p>
+    <textarea id="impText" rows="5" placeholder="카톡 청첩장 메시지 또는 링크(https://...)만 붙여넣기&#10;예) https://mcard.example.com/abc123">${esc(t)}</textarea>
+    <button class="btn btn-primary" style="margin-top:10px" onclick="analyzeImport()" ${S.ui.importFetching?'disabled':''}>${S.ui.importFetching?'🔗 청첩장 페이지 분석 중…':'🔍 분석하기'}</button>
+    <div class="note">💡 ① 메시지·링크 <b>복사 → 붙여넣기</b> 또는 ② (안드로이드) 청첩장 링크 <b>공유 → 이음</b>. 링크 분석은 공개 중계서버를 경유하며 내용은 저장되지 않아요. 일부 청첩장은 계좌가 안 읽힐 수 있어요(직접 입력).</div>
   </div>
-  ${p?`<div class="card">
+  ${S.ui.importFetching?`<div class="card" style="text-align:center;padding:22px">
+    <div style="font-size:26px">🔗</div>
+    <div style="font-weight:800;margin-top:6px">청첩장 페이지에서 정보를 가져오는 중…</div>
+    <p class="sub" style="margin:6px 0 0">이름 · 날짜 · 장소 · 계좌번호를 찾고 있어요</p>
+  </div>`:''}
+  ${p&&!S.ui.importFetching?`<div class="card">
     <h3>찾은 정보 · 확인 후 추가</h3>
     <p class="sub">자동으로 채운 값입니다. 틀린 곳은 직접 고쳐주세요.</p>
     <label>이름</label><input id="ip_names" value="${esc(p.names)}" placeholder="예: 김민준 ♥ 이서연">
@@ -1755,6 +1843,9 @@ function importView(){
       <div><label>시간</label><input id="ip_time" type="time" value="${p.time}"></div></div>
     <label>장소</label><input id="ip_venue" value="${esc(p.venue)}">
     <label>청첩장 링크</label><input id="ip_url" value="${esc(p.url)}" placeholder="https://...">
+    ${importAcctRow(0,accs[0])}
+    ${importAcctRow(1,accs[1])}
+    ${p.img?`<div class="note" style="margin-top:10px">🖼️ 청첩장 대표 사진도 함께 저장돼요 — 카톡 공유 시 썸네일로 쓰입니다.</div>`:''}
     <button class="btn btn-sage" style="margin-top:13px" onclick="addImported()">＋ 내 경조사에 추가</button>
   </div>`:''}`;
 }
@@ -1804,7 +1895,8 @@ function budgetCard(ev){ const c=cfg(ev), pl=ev.plan||{}, {sent,rate,meal,gift}=
 (function(){ try{ const q=new URLSearchParams(location.search);
   const shared=[q.get('shared_text'),q.get('shared_url'),q.get('shared_title')].filter(Boolean).join('\n');
   if(shared){ S.ui.entered=true; S.ui.tab='guest'; S.ui.guestView='import'; S.ui.importText=shared; S.ui.importParsed=parseInvite(shared); save();
-    history.replaceState(null,'',location.pathname); }
+    history.replaceState(null,'',location.pathname);
+    if(S.ui.importParsed.url) setTimeout(()=>{ try{ fetchImportUrl(); }catch(e){} }, 400); } // 링크 공유받으면 즉시 자동 분석
 }catch(e){} })();
 
 /* ======================= 부팅 ======================= */
