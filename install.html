@@ -10,6 +10,7 @@
 <meta property="og:image" content="https://shin-nyum.github.io/ieum/og-image.png" />
 <meta property="og:url" content="https://shin-nyum.github.io/ieum/install.html" />
 <meta name="theme-color" content="#a87f6a" />
+<link rel="manifest" href="manifest.webmanifest" />
 <link rel="icon" type="image/png" href="icon-192.png" />
 <style>
   :root{--bg:#f3efe8;--card:#fff;--ink:#39342e;--muted:#8b8378;--line:#e7e0d5;--primary:#a87f6a;--primary-d:#8f6852;--gold:#bfa06a;--ok:#5b8c6e}
@@ -71,11 +72,15 @@
 
   <!-- Android -->
   <div id="s-android" class="card hide">
-    <h2>🤖 Android 설치 (Chrome)</h2>
-    <div class="step"><div class="n">1</div><div class="t">아래 버튼으로 앱을 연 뒤, Chrome 메뉴 <b>⋮</b>를 눌러요</div></div>
-    <div class="step"><div class="n">2</div><div class="t"><b>“앱 설치”</b> 또는 <b>“홈 화면에 추가”</b> 선택</div></div>
-    <a class="btn btn-primary" href="./index.html">이음 열기 →</a>
-    <div class="note">화면 하단에 <b>설치 배너</b>가 자동으로 뜨면 그걸 눌러도 돼요.</div>
+    <h2>🤖 Android 설치</h2>
+    <button id="btn-install" class="btn btn-primary hide" onclick="doInstall()">🚀 바로 설치 (원터치)</button>
+    <div id="installed-note" class="note hide" style="border-color:var(--ok)">✅ 설치됐어요! 홈 화면에서 <b>이음</b>을 실행하세요.</div>
+    <div id="android-manual">
+      <div class="step"><div class="n">1</div><div class="t">아래 버튼으로 앱을 연 뒤, Chrome 메뉴 <b>⋮</b>를 눌러요</div></div>
+      <div class="step"><div class="n">2</div><div class="t"><b>“앱 설치”</b> 또는 <b>“홈 화면에 추가”</b> 선택</div></div>
+      <a class="btn btn-primary" href="./index.html">이음 열기 →</a>
+      <div class="note">화면 하단에 <b>설치 배너</b>가 자동으로 뜨면 그걸 눌러도 돼요. 위에 <b>‘바로 설치’</b> 버튼이 나타나면 한 번으로 끝!</div>
+    </div>
   </div>
 
   <!-- Desktop -->
@@ -106,12 +111,36 @@
   var android=/Android/i.test(ua);
   var standalone=(window.navigator.standalone===true)||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
   if(standalone){ location.replace('./index.html'); return; }
+  // 플랫폼 지정 링크 지원: ?p=android / ?p=ios (지정 시 감지보다 우선)
+  var p=''; try{ p=(new URLSearchParams(location.search).get('p')||'').toLowerCase(); }catch(e){}
   function show(id){ document.getElementById(id).classList.remove('hide'); }
   if(kakao) show('s-kakao');
-  if(ios) show('s-ios');
+  if(p==='ios') show('s-ios');
+  else if(p==='android') show('s-android');
+  else if(ios) show('s-ios');
   else if(android) show('s-android');
   else show('s-desktop');
 })();
+/* Android: Chrome 네이티브 설치 프롬프트(원터치) */
+var deferredPrompt=null;
+window.addEventListener('beforeinstallprompt', function(e){
+  e.preventDefault(); deferredPrompt=e;
+  var b=document.getElementById('btn-install'); if(b) b.classList.remove('hide');
+});
+window.addEventListener('appinstalled', function(){
+  var n=document.getElementById('installed-note'); if(n) n.classList.remove('hide');
+  var b=document.getElementById('btn-install'); if(b) b.classList.add('hide');
+});
+function doInstall(){
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(function(r){
+    if(r.outcome==='accepted'){ var n=document.getElementById('installed-note'); if(n) n.classList.remove('hide'); }
+    deferredPrompt=null; var b=document.getElementById('btn-install'); if(b) b.classList.add('hide');
+  });
+}
+/* 설치 가능 판정을 위해 이 페이지에서도 SW 등록(스코프 동일) */
+if('serviceWorker' in navigator){ try{ navigator.serviceWorker.register('./service-worker.js?v=3'); }catch(e){} }
 function copyLink(){
   var url='https://shin-nyum.github.io/ieum/install.html';
   var done=function(){ var b=event.target; b.textContent='복사됐어요 ✓'; setTimeout(function(){b.textContent='설치 링크 복사';},1800); };
