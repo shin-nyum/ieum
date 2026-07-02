@@ -8,3 +8,4 @@ deploy/
 make_og.py
 play_assets.py
 play-store/
+make_splash.py
