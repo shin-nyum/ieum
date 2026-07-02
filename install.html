@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>이음 설치하기</title>
+<meta property="og:type" content="website" />
+<meta property="og:title" content="이음 설치하기 — 마음을 잇다" />
+<meta property="og:description" content="경조사를 한곳에서. 30초면 홈 화면에 설치돼요 (앱스토어 불필요)" />
+<meta property="og:image" content="https://shin-nyum.github.io/ieum/og-image.png" />
+<meta property="og:url" content="https://shin-nyum.github.io/ieum/install.html" />
+<meta name="theme-color" content="#a87f6a" />
+<link rel="icon" type="image/png" href="icon-192.png" />
+<style>
+  :root{--bg:#f3efe8;--card:#fff;--ink:#39342e;--muted:#8b8378;--line:#e7e0d5;--primary:#a87f6a;--primary-d:#8f6852;--gold:#bfa06a;--ok:#5b8c6e}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic",sans-serif;line-height:1.6}
+  .wrap{max-width:430px;margin:0 auto;padding:34px 20px 60px}
+  .hero{text-align:center;padding:10px 0 22px}
+  .logo{font-family:"Nanum Myeongjo",Georgia,serif;font-size:44px;color:var(--primary-d);letter-spacing:.08em}
+  .slogan{font-size:13px;color:var(--gold);letter-spacing:.28em;margin-top:8px}
+  .desc{font-size:14px;color:var(--muted);margin-top:14px}
+  .badge{display:inline-block;background:#efe6da;color:var(--primary-d);font-size:12px;font-weight:700;border-radius:999px;padding:6px 14px;margin-top:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:14px;box-shadow:0 6px 24px rgba(57,52,46,.08)}
+  h2{font-size:15px;margin:0 0 4px}
+  .sub{font-size:12.5px;color:var(--muted);margin:0 0 12px}
+  .step{display:flex;gap:13px;align-items:flex-start;padding:11px 2px}
+  .step+.step{border-top:1px dashed var(--line)}
+  .n{flex:none;width:30px;height:30px;border-radius:50%;background:var(--primary);color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;margin-top:2px}
+  .t{font-size:14px}.t b{color:var(--primary-d)}
+  .t small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+  .ic{font-size:17px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:0;border-radius:12px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;text-decoration:none;margin-top:10px}
+  .btn-primary{background:var(--primary);color:#fff}
+  .btn-ghost{background:#f1ece4;color:var(--ink);border:1px solid var(--line)}
+  .note{font-size:12px;color:var(--muted);background:#faf7f2;border:1px dashed var(--line);border-radius:10px;padding:10px 12px;margin-top:12px;line-height:1.7}
+  .note b{color:var(--primary-d)}
+  .hide{display:none}
+  .qr{text-align:center}
+  .qr img{width:180px;height:180px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:8px}
+  .foot{text-align:center;font-size:11px;color:#a59b8c;margin-top:26px;line-height:1.8}
+  .kakao-warn{background:#fff7df;border:1px solid #eadfb2;border-radius:12px;padding:13px 14px;font-size:13.5px;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div class="logo">이음</div>
+    <div class="slogan">마음을 잇다</div>
+    <p class="desc">청첩장·부고 관리 · 축의금 시세 추천 · 3초 송금<br/>정산 장부 · 경조사비 가계부 · 감사카드</p>
+    <span class="badge">테스터 초대 · 30초 설치 · 앱스토어 불필요</span>
+  </div>
+
+  <!-- 카카오톡 인앱 브라우저: 홈 화면 추가 불가 → 우선 안내 -->
+  <div id="s-kakao" class="kakao-warn hide">
+    ⚠️ 지금 <b>카카오톡 안</b>에서 보고 계세요.<br/>
+    오른쪽 아래 <b>⋮ (또는 공유 아이콘)</b> → <b>“다른 브라우저로 열기”</b>를 눌러
+    <b>Safari/Chrome</b>으로 열면 설치할 수 있어요.
+  </div>
+
+  <!-- iPhone -->
+  <div id="s-ios" class="card hide">
+    <h2>📱 iPhone 설치 (Safari)</h2>
+    <p class="sub">애플 정책상 버튼 한 번 설치는 없지만, 세 번 터치면 끝나요.</p>
+    <div class="step"><div class="n">1</div><div class="t">하단 가운데 <b>공유 버튼</b> <span class="ic">⎋</span>(네모에 화살표 ↑)를 눌러요</div></div>
+    <div class="step"><div class="n">2</div><div class="t">메뉴에서 <b>“홈 화면에 추가”</b>를 찾아 눌러요<small>안 보이면 목록을 위로 스크롤</small></div></div>
+    <div class="step"><div class="n">3</div><div class="t">오른쪽 위 <b>“추가”</b> → 홈 화면의 <b>이음</b>을 실행!</div></div>
+    <a class="btn btn-primary" href="./index.html">앱 먼저 둘러보기 →</a>
+    <div class="note">💡 <b>꼭 홈 화면에 추가해서 쓰세요.</b> 사파리 탭으로만 쓰면 iOS가 7일 뒤 데이터를 지울 수 있지만, <b>설치하면 지워지지 않아요.</b> 전체 기능(카카오 공유·토스 송금·감사카드·백업)이 그대로 작동합니다.</div>
+  </div>
+
+  <!-- Android -->
+  <div id="s-android" class="card hide">
+    <h2>🤖 Android 설치 (Chrome)</h2>
+    <div class="step"><div class="n">1</div><div class="t">아래 버튼으로 앱을 연 뒤, Chrome 메뉴 <b>⋮</b>를 눌러요</div></div>
+    <div class="step"><div class="n">2</div><div class="t"><b>“앱 설치”</b> 또는 <b>“홈 화면에 추가”</b> 선택</div></div>
+    <a class="btn btn-primary" href="./index.html">이음 열기 →</a>
+    <div class="note">화면 하단에 <b>설치 배너</b>가 자동으로 뜨면 그걸 눌러도 돼요.</div>
+  </div>
+
+  <!-- Desktop -->
+  <div id="s-desktop" class="card hide qr">
+    <h2>💻 PC로 보고 계시네요</h2>
+    <p class="sub">휴대폰 카메라로 QR을 찍으면 이 설치 페이지가 열려요.</p>
+    <img src="qr-install.png" alt="이음 설치 QR" />
+    <a class="btn btn-ghost" href="./index.html">브라우저에서 바로 써보기 →</a>
+  </div>
+
+  <div class="card">
+    <h2>🔗 링크 공유</h2>
+    <p class="sub">친구·가족 테스터에게 이 페이지를 그대로 보내세요.</p>
+    <button class="btn btn-ghost" onclick="copyLink()">설치 링크 복사</button>
+  </div>
+
+  <p class="foot">
+    이음은 서버 없이 <b>내 기기에만</b> 데이터를 저장하는 앱입니다.<br/>
+    설치해도 저장공간을 거의 쓰지 않으며, 홈 화면 아이콘을 지우면 완전히 제거됩니다.<br/>
+    피드백은 초대해 준 사람에게 편하게 전해주세요 🙏
+  </p>
+</div>
+<script>
+(function(){
+  var ua=navigator.userAgent;
+  var kakao=/KAKAOTALK/i.test(ua);
+  var ios=/iPad|iPhone|iPod/.test(ua);
+  var android=/Android/i.test(ua);
+  var standalone=(window.navigator.standalone===true)||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
+  if(standalone){ location.replace('./index.html'); return; }
+  function show(id){ document.getElementById(id).classList.remove('hide'); }
+  if(kakao) show('s-kakao');
+  if(ios) show('s-ios');
+  else if(android) show('s-android');
+  else show('s-desktop');
+})();
+function copyLink(){
+  var url='https://shin-nyum.github.io/ieum/install.html';
+  var done=function(){ var b=event.target; b.textContent='복사됐어요 ✓'; setTimeout(function(){b.textContent='설치 링크 복사';},1800); };
+  if(navigator.clipboard&&window.isSecureContext){ navigator.clipboard.writeText(url).then(done); }
+  else{ var t=document.createElement('textarea'); t.value=url; document.body.appendChild(t); t.select();
+    try{document.execCommand('copy');}catch(e){} t.remove(); done(); }
+}
+</script>
+</body>
+</html>
