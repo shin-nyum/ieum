@@ -9,3 +9,5 @@ make_og.py
 play_assets.py
 play-store/
 make_splash.py
+capture_shots.py
+compose_store_v2.py
