@@ -1,0 +1,13 @@
+{
+  "appId": "io.github.shinnyum.ieum",
+  "appName": "이음",
+  "webDir": "www",
+  "server": {
+    "iosScheme": "https",
+    "hostname": "shin-nyum.github.io"
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "backgroundColor": "#f3efe8"
+  }
+}

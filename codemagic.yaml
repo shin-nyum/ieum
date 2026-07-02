@@ -1,0 +1,49 @@
+# 이음 iOS — Codemagic 클라우드 빌드 (Mac 없이 App Store 제출)
+# 사용법: codemagic.io 가입(GitHub 연동) → 이 리포 추가 → Team settings > Integrations >
+#   App Store Connect에서 API 키 등록(이름: ieum-asc) → 아래 워크플로우 실행.
+# 필요 값: Apple Developer($99) 계정의 App Store Connect API Key(Issuer ID, Key ID, .p8)
+
+workflows:
+  ios-testflight:
+    name: 이음 iOS → TestFlight
+    max_build_duration: 45
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: ieum-asc          # Codemagic UI에 등록한 API 키 이름과 일치해야 함
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: io.github.shinnyum.ieum
+      node: 22
+      xcode: latest
+      vars:
+        APP_DIR: native
+    triggering:
+      events: []                            # 수동 실행(Start new build)
+    scripts:
+      - name: 웹 자산 → www/ 복사 + Capacitor 동기화
+        script: |
+          cd $APP_DIR
+          npm ci
+          node copy-web.js
+          npx cap sync ios
+      - name: 서명 프로파일 적용
+        script: |
+          xcode-project use-profiles
+      - name: 빌드 번호 자동 증가
+        script: |
+          cd $APP_DIR/ios/App
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_APPLE_ID" 2>/dev/null || echo 0)
+          agvtool new-version -all $((${LATEST:-0} + 1))
+      - name: IPA 빌드
+        script: |
+          cd $APP_DIR/ios/App
+          xcode-project build-ipa --project App.xcodeproj --scheme App
+    artifacts:
+      - native/ios/App/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        # 심사 제출은 App Store Connect 웹에서 수동으로(첫 제출은 메타데이터 작성 필요)

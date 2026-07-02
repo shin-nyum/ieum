@@ -11,3 +11,6 @@ play-store/
 make_splash.py
 capture_shots.py
 compose_store_v2.py
+compose_appstore.py
+native/node_modules/
+native/www/
