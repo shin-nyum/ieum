@@ -30,11 +30,10 @@ workflows:
       - name: 서명 프로파일 적용
         script: |
           xcode-project use-profiles
-      - name: 빌드 번호 자동 증가
+      - name: 빌드 번호 자동 증가 (Codemagic 내장 카운터 — 공식 샘플 방식)
         script: |
           cd $APP_DIR/ios/App
-          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_APPLE_ID" 2>/dev/null || echo 0)
-          agvtool new-version -all $((${LATEST:-0} + 1))
+          agvtool new-version -all $(($BUILD_NUMBER))
       - name: IPA 빌드
         script: |
           cd $APP_DIR/ios/App
