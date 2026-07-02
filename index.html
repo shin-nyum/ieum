@@ -330,17 +330,30 @@ const TYPES={
 const BANKS=['카카오뱅크','토스뱅크','국민','신한','우리','하나','농협','기업','SC제일','새마을금고'];
 const RELATIONS=['가족','친척','친구','직장','선후배','기타'];
 
-/* ======================= 상태 ======================= */
+/* ======================= 상태 · 데이터 계층 ======================= */
+// 설계: localStorage(주 저장소) + IndexedDB(미러·스냅샷 이중화) + 파일 백업(기기 교체용).
+// 기기 교체 시 웹 저장소는 자동 이전되지 않으므로, 파일 백업/복원이 공식 이전 경로.
 const LS='ieum_v3';
+const SCHEMA_VERSION=3;
 let _id=1; const uid=p=>(p||'x')+Date.now().toString(36)+(_id++);
 // pay: { amount, source:'app'|'manual', method:'toss'|'account'|'cash' }
 function mkGuest(name,relation,side,pay){return {id:uid('g'),name,relation,side:side||0,
   rsvp:{status:null,count:1,meal:true}, pay:pay||{amount:null,source:null,method:null}, unregistered:false};}
 
-function seed(){
+function seed(){ // 신규 사용자: 빈 상태로 시작 (샘플은 원할 때만 fillSample)
+  return {
+    _v:SCHEMA_VERSION,
+    events:[], people:[],
+    settings:{ name:'', kakaoKey:'', premium:true },
+    meta:{ createdAt:Date.now(), lastBackupAt:null, dirty:0 },
+    ui:{ entered:false, tab:'guest', hostEventId:null, guestView:'list', currentEventId:null,
+         guestSession:{name:'', acctIdx:0} }
+  };
+}
+function sampleData(){ // 둘러보기용 샘플 (demo:true 표시 → 한 번에 삭제 가능)
   return {
     events:[
-      { id:'e1', role:'host', type:'wedding',
+      { id:'e1', demo:true, role:'host', type:'wedding',
         partyA:'김민준', partyB:'이서연', subtitle:'저희 결혼합니다',
         date:'2026-10-17', time:'13:00', venue:'더채플 앳 청담', address:'서울 강남구 청담동 123-4',
         message:'서로 마주보며 다져온 사랑을\n이제 함께 한곳을 바라보며\n걸어가고자 합니다.',
@@ -350,7 +363,7 @@ function seed(){
         guests:[ mkGuest('박지훈','친구',0,{amount:100000,source:'app',method:'toss'}),
                  mkGuest('최수아','직장',1,{amount:50000,source:'manual',method:'cash'}),
                  mkGuest('정해린','가족',1) ] },
-      { id:'e2', role:'guest', type:'wedding',
+      { id:'e2', demo:true, role:'guest', type:'wedding',
         partyA:'박서준', partyB:'김지우', subtitle:'결혼합니다',
         date:'2026-09-05', time:'12:00', venue:'그랜드 워커힐 서울', address:'서울 광진구 워커힐로 177',
         message:'두 사람이 사랑으로 만나\n새로운 가정을 이룹니다.',
@@ -358,7 +371,7 @@ function seed(){
         accounts:[ {label:'신랑측', bank:'국민', number:'123-45-6789012', holder:'박서준', kakaopay:'https://qr.kakaopay.com/demo-seojun'},
                    {label:'신부측', bank:'신한', number:'110-234-567890', holder:'김지우'} ],
         myGift:100000, myRelation:'친구', guests:[] },
-      { id:'e3', role:'guest', type:'memorial',
+      { id:'e3', demo:true, role:'guest', type:'memorial',
         partyA:'故 김정호', partyB:'', subtitle:'삼가 고인의 명복을 빕니다',
         date:'2026-07-03', time:'09:00', venue:'서울추모공원 빈소 3호', address:'서울 서초구 원지동 산4',
         message:'장례에 마음 보태주셔서 감사합니다.\n상주 김민수',
@@ -367,22 +380,86 @@ function seed(){
         myGift:50000, myRelation:'직장', guests:[] }
     ],
     people:[
-      { id:'p1', name:'박서준', relation:'친구', items:[ {id:'pi1', dir:'gave', amount:100000, label:'결혼식', date:'2026-09-05'} ] },
-      { id:'p2', name:'이수민', relation:'친구', items:[ {id:'pi2', dir:'received', amount:100000, label:'내 결혼식 때', date:'2024-05-11'}, {id:'pi3', dir:'gave', amount:50000, label:'돌잔치', date:'2025-08-20'} ] },
-      { id:'p3', name:'김태영', relation:'직장', items:[ {id:'pi4', dir:'received', amount:50000, label:'내 결혼식 때', date:'2024-05-11'} ] }
-    ],
-    settings:{ name:'', kakaoKey:'', premium:true },
-    ui:{ entered:false, tab:'guest', hostEventId:'e1', guestView:'list', currentEventId:null,
-         guestSession:{name:'', acctIdx:0} }
+      { id:'p1', demo:true, name:'박서준', relation:'친구', items:[ {id:'pi1', dir:'gave', amount:100000, label:'결혼식', date:'2026-09-05'} ] },
+      { id:'p2', demo:true, name:'이수민', relation:'친구', items:[ {id:'pi2', dir:'received', amount:100000, label:'내 결혼식 때', date:'2024-05-11'}, {id:'pi3', dir:'gave', amount:50000, label:'돌잔치', date:'2025-08-20'} ] },
+      { id:'p3', demo:true, name:'김태영', relation:'직장', items:[ {id:'pi4', dir:'received', amount:50000, label:'내 결혼식 때', date:'2024-05-11'} ] }
+    ]
   };
 }
+function hasDemo(){ return S.events.some(e=>e.demo)||S.people.some(p=>p.demo); }
+function fillSample(){ const d=sampleData();
+  d.events.forEach(e=>{ if(!S.events.find(x=>x.id===e.id)) S.events.push(e); });
+  d.people.forEach(p=>{ if(!S.people.find(x=>x.id===p.id)) S.people.push(p); });
+  save(); render(); toast('샘플 데이터를 채웠어요 — 언제든 설정에서 삭제'); }
+function removeSample(){ S.events=S.events.filter(e=>!e.demo); S.people=S.people.filter(p=>!p.demo);
+  if(S.ui.hostEventId && !S.events.find(e=>e.id===S.ui.hostEventId)) S.ui.hostEventId=null;
+  if(S.ui.currentEventId && !S.events.find(e=>e.id===S.ui.currentEventId)){ S.ui.currentEventId=null; if(S.ui.guestView==='detail')S.ui.guestView='list'; }
+  save(); render(); toast('샘플 데이터를 삭제했어요'); }
+
+function migrate(o){ // 어떤 과거 상태가 와도 안전하게 현재 스키마로
+  const d=seed();
+  if(!o||typeof o!=='object') return d;
+  o._v=SCHEMA_VERSION;
+  if(!Array.isArray(o.events)) o.events=[];
+  if(!Array.isArray(o.people)) o.people=[];
+  o.settings={...d.settings, ...(o.settings||{})};
+  o.meta={...d.meta, ...(o.meta||{})};
+  o.ui={...d.ui, ...(o.ui||{})};
+  o.ui.guestSession={...d.ui.guestSession, ...((o.ui&&o.ui.guestSession)||{})};
+  // 초기 버전이 자동 주입했던 데모(e1~e3/p1~p3)에 demo 태그 소급
+  o.events.forEach(e=>{ if(['e1','e2','e3'].includes(e.id)) e.demo=true; if(!Array.isArray(e.guests))e.guests=[]; if(!Array.isArray(e.accounts))e.accounts=[]; });
+  o.people.forEach(p=>{ if(['p1','p2','p3'].includes(p.id)) p.demo=true; if(!Array.isArray(p.items))p.items=[]; });
+  return o;
+}
 let S=load();
-function load(){ try{const r=localStorage.getItem(LS); if(r){ const o=JSON.parse(r); const d=seed();
-  o.ui={...d.ui, ...(o.ui||{})}; o.ui.guestSession={...d.ui.guestSession, ...((o.ui&&o.ui.guestSession)||{})};
-  if(!Array.isArray(o.events)) o.events=d.events; if(!Array.isArray(o.people)) o.people=d.people;
-  o.settings={...d.settings, ...(o.settings||{})}; return o; } }catch(e){} return seed(); }
-function save(){ localStorage.setItem(LS, JSON.stringify(S)); }
-function reset(){ if(confirm('데모 데이터를 초기화할까요?')){ localStorage.removeItem(LS); S=seed(); applyTheme(); render(); toast('초기화했어요'); } }
+function load(){
+  try{ const r=localStorage.getItem(LS); if(r) return migrate(JSON.parse(r)); }catch(e){}
+  return seed();
+}
+/* ---- IndexedDB 미러: localStorage가 비워져도(브라우저 정리 등) 자동 복구 ---- */
+function idbOpen(){ return new Promise((res,rej)=>{ try{ const q=indexedDB.open('ieum-db',1);
+  q.onupgradeneeded=()=>{ try{q.result.createObjectStore('kv');}catch(e){} };
+  q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }catch(e){rej(e);} }); }
+function idbSet(k,v){ return idbOpen().then(db=>new Promise(res=>{ const tx=db.transaction('kv','readwrite');
+  tx.objectStore('kv').put(v,k); tx.oncomplete=()=>{db.close();res(true);}; tx.onerror=()=>{db.close();res(false);} })).catch(()=>false); }
+function idbGet(k){ return idbOpen().then(db=>new Promise(res=>{ const tx=db.transaction('kv','readonly');
+  const rq=tx.objectStore('kv').get(k); rq.onsuccess=()=>{db.close();res(rq.result);}; rq.onerror=()=>{db.close();res(undefined);} })).catch(()=>undefined); }
+function coreData(){ return {events:S.events, people:S.people, settings:S.settings, meta:S.meta, theme:S.ui.theme||'auto'}; }
+let _mirrorT=null;
+function mirror(){ clearTimeout(_mirrorT); _mirrorT=setTimeout(()=>{ try{ idbSet('state', JSON.stringify(coreData())); }catch(e){} }, 600); }
+function tryAutoRecover(){ // 부팅 시: LS는 비었는데 미러에 실데이터가 있으면 복구
+  if(S.events.length||S.people.length) { dailySnapshot(); return; }
+  idbGet('state').then(rawStr=>{ try{ const raw=rawStr&&JSON.parse(rawStr);
+    if(raw && ((raw.events&&raw.events.length)||(raw.people&&raw.people.length))){
+      S.events=raw.events||[]; S.people=raw.people||[]; S.settings={...S.settings,...(raw.settings||{})};
+      S.meta={...S.meta,...(raw.meta||{})}; if(raw.theme)S.ui.theme=raw.theme;
+      S=migrate(S); save(); applyTheme(); render(); toast('저장소에서 데이터를 자동 복구했어요');
+    } }catch(e){} dailySnapshot(); });
+}
+function dailySnapshot(){ // 하루 1회 롤링 스냅샷 5개 (실수 삭제·오염 대비)
+  if(!(S.events.length||S.people.length)) return;
+  const today=todayStr();
+  idbGet('snaps').then(s=>{ let snaps=[]; try{ snaps=JSON.parse(s||'[]'); }catch(e){}
+    if(snaps.length && snaps[snaps.length-1].d===today) return;
+    snaps.push({d:today, j:JSON.stringify(coreData())}); while(snaps.length>5) snaps.shift();
+    idbSet('snaps', JSON.stringify(snaps)); });
+}
+/* ---- 저장 ---- */
+function save(){
+  try{ localStorage.setItem(LS, JSON.stringify(S)); }
+  catch(e){ toast('저장 공간이 부족해요 — 사진 없는 백업을 권장'); }
+  if(S.meta) S.meta.dirty=(S.meta.dirty||0)+1;
+  mirror();
+}
+function reset(){
+  if(!confirm('모든 데이터를 삭제할까요?\n백업하지 않았다면 복구할 수 없어요.'))return;
+  if(!confirm('정말 삭제합니다. 계속할까요?'))return;
+  localStorage.removeItem(LS); try{ idbSet('state',''); idbSet('snaps','[]'); }catch(e){}
+  S=seed(); applyTheme(); render(); toast('모든 데이터를 삭제했어요');
+}
+/* ---- 저장소 영속화 요청 (브라우저 자동정리 방지) ---- */
+try{ if(navigator.storage&&navigator.storage.persist&&!localStorage.getItem('ieum_persist')){
+  navigator.storage.persist().then(g=>{ if(g)localStorage.setItem('ieum_persist','1'); }); } }catch(e){}
 function applyTheme(){ const t=(S.ui&&S.ui.theme)||'auto';
   const dark = t==='dark' || (t==='auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
   document.documentElement.dataset.theme = dark?'dark':'light';
@@ -411,7 +488,7 @@ const hostEvent=()=>S.events.find(e=>e.id===S.ui.hostEventId);
 const curEvent=()=>S.events.find(e=>e.id===S.ui.currentEventId);
 
 /* ======================= 탭/내비 ======================= */
-function setTab(t){S.ui.tab=t;save();render();}
+function setTab(t){ if(t==='host') ensureHostEvent(); S.ui.tab=t; save(); render(); }
 function openEvent(id){S.ui.currentEventId=id;S.ui.guestView='detail';S.ui.guestSession.acctIdx=0;save();render();window.scrollTo(0,0);}
 function backToList(){S.ui.guestView='list';save();render();window.scrollTo(0,0);}
 
@@ -536,13 +613,14 @@ function soon(name){toast(`「${name}」 — 곧 추가될 기능이에요`);}
 function render(){
   const bn=document.getElementById('bottomnav');
   if(!S.ui.entered){ if(bn)bn.style.display='none'; $('#ddayTop').textContent=''; $('#app').innerHTML=landingView(); return; }
-  if(S.ui.tab==='host'){ if(bn)bn.style.display='none'; const he=hostEvent();
+  if(S.ui.tab==='host'){ if(bn)bn.style.display='none'; const he=hostEvent()||ensureHostEvent();
     $('#ddayTop').textContent = he?dday(he):''; $('#app').innerHTML = S.ui.hostSub==='thanks'?thanksView():hostView(); return; }
   if(bn){ bn.style.display='flex'; }
   $('#ddayTop').textContent='';
   const v=S.ui.guestView;
   $('#app').innerHTML =
       v==='invite' ? inviteView()
+    : v==='restore' ? restoreView()
     : v==='import' ? importView()
     : v==='ledger' ? ledgerView()
     : v==='add' ? addView()
@@ -579,10 +657,20 @@ function landingView(){
         <div class="lc-d">내 결혼식·행사를 만들어 하객에게 보내고, 참석·축의금을 정산</div>
       </button>
     </div>
-    <p class="land-foot">대부분은 ‘내 경조사’로 시작하세요 · 언제든 상단에서 전환할 수 있어요</p>
+    <p class="land-foot">대부분은 ‘내 경조사’로 시작하세요 · 언제든 상단에서 전환할 수 있어요<br/>
+      <button class="backbtn" style="margin:10px 6px 0" onclick="importData()">📂 기기를 바꾸셨나요? 백업 복원</button>
+      ${!S.events.length&&!S.people.length?`<button class="backbtn" style="margin:10px 6px 0" onclick="S.ui.entered=true;S.ui.tab='guest';S.ui.guestView='list';fillSample()">✨ 샘플로 둘러보기</button>`:''}
+    </p>
   </div>`;
 }
-function enterAs(mode){ S.ui.tab=mode; if(mode==='guest'){ S.ui.guestView='list'; } S.ui.entered=true; save(); render(); window.scrollTo(0,0); }
+function ensureHostEvent(){ // 빈 시작에서도 호스트 모드가 안전하도록
+  let ev=S.events.find(e=>e.id===S.ui.hostEventId) || S.events.find(e=>e.role==='host');
+  if(!ev){ ev={ id:uid('e'), role:'host', type:'wedding', partyA:'', partyB:'', subtitle:'저희 결혼합니다',
+    date:'', time:'13:00', venue:'', address:'', message:'', externalUrl:'',
+    accounts:[{label:'신랑측',bank:'카카오뱅크',number:'',holder:''},{label:'신부측',bank:'토스뱅크',number:'',holder:''}], guests:[] };
+    S.events.push(ev); }
+  S.ui.hostEventId=ev.id; return ev; }
+function enterAs(mode){ S.ui.tab=mode; if(mode==='guest'){ S.ui.guestView='list'; } else { ensureHostEvent(); } S.ui.entered=true; save(); render(); window.scrollTo(0,0); }
 function goLanding(){ S.ui.entered=false; save(); render(); window.scrollTo(0,0); }
 
 /* ---------- 호스트 ---------- */
@@ -707,6 +795,7 @@ function guestList(){
   return `
   <div class="listhead"><div class="t serif">내 경조사</div><div class="c">다가오는 일정 ${upcoming}건</div></div>
   ${reminderBanner()}
+  ${backupBanner()}
   <div class="row" style="margin-bottom:13px">
     <button class="badge-add" style="margin:0" onclick="openImport()">📥 가져오기</button>
     <button class="badge-add" style="margin:0" onclick="openAdd()">＋ 직접 추가</button>
@@ -913,7 +1002,7 @@ function ledgerSummaryCard(){ const s=myStats(); const nc=s.net>=0?'var(--ok)':'
   </div>`; }
 function ledgerView(){ const s=myStats();
   const gaveEvents=S.events.filter(e=>e.role!=='host'&&e.myGift>0).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  const recvEvents=S.events.filter(e=>e.role==='host').map(e=>({e,c:ledgerStats(e).confirmed})).filter(x=>x.c>0);
+  const recvEvents=S.events.filter(e=>e.role==='host').map(e=>({e,c:ledgerStats(e).total})).filter(x=>x.c>0);
   const rel=Object.entries(s.byRel).sort((a,b)=>b[1]-a[1]); const mx=Math.max(1,...rel.map(x=>x[1]));
   return `
   <div class="listhead"><div class="t serif">경조사비 가계부</div></div>
@@ -946,7 +1035,9 @@ function ledgerView(){ const s=myStats();
 function kakaoInit(){ try{ const k=(S.settings&&S.settings.kakaoKey)||KAKAO_JS_KEY; if(k&&window.Kakao&&!Kakao.isInitialized())Kakao.init(k); }catch(e){} }
 function openSettings(){ S.ui.guestView='settings'; save(); render(); window.scrollTo(0,0); }
 function setSetting(k,v){ if(!S.settings)S.settings={}; S.settings[k]=v; save(); if(k==='kakaoKey')kakaoInit(); }
-function settingsView(){ const st=S.settings||{};
+function backupAgo(){ const t=S.meta&&S.meta.lastBackupAt; if(!t) return null;
+  const d=Math.floor((Date.now()-t)/86400000); return d<=0?'오늘':d+'일 전'; }
+function settingsView(){ const st=S.settings||{}; const ago=backupAgo();
   return `<button class="backbtn" onclick="setGuestTab('more')">‹ 더보기</button>
   <div class="listhead"><div class="t serif">설정</div></div>
   <div class="card">
@@ -957,23 +1048,108 @@ function settingsView(){ const st=S.settings||{};
       <button class="${S.ui.theme==='light'?'on':''}" onclick="setTheme('light')">밝게</button>
       <button class="${S.ui.theme==='dark'?'on':''}" onclick="setTheme('dark')">어둡게</button>
     </div>
-    <p class="lblnote">공유는 카카오톡/문자 등 기기 기본 공유로 자동 작동해요. (카카오 리치 공유는 운영자가 배포 시 설정합니다)</p>
+  </div>
+  <div class="card">
+    <div class="secthead"><div class="t">💾 백업 · 기기 이전</div><div class="c">${ago?`마지막 백업 ${ago}`:'아직 백업 없음'}</div></div>
+    <p class="sub">데이터는 <b>이 기기에만</b> 저장돼요. 휴대폰을 바꾸거나 앱을 지우기 전에 꼭 백업하세요 — 새 기기에서 파일 하나로 그대로 복원됩니다.</p>
+    <div class="stack">
+      <button class="btn btn-primary" onclick="exportData()">⬇️ 백업 파일 만들기 (카톡 나에게·드라이브로)</button>
+      <button class="btn btn-ghost" onclick="importData()">⬆️ 백업 파일에서 복원</button>
+    </div>
+    <div class="note">💡 백업 파일을 <b>카카오톡 나에게 보내기</b>나 구글 드라이브에 두면, 새 폰에서 그 파일을 열어 바로 복원할 수 있어요. 경조사 ${S.events.length}건 · 사람 ${S.people.length}명 포함.</div>
   </div>
   <div class="card" style="padding:5px 4px">
-    ${moreItem('⬇️','데이터 내보내기(백업)','내 경조사·가계부를 파일로 저장','exportData()')}
-    ${moreItem('⬆️','데이터 가져오기(복원)','백업 파일에서 되돌리기','importData()')}
+    ${S.events.length||S.people.length
+      ? (hasDemo()?moreItem('🧹','샘플 데이터 삭제','둘러보기용 샘플만 지워요','removeSample()'):'')
+      : moreItem('✨','샘플 데이터 살펴보기','기능을 둘러볼 예시를 채워요','fillSample()')}
     ${moreItem('📄','개인정보 처리방침','이음은 정보를 서버로 수집하지 않아요',"openDoc('privacy')")}
     ${moreItem('📃','이용약관','',"openDoc('terms')")}
-    ${moreItem('↺','데이터 초기화','데모 데이터로 되돌리기','reset()')}
-  </div>`;
+    ${moreItem('🗑️','모든 데이터 삭제','이 기기의 이음 데이터를 완전히 삭제','reset()')}
+  </div>
+  <p class="land-foot">이음 v1.1 · 데이터는 내 기기에만 저장됩니다</p>`;
 }
-function exportData(){ try{ const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='ieum-backup.json'; document.body.appendChild(a); a.click(); a.remove(); toast('백업 파일을 저장했어요'); }catch(e){toast('내보내기 실패')} }
-function importData(){ const inp=document.createElement('input'); inp.type='file'; inp.accept='application/json,.json';
+/* ---- 백업 파일 (기기 이전의 공식 경로) ---- */
+function backupPayload(){ return { app:'ieum', v:SCHEMA_VERSION, exportedAt:new Date().toISOString(),
+  counts:{events:S.events.length, people:S.people.length},
+  data:{ events:S.events, people:S.people, settings:S.settings, theme:S.ui.theme||'auto' } }; }
+function backupDone(){ if(S.meta){ S.meta.lastBackupAt=Date.now(); S.meta.dirty=0; } save(); render(); }
+function exportData(){
+  try{
+    const json=JSON.stringify(backupPayload(),null,1);
+    const name='이음백업_'+todayStr()+'.json';
+    const blob=new Blob([json],{type:'application/json'});
+    const file=new File([blob],name,{type:'application/json'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      navigator.share({files:[file], title:'이음 백업', text:'이음 데이터 백업 파일 — 새 기기에서 이음 열고 [복원]으로 가져오세요'})
+        .then(()=>{ backupDone(); toast('백업을 공유했어요 — 카톡 나에게/드라이브에 보관하세요'); })
+        .catch(()=>{ dlBlob(blob,name); backupDone(); });
+      return;
+    }
+    dlBlob(blob,name); backupDone(); toast('백업 파일을 저장했어요 — 안전한 곳에 보관하세요');
+  }catch(e){ toast('내보내기에 실패했어요'); }
+}
+function dlBlob(blob,name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },800); }
+function parseBackup(text){ // 신 포맷(payload) + 구 포맷(S 통짜) 모두 수용
+  const o=JSON.parse(text);
+  if(o && o.app==='ieum' && o.data) return { events:o.data.events||[], people:o.data.people||[], settings:o.data.settings||{}, theme:o.data.theme };
+  if(o && Array.isArray(o.events)) return { events:o.events, people:o.people||[], settings:o.settings||{}, theme:o.ui&&o.ui.theme };
+  return null;
+}
+function importData(){ const inp=document.createElement('input'); inp.type='file'; inp.accept='application/json,.json,text/plain';
   inp.onchange=e=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const r=new FileReader();
-    r.onload=()=>{ try{ const o=JSON.parse(r.result); if(o&&Array.isArray(o.events)&&o.ui){ S=o; if(!S.people)S.people=[]; if(!S.settings)S.settings={}; save(); render(); toast('복원했어요'); } else toast('올바른 백업 파일이 아니에요'); }catch(err){ toast('파일을 읽지 못했어요'); } };
+    r.onload=()=>{ try{ const p=parseBackup(r.result);
+        if(!p){ toast('올바른 이음 백업 파일이 아니에요'); return; }
+        S.ui.pendingRestore=p; S.ui.entered=true; S.ui.tab='guest'; S.ui.guestView='restore'; save(); render(); window.scrollTo(0,0);
+      }catch(err){ toast('파일을 읽지 못했어요'); } };
     r.readAsText(f); };
   inp.click(); }
+function evKey(e){ return [e.partyA,e.partyB,e.date,e.venue].join('|'); }
+function applyRestore(mode){ const p=S.ui.pendingRestore; if(!p)return;
+  if(mode==='replace'){ S.events=p.events; S.people=p.people; S.settings={...S.settings,...p.settings}; if(p.theme)S.ui.theme=p.theme; }
+  else { // merge: 같은 행사/사람은 유지, 새 것만 추가
+    const have=new Set(S.events.map(evKey));
+    p.events.forEach(e=>{ if(!have.has(evKey(e))) S.events.push(e); });
+    p.people.forEach(np=>{ const mine=S.people.find(x=>x.name===np.name);
+      if(!mine){ S.people.push(np); return; }
+      const ids=new Set((mine.items||[]).map(i=>i.id));
+      (np.items||[]).forEach(it=>{ if(!ids.has(it.id)) mine.items.push(it); }); });
+  }
+  S=migrate(S); S.ui.pendingRestore=null; S.ui.guestView='list';
+  if(S.meta){ S.meta.lastBackupAt=Date.now(); S.meta.dirty=0; }
+  save(); applyTheme(); render(); window.scrollTo(0,0);
+  toast(mode==='replace'?'백업으로 복원했어요':'백업을 병합했어요');
+}
+function cancelRestore(){ S.ui.pendingRestore=null; S.ui.guestView='list'; save(); render(); }
+function restoreView(){ const p=S.ui.pendingRestore; if(!p){ S.ui.guestView='list'; return guestList(); }
+  const mine=S.events.length+S.people.length;
+  return `<div class="listhead"><div class="t serif">백업 복원</div></div>
+  <div class="card">
+    <h3>백업 파일을 확인했어요</h3>
+    <div class="stats" style="margin-top:10px">
+      <div class="stat"><div class="v">${p.events.length}</div><div class="k">경조사</div></div>
+      <div class="stat"><div class="v">${p.people.length}</div><div class="k">주고받은 사람</div></div>
+      <div class="stat"><div class="v">${mine}</div><div class="k">현재 기기 데이터</div></div>
+    </div>
+    <div class="stack" style="margin-top:14px">
+      <button class="btn btn-primary" onclick="applyRestore('replace')">${mine?'전체 교체 — 백업 내용으로 덮어쓰기':'복원하기'}</button>
+      ${mine?`<button class="btn btn-sage" onclick="applyRestore('merge')">병합 — 기존 데이터에 새 항목만 추가</button>`:''}
+      <button class="btn btn-ghost btn-sm" onclick="cancelRestore()">취소</button>
+    </div>
+    ${mine?`<div class="note">💡 새 기기라면 <b>전체 교체</b>, 두 기기 데이터를 합치려면 <b>병합</b>을 선택하세요.</div>`:''}
+  </div>`;
+}
+/* ---- 백업 리마인더: 실데이터가 쌓였는데 백업이 오래됐으면 안내 ---- */
+function backupBanner(){ const m=S.meta||{}; const real=S.events.filter(e=>!e.demo).length+S.people.filter(p=>!p.demo).length;
+  if(!real) return '';
+  const stale = m.lastBackupAt ? (Date.now()-m.lastBackupAt>14*86400000 && (m.dirty||0)>0) : (m.dirty||0)>=12;
+  if(!stale) return '';
+  return `<div class="card" style="border-color:var(--warn);background:var(--tint2)">
+    <div class="rm-top" style="margin-bottom:6px"><span class="rm-h" style="color:var(--warn)">💾 백업할 때가 됐어요</span>
+      <button class="rm-noti" onclick="exportData()">지금 백업</button></div>
+    <p class="sub" style="margin:0">데이터는 이 기기에만 저장돼요. 파일로 백업해 두면 휴대폰을 바꿔도 그대로 복원됩니다.</p>
+  </div>`;
+}
 const DOCS={
   privacy:{ t:'개인정보 처리방침', b:`이음(마음을 잇다)은 별도의 서버 없이 이용자의 기기에서만 동작하는 앱입니다.
 
@@ -1502,9 +1678,12 @@ function budgetCard(ev){ const c=cfg(ev), pl=ev.plan||{}, {sent,rate,meal,gift}=
     history.replaceState(null,'',location.pathname); }
 }catch(e){} })();
 
+/* ======================= 부팅 ======================= */
+window.addEventListener('error', ()=>{ try{ toast('일시적인 문제가 발생했어요'); }catch(e){} });
 applyTheme();
 kakaoInit();
 render();
+try{ tryAutoRecover(); }catch(e){}
 try{ if(S.ui.noti) fireDueNotis(); }catch(e){}
 
 /* PWA: 서비스 워커 등록 */
