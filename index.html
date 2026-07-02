@@ -137,6 +137,19 @@
   .pbdg{position:absolute;top:-6px;right:-5px;background:var(--gold);color:#fff;font-size:9px;font-weight:800;
     padding:1.5px 5.5px;border-radius:999px;box-shadow:0 1px 3px rgba(0,0,0,.2)}
   .pchip{font-size:10px;font-weight:800;background:var(--dd-bg);color:#9a7d3e;padding:2px 8px;border-radius:999px;margin-left:4px}
+  /* 결제 바텀시트 */
+  .sheet-bg{position:fixed;inset:0;background:rgba(30,25,20,.45);z-index:90;display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:.2s}
+  .sheet-bg.show{opacity:1}
+  .sheet{width:100%;max-width:430px;background:var(--card);border-radius:20px 20px 0 0;
+    padding:20px 18px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.18);
+    transform:translateY(36px);transition:.22s}
+  .sheet-bg.show .sheet{transform:none}
+  .paygrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .payopt{border:1.5px solid var(--line);background:var(--field);border-radius:12px;padding:11px 12px;
+    text-align:left;cursor:pointer;font-family:inherit;color:var(--ink)}
+  .payopt b{display:block;font-size:13.5px}
+  .payopt small{display:block;color:var(--muted);font-size:10.5px;margin-top:2px}
+  .payopt.on{border-color:var(--primary);background:var(--tint2);box-shadow:0 0 0 1px var(--primary)}
   .card-thumb.on{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary)}
   .card-preview{border-radius:12px;overflow:hidden;border:1px solid var(--line);max-width:280px;margin:6px auto 0;box-shadow:var(--shadow)}
   .card-preview svg{display:block;width:100%;height:auto}
@@ -830,7 +843,7 @@ function hostView(){
     <div class="secthead"><div class="t">💳 호스트 패스</div><div class="c">${hasPass(ev)?'✓ 사용 중':'테스터 무료'}</div></div>
     ${hasPass(ev)
       ?`<div class="note" style="margin-top:4px">✓ 이 행사의 모든 부가 기능이 열려 있어요. 테스터 기간이라 <b>무료</b> — 나중에 소중한 피드백으로 갚아주세요 🙏</div>`
-      :`<p class="sub" style="margin-bottom:10px">정산 <b>엑셀 내보내기</b> · <b>감사카드 전체 디자인</b>을 행사당 한 번으로. 정식 출시 후 <b>${PASS_PRICE}</b>(축의금 한 번 값) — 지금은 무료로 열려요.</p>
+      :`<p class="sub" style="margin-bottom:10px">정산 <b>엑셀 내보내기</b> · <b>감사카드 전체 디자인</b>을 행사당 한 번으로. 정식 출시 후 <b>${PASS_PRICE}</b>(커피 한 잔 값) — 지금은 무료로 열려요.</p>
     <button class="btn btn-line" onclick="activatePass()">무료로 패스 열기 · 테스터 혜택</button>`}
   </div>
   <button class="backbtn" style="color:var(--danger);margin:0 4px 10px" onclick="delEvent('${ev.id}')">🗑️ 이 행사 삭제</button>`;
@@ -1317,16 +1330,48 @@ function docView(){ const d=DOCS[S.ui.docKey]||DOCS.privacy;
 /* ---- 호스트 패스 (훅 UI · 테스터 기간 무료) ----
    정식 출시 후 행사당 1회 ₩9,900 예정. 지금은 과금 없이 '패스'라는 개념만 심고,
    관심도(안내 노출/수락/거절)를 meta에 기록해 전환율을 가늠한다. */
-const PASS_PRICE='₩9,900';
+const PASS_PRICE='₩4,900'; // 심리적 저항 최소 가격 (커피 한 잔 값)
 const FREE_CARDS=3; // 감사카드 무료 디자인 수 (4번째부터 패스)
 function hasPass(ev){ return !!(ev&&ev.pass); }
-function passTrack(k){ if(!S.meta.passStats)S.meta.passStats={shown:0,accepted:0,declined:0,used:{}};
+function passTrack(k){ if(!S.meta.passStats)S.meta.passStats={shown:0,accepted:0,declined:0,used:{},method:{}};
   if(k==='shown'||k==='accepted'||k==='declined')S.meta.passStats[k]++;
   else S.meta.passStats.used[k]=(S.meta.passStats.used[k]||0)+1; }
-function passPrompt(cont){ const ev=hostEvent(); passTrack('shown');
-  const ok=confirm(`💳 호스트 패스 기능이에요.\n정식 출시 후 행사당 ${PASS_PRICE} — 축의금 한 번 값으로 정산 엑셀·감사카드 전체가 열려요.\n\n지금은 테스터 기간이라 무료! 패스를 열까요?`);
-  if(ok){ ev.pass=true; passTrack('accepted'); save(); toast('호스트 패스가 열렸어요 — 테스터 기간 무료 🎉'); render(); cont&&cont(); }
-  else { passTrack('declined'); save(); } }
+/* ---- 결제 시트: 정식 오픈 시 이 자리에 PG(토스페이먼츠 위젯 등)가 붙는다.
+        테스터 기간엔 무료 해제 + '선호 결제수단' 설문 계측. ---- */
+const PAY_METHODS=[['easy','⚡ 간편결제','토스페이 · 카카오페이 · 네이버페이'],
+                   ['card','💳 신용/체크카드','모든 카드사'],
+                   ['bank','🏦 계좌이체','실시간 이체'],
+                   ['phone','📱 휴대폰 결제','통신사 소액결제']];
+let _passCont=null, _payPick=null, _sheetHideT=null;
+function passPrompt(cont){ _passCont=cont||null; _payPick=null; passTrack('shown'); save();
+  clearTimeout(_sheetHideT); // 직전 닫기 타이머가 새 시트를 지우는 레이스 방지
+  let bg=document.getElementById('paysheet');
+  if(!bg){ bg=document.createElement('div'); bg.id='paysheet'; bg.className='sheet-bg'; document.body.appendChild(bg); }
+  bg.innerHTML=`<div class="sheet" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+      <div style="font-weight:800;font-size:16px">💳 호스트 패스</div>
+      <div style="font-size:14px"><s style="color:var(--muted)">${PASS_PRICE}</s> <b style="color:var(--ok)">테스터 무료</b></div>
+    </div>
+    <p class="sub" style="margin:6px 0 12px">행사당 딱 한 번 — <b>정산 엑셀</b>과 <b>감사카드 전체 디자인</b>이 열려요.</p>
+    <label style="margin:0 0 7px">결제 수단 <span style="font-weight:400;color:var(--muted)">— 정식 출시 후 모두 지원 · 지금은 선호 조사(선택)</span></label>
+    <div class="paygrid">
+      ${PAY_METHODS.map(([k,t,d])=>`<button class="payopt" onclick="pickPay('${k}',this)"><b>${t}</b><small>${d}</small></button>`).join('')}
+    </div>
+    <button class="btn btn-primary" style="margin-top:14px" onclick="acceptPass()">지금은 무료로 열기 🎉</button>
+    <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="declinePass()">다음에</button>
+  </div>`;
+  bg.onclick=declinePass;
+  setTimeout(()=>bg.classList.add('show'),10); // rAF는 백그라운드 탭에서 지연될 수 있음
+}
+function pickPay(k,el){ _payPick=k; document.querySelectorAll('.payopt').forEach(b=>b.classList.toggle('on',b===el)); }
+function hidePassSheet(){ const bg=document.getElementById('paysheet'); if(!bg)return;
+  bg.classList.remove('show'); _sheetHideT=setTimeout(()=>{ try{bg.remove();}catch(e){} },220); }
+function declinePass(){ hidePassSheet(); passTrack('declined'); save(); _passCont=null; _payPick=null; }
+function acceptPass(){ const ev=hostEvent(); ev.pass=true; passTrack('accepted');
+  if(_payPick){ if(!S.meta.passStats.method)S.meta.passStats.method={};
+    S.meta.passStats.method[_payPick]=(S.meta.passStats.method[_payPick]||0)+1; }
+  save(); const cont=_passCont; _passCont=null; _payPick=null; hidePassSheet();
+  toast('호스트 패스가 열렸어요 — 테스터 기간 무료 🎉'); render(); cont&&cont(); }
 function activatePass(){ passPrompt(); }
 function withPass(key,fn){ const ev=hostEvent(); passTrack(key);
   if(hasPass(ev)){ fn(); return; } passPrompt(fn); }
