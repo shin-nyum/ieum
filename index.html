@@ -131,9 +131,12 @@
   .pill-gold{background:var(--dd-bg);color:#9a7d3e}
   .pill-app{background:#e6eef6;color:#4a6f9a}
   .pill-cash{background:#f1ece1;color:#8a7a4e}
-  .card-thumbs{display:flex;gap:8px;overflow-x:auto;padding:3px 1px 5px}
+  .card-thumbs{display:flex;gap:8px;overflow-x:auto;padding:6px 1px 5px}
   .card-thumb{flex:none;width:50px;height:64px;border-radius:11px;border:2px solid transparent;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+    display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 1px 4px rgba(0,0,0,.08);position:relative}
+  .pbdg{position:absolute;top:-6px;right:-5px;background:var(--gold);color:#fff;font-size:9px;font-weight:800;
+    padding:1.5px 5.5px;border-radius:999px;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .pchip{font-size:10px;font-weight:800;background:var(--dd-bg);color:#9a7d3e;padding:2px 8px;border-radius:999px;margin-left:4px}
   .card-thumb.on{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary)}
   .card-preview{border-radius:12px;overflow:hidden;border:1px solid var(--line);max-width:280px;margin:6px auto 0;box-shadow:var(--shadow)}
   .card-preview svg{display:block;width:100%;height:auto}
@@ -817,10 +820,18 @@ function hostView(){
     <h3>부가 기능</h3>
     <p class="sub">정산이 끝나면 엑셀로 정리하고, 참석·축의한 분들께 감사 인사를 준비하세요.</p>
     <div class="stack">
-      <button class="btn btn-ghost" onclick="exportLedgerCSV()">📊 축의금 엑셀(CSV) 내보내기</button>
-      <button class="btn btn-ghost" onclick="openThanks()">✉️ 감사 인사 준비하기</button>
+      <button class="btn btn-ghost" onclick="withPass('csv',exportLedgerCSV)">📊 축의금 엑셀(CSV) 내보내기 ${passChip(ev)}</button>
+      <button class="btn btn-ghost" onclick="openThanks()">✉️ 감사 인사 준비하기 ${hasPass(ev)?'':'<span class="pchip">일부 PASS</span>'}</button>
       <button class="btn btn-disabled" onclick="soon('청첩모임 만들기')">🍽️ 청첩모임 만들기 <span class="lock">· 추후</span></button>
     </div>
+  </div>
+
+  <div class="card" style="border-color:var(--gold);background:var(--tint2)">
+    <div class="secthead"><div class="t">💳 호스트 패스</div><div class="c">${hasPass(ev)?'✓ 사용 중':'테스터 무료'}</div></div>
+    ${hasPass(ev)
+      ?`<div class="note" style="margin-top:4px">✓ 이 행사의 모든 부가 기능이 열려 있어요. 테스터 기간이라 <b>무료</b> — 나중에 소중한 피드백으로 갚아주세요 🙏</div>`
+      :`<p class="sub" style="margin-bottom:10px">정산 <b>엑셀 내보내기</b> · <b>감사카드 전체 디자인</b>을 행사당 한 번으로. 정식 출시 후 <b>${PASS_PRICE}</b>(축의금 한 번 값) — 지금은 무료로 열려요.</p>
+    <button class="btn btn-line" onclick="activatePass()">무료로 패스 열기 · 테스터 혜택</button>`}
   </div>
   <button class="backbtn" style="color:var(--danger);margin:0 4px 10px" onclick="delEvent('${ev.id}')">🗑️ 이 행사 삭제</button>`;
 }
@@ -1303,6 +1314,24 @@ function docView(){ const d=DOCS[S.ui.docKey]||DOCS.privacy;
 }
 
 /* ======================= 부가 실기능 (무료) ======================= */
+/* ---- 호스트 패스 (훅 UI · 테스터 기간 무료) ----
+   정식 출시 후 행사당 1회 ₩9,900 예정. 지금은 과금 없이 '패스'라는 개념만 심고,
+   관심도(안내 노출/수락/거절)를 meta에 기록해 전환율을 가늠한다. */
+const PASS_PRICE='₩9,900';
+const FREE_CARDS=3; // 감사카드 무료 디자인 수 (4번째부터 패스)
+function hasPass(ev){ return !!(ev&&ev.pass); }
+function passTrack(k){ if(!S.meta.passStats)S.meta.passStats={shown:0,accepted:0,declined:0,used:{}};
+  if(k==='shown'||k==='accepted'||k==='declined')S.meta.passStats[k]++;
+  else S.meta.passStats.used[k]=(S.meta.passStats.used[k]||0)+1; }
+function passPrompt(cont){ const ev=hostEvent(); passTrack('shown');
+  const ok=confirm(`💳 호스트 패스 기능이에요.\n정식 출시 후 행사당 ${PASS_PRICE} — 축의금 한 번 값으로 정산 엑셀·감사카드 전체가 열려요.\n\n지금은 테스터 기간이라 무료! 패스를 열까요?`);
+  if(ok){ ev.pass=true; passTrack('accepted'); save(); toast('호스트 패스가 열렸어요 — 테스터 기간 무료 🎉'); render(); cont&&cont(); }
+  else { passTrack('declined'); save(); } }
+function activatePass(){ passPrompt(); }
+function withPass(key,fn){ const ev=hostEvent(); passTrack(key);
+  if(hasPass(ev)){ fn(); return; } passPrompt(fn); }
+function passChip(ev){ return hasPass(ev)?'':`<span class="pchip">PASS</span>`; }
+
 function exportLedgerCSV(){ const ev=hostEvent(); const c=cfg(ev);
   const rows=[['이름','관계','측','응답','인원','금액','출처']];
   ev.guests.forEach(g=>{ const p=g.pay||{}; rows.push([ g.name, g.relation, (ev.accounts[g.side]||{}).label||'',
@@ -1354,7 +1383,9 @@ function thankSamples(ev){ return cfg(ev).label==='부고'
 function cardState(ev){ if(!ev.thankCard)ev.thankCard={design:0,msg:''}; return ev.thankCard; }
 function hostSig(ev){ return ev.partyB?`${ev.partyA}·${ev.partyB}`:ev.partyA; }
 function personGreeting(ev,name){ const c=cardState(ev); const m=(c.msg&&c.msg.trim())?c.msg:thankSamples(ev)[0]; return m.replace(/\{이름\}/g, name||'○○'); }
-function setCardDesign(i){ cardState(hostEvent()).design=i; save(); render(); }
+function setCardDesign(i){ const ev=hostEvent();
+  if(i>=FREE_CARDS && !hasPass(ev)){ passTrack('cardDesign'); passPrompt(()=>{ cardState(ev).design=i; save(); render(); }); return; }
+  cardState(ev).design=i; save(); render(); }
 function setCardMsg(v){ cardState(hostEvent()).msg=v; renderCardPreview(); }
 function useSample(i){ const ev=hostEvent(); cardState(ev).msg=thankSamples(ev)[i]; save(); render(); }
 function setCardPhoto(){ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
@@ -1373,7 +1404,8 @@ function thanksView(){ const ev=hostEvent(); const c=cardState(ev); const sample
   <p class="sub" style="margin:0 2px 12px">파스텔 카드에 사진·메시지를 담아 예쁜 감사 인사를 보내세요. <b>내 문자·카톡</b>으로 직접 전송해요.</p>
   <div class="card">
     <label>카드 디자인</label>
-    <div class="card-thumbs">${CARDS.map((cc,i)=>`<button class="card-thumb ${c.design===i?'on':''}" onclick="setCardDesign(${i})" style="background:linear-gradient(135deg,${cc.bg[0]},${cc.bg[cc.bg.length-1]})"><span style="color:${cc.accent}">♥</span></button>`).join('')}</div>
+    <div class="card-thumbs">${CARDS.map((cc,i)=>`<button class="card-thumb ${c.design===i?'on':''}" onclick="setCardDesign(${i})" style="background:linear-gradient(135deg,${cc.bg[0]},${cc.bg[cc.bg.length-1]})"><span style="color:${cc.accent}">♥</span>${i>=FREE_CARDS&&!hasPass(ev)?'<span class="pbdg">P</span>':''}</button>`).join('')}</div>
+    ${!hasPass(ev)?`<p class="lblnote">‘P’ 디자인은 <b>호스트 패스</b>(정식 출시 후 ${PASS_PRICE} · 지금은 무료)로 열 수 있어요.</p>`:''}
     <label style="margin-top:13px">메시지 <span style="font-weight:600;color:var(--muted);font-size:11px">· {이름}은 하객 이름으로 바뀜</span></label>
     <div class="chips" style="margin-bottom:8px">${samples.map((s,i)=>`<button class="chip" onclick="useSample(${i})">샘플 ${i+1}</button>`).join('')}</div>
     <textarea rows="3" oninput="setCardMsg(this.value)" placeholder="직접 입력하거나 위 샘플을 골라보세요">${esc(c.msg)}</textarea>
