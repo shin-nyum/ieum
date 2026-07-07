@@ -1410,6 +1410,40 @@ function docView(){ const d=DOCS[S.ui.docKey]||DOCS.privacy;
    정식 출시 후 행사당 1회 ₩9,900 예정. 지금은 과금 없이 '패스'라는 개념만 심고,
    관심도(안내 노출/수락/거절)를 meta에 기록해 전환율을 가늠한다. */
 const PASS_PRICE='₩4,900'; // 심리적 저항 최소 가격 (커피 한 잔 값)
+const PASS_AMOUNT=4900;
+/* ---- 결제 설정 ----
+   mode 'free' = 테스터 무료(현재 기본) · 'test' = 토스 테스트 결제창(실청구 없음) · 'live' = 실결제
+   라이브 전환 절차(사업자등록+토스페이먼츠 심사 후): clientKey를 live_ck_로 교체,
+   payments-worker/ 배포 후 confirmUrl 입력, mode='live'. 자세히: play-store/PAYMENTS.md */
+const PAY={
+  mode:'free',
+  clientKey:'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq', // 토스 공개 테스트 키(실청구 불가)
+  confirmUrl:'' // 예: https://ieum-pay.<계정>.workers.dev/confirm
+};
+try{ const q=new URLSearchParams(location.search).get('pay'); if(q==='test') PAY.mode='test'; }catch(e){} // 소유자 확인용 ?pay=test
+function loadToss(cb){ if(window.TossPayments){ cb(); return; }
+  const s=document.createElement('script'); s.src='https://js.tosspayments.com/v1/payment';
+  s.onload=cb; s.onerror=()=>toast('결제 모듈을 불러오지 못했어요 — 네트워크 확인');
+  document.head.appendChild(s); }
+const PAY_METHOD_MAP={easy:'토스페이', card:'카드', bank:'계좌이체', phone:'휴대폰'};
+function startPassPayment(method){
+  const ev=hostEvent(); if(!ev){ toast('행사를 먼저 선택해 주세요'); return; }
+  if(PAY.mode==='live' && !PAY.confirmUrl){ toast('결제 설정 오류(승인 서버 미설정) — 관리자에게 문의'); return; }
+  const orderId='ieum-'+ev.id+'-'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  try{ localStorage.setItem('ieum_pay_pending', JSON.stringify({orderId, eventId:ev.id, amount:PASS_AMOUNT, mode:PAY.mode, at:Date.now()})); }catch(e){}
+  const base=location.origin+location.pathname;
+  loadToss(()=>{ try{
+    const toss=TossPayments(PAY.clientKey);
+    const m=PAY_METHOD_MAP[method]||'카드';
+    const req=(mm)=>toss.requestPayment(mm,{ amount:PASS_AMOUNT, orderId, orderName:'이음 호스트 패스',
+      successUrl:base+'?pay_result=ok', failUrl:base+'?pay_result=fail' });
+    req(m).catch(err=>{
+      if(err&&err.code==='USER_CANCEL'){ return; }
+      if(m!=='카드'){ req('카드').catch(e2=>{ if(!(e2&&e2.code==='USER_CANCEL')) toast('결제창 오류: '+((e2&&e2.message)||'')); }); return; }
+      toast('결제창 오류: '+((err&&err.message)||''));
+    });
+  }catch(e){ toast('결제 초기화 실패'); } });
+}
 const FREE_CARDS=3; // 감사카드 무료 디자인 수 (4번째부터 패스)
 function hasPass(ev){ return !!(ev&&ev.pass); }
 function passTrack(k){ if(!S.meta.passStats)S.meta.passStats={shown:0,accepted:0,declined:0,used:{},method:{}};
@@ -1429,14 +1463,17 @@ function passPrompt(cont){ _passCont=cont||null; _payPick=null; passTrack('shown
   bg.innerHTML=`<div class="sheet" onclick="event.stopPropagation()">
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
       <div style="font-weight:800;font-size:16px">💳 호스트 패스</div>
-      <div style="font-size:14px"><s style="color:var(--muted)">${PASS_PRICE}</s> <b style="color:var(--ok)">테스터 무료</b></div>
+      <div style="font-size:14px">${PAY.mode==='free'?`<s style="color:var(--muted)">${PASS_PRICE}</s> <b style="color:var(--ok)">테스터 무료</b>`:`<b>${PASS_PRICE}</b> <span style="color:var(--muted);font-size:12px">· 행사당 1회</span>`}</div>
     </div>
     <p class="sub" style="margin:6px 0 12px">행사당 딱 한 번 — <b>정산 엑셀</b>과 <b>감사카드 전체 디자인</b>이 열려요.</p>
     <label style="margin:0 0 7px">결제 수단 <span style="font-weight:400;color:var(--muted)">— 정식 출시 후 모두 지원 · 지금은 선호 조사(선택)</span></label>
     <div class="paygrid">
-      ${PAY_METHODS.map(([k,t,d])=>`<button class="payopt" onclick="pickPay('${k}',this)"><b>${t}</b><small>${d}</small></button>`).join('')}
+      ${PAY_METHODS.map(([k,t,d])=>`<button class="payopt${PAY.mode!=='free'&&k==='card'?' on':''}" onclick="pickPay('${k}',this)"><b>${t}</b><small>${d}</small></button>`).join('')}
     </div>
-    <button class="btn btn-primary" style="margin-top:14px" onclick="acceptPass()">지금은 무료로 열기 🎉</button>
+    ${PAY.mode==='free'
+      ?`<button class="btn btn-primary" style="margin-top:14px" onclick="acceptPass()">지금은 무료로 열기 🎉</button>`
+      :`<button class="btn btn-primary" style="margin-top:14px" onclick="acceptPass()">${PASS_PRICE} 결제하기</button>
+       <p class="lblnote" style="text-align:center;margin-top:8px">토스페이먼츠 안전 결제창으로 이동합니다${PAY.mode==='test'?' · <b style="color:var(--warn)">테스트 모드(실제 청구 없음)</b>':''}</p>`}
     <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="declinePass()">다음에</button>
   </div>`;
   bg.onclick=declinePass;
@@ -1446,9 +1483,14 @@ function pickPay(k,el){ _payPick=k; document.querySelectorAll('.payopt').forEach
 function hidePassSheet(){ const bg=document.getElementById('paysheet'); if(!bg)return;
   bg.classList.remove('show'); _sheetHideT=setTimeout(()=>{ try{bg.remove();}catch(e){} },220); }
 function declinePass(){ hidePassSheet(); passTrack('declined'); save(); _passCont=null; _payPick=null; }
-function acceptPass(){ const ev=hostEvent(); ev.pass=true; passTrack('accepted');
-  if(_payPick){ if(!S.meta.passStats.method)S.meta.passStats.method={};
+function acceptPass(){
+  if(_payPick){ if(!S.meta.passStats)S.meta.passStats={shown:0,accepted:0,declined:0,used:{},method:{}};
+    if(!S.meta.passStats.method)S.meta.passStats.method={};
     S.meta.passStats.method[_payPick]=(S.meta.passStats.method[_payPick]||0)+1; }
+  if(PAY.mode!=='free'){ // 실결제/테스트: 토스 결제창으로 (성공 복귀 시 boot 핸들러가 패스 개방)
+    const m=_payPick||'card'; save(); _passCont=null; _payPick=null; hidePassSheet();
+    startPassPayment(m); return; }
+  const ev=hostEvent(); ev.pass=true; passTrack('accepted');
   save(); const cont=_passCont; _passCont=null; _payPick=null; hidePassSheet();
   toast('호스트 패스가 열렸어요 — 테스터 기간 무료 🎉'); render(); cont&&cont(); }
 function activatePass(){ passPrompt(); }
@@ -2057,6 +2099,36 @@ function budgetCard(ev){ const c=cfg(ev), pl=ev.plan||{}, {sent,rate,meal,gift}=
     <div class="note">현재 실제 ${c.counts?'참석':'조문'} 응답 <b>${led.attend}명</b> · 실수령 <b>${won(led.total)}</b> — 응답이 쌓일수록 예측이 정확해집니다.</div>
   </div>`;
 }
+
+/* ======================= 결제 복귀 처리 (토스 successUrl/failUrl) ======================= */
+(function(){ try{
+  const q=new URLSearchParams(location.search); const r=q.get('pay_result'); if(!r) return;
+  let pend=null; try{ pend=JSON.parse(localStorage.getItem('ieum_pay_pending')||'null'); }catch(e){}
+  history.replaceState(null,'',location.pathname);
+  const clear=()=>{ try{ localStorage.removeItem('ieum_pay_pending'); }catch(e){} };
+  if(r!=='ok'){ clear(); const msg=q.get('message'); setTimeout(()=>toast(msg?('결제 실패: '+msg):'결제를 취소했어요'),400); return; }
+  const paymentKey=q.get('paymentKey'), orderId=q.get('orderId'), amount=Number(q.get('amount'));
+  // 위변조 방어: 내가 만든 주문인지 + 금액이 정확한지 대조
+  if(!pend || !paymentKey || pend.orderId!==orderId || amount!==PASS_AMOUNT || pend.amount!==PASS_AMOUNT){
+    clear(); setTimeout(()=>toast('결제 검증 실패(주문 정보 불일치) — 승인되지 않았어요'),400); return; }
+  const ev=S.events.find(e=>e.id===pend.eventId);
+  const finish=(receipt)=>{ clear();
+    if(ev){ if(ev.demo)delete ev.demo; if(ev.tut)delete ev.tut; if(ev.draft)delete ev.draft;
+      ev.pass=true; ev.passPaid={orderId, paymentKey, amount:PASS_AMOUNT, at:Date.now(), mode:pend.mode, receipt:receipt||null}; }
+    passTrack('accepted');
+    S.ui.entered=true; S.ui.tab='host'; if(ev) S.ui.hostEventId=ev.id; S.ui.hostSub=null;
+    save();
+    setTimeout(()=>toast(pend.mode==='test'?'테스트 결제 완료 — 패스가 열렸어요 (실제 청구 없음)':'결제 완료 — 호스트 패스가 열렸어요 🎉'),400); };
+  if(pend.mode==='live'){
+    if(!PAY.confirmUrl){ clear(); setTimeout(()=>toast('결제 승인 서버 미설정 — 청구되지 않았어요. 관리자에게 문의해 주세요'),400); return; }
+    fetch(PAY.confirmUrl,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({paymentKey,orderId,amount:PASS_AMOUNT})})
+      .then(res=>res.json().then(j=>({ok:res.ok,j})))
+      .then(({ok,j})=>{ if(ok&&j&&j.ok){ finish(j.receiptUrl); render(); }
+        else { clear(); toast('결제 승인 실패: '+((j&&j.message)||'다시 시도해 주세요')); render(); } })
+      .catch(()=>{ clear(); toast('승인 서버 연결 실패 — 결제는 자동 취소됩니다(미승인 시 청구 없음)'); render(); });
+  } else { finish(null); } // test: 실청구 없음 — 클라 확인으로 개방
+}catch(e){} })();
 
 /* ======================= 받은 청첩장 링크(#e=) 감지 → 각자 접속 (사용자 분리) ======================= */
 (function(){ try{ const m=(location.hash||'').match(/[#&]e=([^&]+)/);

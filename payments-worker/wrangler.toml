@@ -1,0 +1,6 @@
+name = "ieum-pay"
+main = "worker.js"
+compatibility_date = "2026-06-01"
+
+# 시크릿(코드에 넣지 말 것):
+#   npx wrangler secret put TOSS_SECRET_KEY
