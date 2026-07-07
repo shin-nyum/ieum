@@ -989,11 +989,10 @@ function guestList(){
   ${iosInstallBanner()}
   ${up.length?homeHero(up[0]):''}
   <button class="badge-add" style="margin-bottom:13px" onclick="openImport()">＋ 청첩장 추가 <span style="font-weight:400;font-size:12px">· 카톡 링크 붙여넣으면 자동 인식</span></button>
+  ${calendarHTML()}
   ${rest.length?`<div class="secthead" style="margin:2px 2px 8px"><div class="t">다음 일정</div><div class="c">${rest.length}건</div></div>${rest.map(evcardHTML).join('')}`:''}
   ${past.length?`<details class="fold" ${S.ui.pastOpen?'open':''} ontoggle="S.ui.pastOpen=this.open">
-    <summary>🕰️ 지난 경조사 ${past.length}건</summary><div class="fold-body">${past.map(evcardHTML).join('')}</div></details>`:''}
-  <details class="fold" ${S.ui.calOpen?'open':''} ontoggle="S.ui.calOpen=this.open">
-    <summary>📅 이음 달력</summary><div class="fold-body">${calendarHTML()}</div></details>`;
+    <summary>🕰️ 지난 경조사 ${past.length}건</summary><div class="fold-body">${past.map(evcardHTML).join('')}</div></details>`:''}`;
 }
 
 /* ---------- 이음 달력 ---------- */
@@ -2084,8 +2083,8 @@ const TUT={on:false,i:0,last:-1};
 const TUT_STEPS=[
  {at:'list', v:()=>{S.ui.tab='guest';S.ui.guestView='list';}, sel:'.homehero',
   t:'다음 경조사가 맨 위에', x:'가장 가까운 일정이 크게 떠요. 카드를 누르면 상세로, 아래엔 나머지 일정이 모여요. (지금 보이는 건 연습용 데모 — 끝나면 지워져요)'},
- {at:'list', v:()=>{S.ui.tab='guest';S.ui.guestView='list';S.ui.calOpen=true;}, sel:'.calgrid',
-  t:'이음 달력', x:'경조사가 있는 날엔 점이 콕 찍혀요. 평소엔 접혀 있고, 필요할 때 펼쳐 보세요.'},
+ {at:'list', v:()=>{S.ui.tab='guest';S.ui.guestView='list';}, sel:'.calgrid',
+  t:'이음 달력', x:'경조사가 있는 날엔 점이 콕 찍혀요. 한 달 일정이 한눈에 — 날짜를 누르면 그날 일정으로 바로 가요.'},
  {at:'detail', ev:'e2', v:()=>{S.ui.tab='guest';S.ui.guestView='detail';S.ui.currentEventId='e2';}, sel:'.hero',
   t:'청첩장 상세', x:'날짜·장소 확인부터 내 캘린더 저장(.ics·구글)까지 여기서 한 번에 끝나요.'},
  {at:'detail', ev:'e2', v:()=>{S.ui.tab='guest';S.ui.guestView='detail';S.ui.currentEventId='e2';}, sel:'.btn-toss',
