@@ -912,6 +912,7 @@ function hostView(){
     ${hasPass(ev)
       ?`<div class="note" style="margin-top:4px">✓ 이 행사의 모든 부가 기능이 열려 있어요. 테스터 기간이라 <b>무료</b> — 나중에 소중한 피드백으로 갚아주세요 🙏</div>`
       :`<p class="sub" style="margin-bottom:10px">정산 <b>엑셀 내보내기</b> · <b>감사카드 전체 디자인</b>을 행사당 한 번으로. 정식 출시 후 <b>${PASS_PRICE}</b>(커피 한 잔 값) — 지금은 무료로 열려요.</p>
+    ${S.meta&&S.meta.passCredits>0?`<button class="btn btn-primary" style="margin-bottom:8px" onclick="useCreditPass()">보유 패스 크레딧 사용 (${S.meta.passCredits}개)</button>`:''}
     <button class="btn btn-line" onclick="activatePass()">무료로 패스 열기 · 테스터 혜택</button>`}
   </div>
   <button class="backbtn" style="color:var(--danger);margin:0 4px 10px" onclick="delEvent('${ev.id}')">🗑️ 이 행사 삭제</button>`;
@@ -1420,7 +1421,54 @@ const PAY={
   clientKey:'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq', // 토스 공개 테스트 키(실청구 불가)
   confirmUrl:'' // 예: https://ieum-pay.<계정>.workers.dev/confirm
 };
-try{ const q=new URLSearchParams(location.search).get('pay'); if(q==='test') PAY.mode='test'; }catch(e){} // 소유자 확인용 ?pay=test
+// 소유자 확인용 ?pay=test — free 배포에서만 유효(라이브 전환 후엔 무시: 무과금 개방 우회 차단)
+try{ const q=new URLSearchParams(location.search).get('pay'); if(q==='test' && PAY.mode==='free') PAY.mode='test'; }catch(e){}
+function payPendingGet(){ try{ return JSON.parse(localStorage.getItem('ieum_pay_pending')||'null'); }catch(e){ return null; } }
+function payPendingSet(p){ try{ localStorage.setItem('ieum_pay_pending', JSON.stringify(p)); }catch(e){} }
+function payPendingClear(){ try{ localStorage.removeItem('ieum_pay_pending'); }catch(e){} }
+function payFinish(pend, receipt){ // 승인 확정 → 패스 개방. 이벤트는 '지금' 재조회(부팅정리·멀티탭 경합 방지)
+  payPendingClear();
+  const ev=S.events.find(e=>e.id===pend.eventId);
+  if(ev){ if(ev.demo)delete ev.demo; if(ev.tut)delete ev.tut; if(ev.draft)delete ev.draft;
+    ev.pass=true; ev.passPaid={orderId:pend.orderId, paymentKey:pend.paymentKey||null, amount:PASS_AMOUNT, at:Date.now(), mode:pend.mode, receipt:receipt||null};
+    S.ui.entered=true; S.ui.tab='host'; S.ui.hostEventId=ev.id; S.ui.hostSub=null; }
+  else if(S.meta){ S.meta.passCredits=(S.meta.passCredits||0)+1; } // 행사가 사라졌어도 결제분은 크레딧으로 보존
+  passTrack('accepted'); save(); try{ render(); }catch(e){}
+  setTimeout(()=>toast(pend.mode==='test'
+    ? '테스트 결제 완료 — 패스가 열렸어요 (실제 청구 없음)'
+    : (ev ? '결제 완료 — 호스트 패스가 열렸어요 🎉 이용하려던 기능을 다시 눌러주세요'
+          : '결제 완료 — 행사가 없어 패스 크레딧으로 보관했어요 (호스트 화면에서 사용)')),400);
+}
+function payConfirm(pend){ // 승인 요청 — 일시 실패는 pending 유지 → 재실행 시 자동 복구 (중복청구 없음: 토스 confirm 멱등)
+  fetch(PAY.confirmUrl,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({paymentKey:pend.paymentKey, orderId:pend.orderId})})
+    .then(res=>res.json().then(j=>({status:res.status,j})).catch(()=>({status:res.status,j:null})))
+    .then(({status,j})=>{
+      if(j && j.ok && j.paid!==false){ payFinish(pend, j.receiptUrl||null); return; }
+      if(status===402 || (j&&j.final)){ payPendingClear();
+        toast('결제가 승인되지 않았어요: '+((j&&j.message)||'거절됨')+' — 청구되지 않습니다'); try{render();}catch(e){} return; }
+      toast('승인 확인이 지연되고 있어요 — 앱을 다시 열면 자동으로 이어져요 (중복 청구 없음)'); try{render();}catch(e){}
+    })
+    .catch(()=>{ toast('승인 서버 연결 실패 — 네트워크 연결 후 앱을 다시 열면 자동으로 이어져요 (중복 청구 없음)'); try{render();}catch(e){} });
+}
+function payRecoverBoot(){ // 부팅 복구: 승인 응답 유실·iOS 설치앱 파티션 복귀 — 서버 /recover로 상태조회→필요시 승인
+  const pend=payPendingGet(); if(!pend) return;
+  const age=Date.now()-(pend.at||0);
+  if(pend.mode!=='live'){ if(age>10*60*1000) payPendingClear(); return; } // 테스트 잔여는 조용히 정리
+  if(age>24*60*60*1000){ payPendingClear(); return; }
+  if(!PAY.confirmUrl) return;
+  const recoverUrl=PAY.confirmUrl.replace(/\/confirm\/?$/,'/recover');
+  fetch(recoverUrl+'?orderId='+encodeURIComponent(pend.orderId))
+    .then(res=>res.json().then(j=>({j})).catch(()=>({j:null})))
+    .then(({j})=>{
+      if(j && j.ok && j.paid){ payFinish(pend, j.receiptUrl||null); return; }
+      if(j && j.ok && j.paid===false && j.final){ payPendingClear(); toast('이전 결제는 승인되지 않아 청구가 없어요'); return; }
+      /* 일시 오류면 pending 유지 — 다음 실행에서 재시도 */
+    }).catch(()=>{});
+}
+function useCreditPass(){ const ev=hostEvent(); if(!ev||!S.meta||!(S.meta.passCredits>0))return;
+  S.meta.passCredits--; own(ev); ev.pass=true; ev.passPaid={credit:true, amount:PASS_AMOUNT, at:Date.now()};
+  save(); render(); toast('보유 크레딧으로 패스를 열었어요'); }
 function loadToss(cb){ if(window.TossPayments){ cb(); return; }
   const s=document.createElement('script'); s.src='https://js.tosspayments.com/v1/payment';
   s.onload=cb; s.onerror=()=>toast('결제 모듈을 불러오지 못했어요 — 네트워크 확인');
@@ -1430,7 +1478,7 @@ function startPassPayment(method){
   const ev=hostEvent(); if(!ev){ toast('행사를 먼저 선택해 주세요'); return; }
   if(PAY.mode==='live' && !PAY.confirmUrl){ toast('결제 설정 오류(승인 서버 미설정) — 관리자에게 문의'); return; }
   const orderId='ieum-'+ev.id+'-'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-  try{ localStorage.setItem('ieum_pay_pending', JSON.stringify({orderId, eventId:ev.id, amount:PASS_AMOUNT, mode:PAY.mode, at:Date.now()})); }catch(e){}
+  payPendingSet({orderId, eventId:ev.id, amount:PASS_AMOUNT, mode:PAY.mode, phase:'redirect', at:Date.now()});
   const base=location.origin+location.pathname;
   loadToss(()=>{ try{
     const toss=TossPayments(PAY.clientKey);
@@ -2103,31 +2151,22 @@ function budgetCard(ev){ const c=cfg(ev), pl=ev.plan||{}, {sent,rate,meal,gift}=
 /* ======================= 결제 복귀 처리 (토스 successUrl/failUrl) ======================= */
 (function(){ try{
   const q=new URLSearchParams(location.search); const r=q.get('pay_result'); if(!r) return;
-  let pend=null; try{ pend=JSON.parse(localStorage.getItem('ieum_pay_pending')||'null'); }catch(e){}
+  const pend=payPendingGet();
   history.replaceState(null,'',location.pathname);
-  const clear=()=>{ try{ localStorage.removeItem('ieum_pay_pending'); }catch(e){} };
-  if(r!=='ok'){ clear(); const msg=q.get('message'); setTimeout(()=>toast(msg?('결제 실패: '+msg):'결제를 취소했어요'),400); return; }
+  if(r!=='ok'){ payPendingClear(); const msg=q.get('message'); setTimeout(()=>toast(msg?('결제 실패: '+msg):'결제를 취소했어요'),400); return; }
   const paymentKey=q.get('paymentKey'), orderId=q.get('orderId'), amount=Number(q.get('amount'));
-  // 위변조 방어: 내가 만든 주문인지 + 금액이 정확한지 대조
-  if(!pend || !paymentKey || pend.orderId!==orderId || amount!==PASS_AMOUNT || pend.amount!==PASS_AMOUNT){
-    clear(); setTimeout(()=>toast('결제 검증 실패(주문 정보 불일치) — 승인되지 않았어요'),400); return; }
-  const ev=S.events.find(e=>e.id===pend.eventId);
-  const finish=(receipt)=>{ clear();
-    if(ev){ if(ev.demo)delete ev.demo; if(ev.tut)delete ev.tut; if(ev.draft)delete ev.draft;
-      ev.pass=true; ev.passPaid={orderId, paymentKey, amount:PASS_AMOUNT, at:Date.now(), mode:pend.mode, receipt:receipt||null}; }
-    passTrack('accepted');
-    S.ui.entered=true; S.ui.tab='host'; if(ev) S.ui.hostEventId=ev.id; S.ui.hostSub=null;
-    save();
-    setTimeout(()=>toast(pend.mode==='test'?'테스트 결제 완료 — 패스가 열렸어요 (실제 청구 없음)':'결제 완료 — 호스트 패스가 열렸어요 🎉'),400); };
+  if(!pend){ // iOS 설치앱 등에서 복귀가 다른 브라우저 컨텍스트로 열린 경우 — 여기선 개방하지 않음(원래 앱이 부팅 복구)
+    setTimeout(()=>toast('결제 확인 중 — 결제를 시작한 이음 앱을 열면 자동으로 적용돼요'),400); return; }
+  // 위변조 방어: 내가 만든 주문인지 + 금액 정확 대조 + 모드 강등 차단
+  if(!paymentKey || pend.orderId!==orderId || amount!==PASS_AMOUNT || pend.amount!==PASS_AMOUNT){
+    payPendingClear(); setTimeout(()=>toast('결제 검증 실패(주문 정보 불일치) — 승인되지 않았어요'),400); return; }
+  if(PAY.mode==='live' && pend.mode!=='live'){
+    payPendingClear(); setTimeout(()=>toast('결제 모드 불일치 — 승인되지 않았어요'),400); return; }
   if(pend.mode==='live'){
-    if(!PAY.confirmUrl){ clear(); setTimeout(()=>toast('결제 승인 서버 미설정 — 청구되지 않았어요. 관리자에게 문의해 주세요'),400); return; }
-    fetch(PAY.confirmUrl,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({paymentKey,orderId,amount:PASS_AMOUNT})})
-      .then(res=>res.json().then(j=>({ok:res.ok,j})))
-      .then(({ok,j})=>{ if(ok&&j&&j.ok){ finish(j.receiptUrl); render(); }
-        else { clear(); toast('결제 승인 실패: '+((j&&j.message)||'다시 시도해 주세요')); render(); } })
-      .catch(()=>{ clear(); toast('승인 서버 연결 실패 — 결제는 자동 취소됩니다(미승인 시 청구 없음)'); render(); });
-  } else { finish(null); } // test: 실청구 없음 — 클라 확인으로 개방
+    if(!PAY.confirmUrl){ payPendingClear(); setTimeout(()=>toast('결제 승인 서버 미설정 — 청구되지 않았어요. 관리자에게 문의해 주세요'),400); return; }
+    pend.paymentKey=paymentKey; pend.phase='confirming'; payPendingSet(pend); // 응답 유실 대비: 재시도 핸들 보존
+    payConfirm(pend);
+  } else { payFinish(pend, null); } // test: 실청구 없음
 }catch(e){} })();
 
 /* ======================= 받은 청첩장 링크(#e=) 감지 → 각자 접속 (사용자 분리) ======================= */
@@ -2244,6 +2283,7 @@ kakaoInit();
 try{ if(!TUT.on && cleanupDemo()) {} }catch(e){}  // 튜토리얼 중 앱이 꺼져 남은 데모 자동 정리
 render();
 try{ tryAutoRecover(); }catch(e){}
+try{ payRecoverBoot(); }catch(e){}  // 미완 결제 자동 복구(승인 유실·설치앱 파티션)
 try{ if(S.ui.noti) fireDueNotis(); }catch(e){}
 
 /* PWA: 서비스 워커 등록 */
