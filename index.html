@@ -164,6 +164,32 @@
   .tutdots i.on{background:var(--gold);width:16px;border-radius:4px}
   .tutbtns{display:flex;gap:8px;margin-top:11px}
   .ftlink{border:0;background:none;color:#a59b8c;font-size:10.5px;text-decoration:underline;cursor:pointer;padding:2px 4px;font-family:inherit;opacity:.85}
+  /* Quick&Easy 메인: 다음 경조사 히어로 */
+  .homehero{position:relative;background:radial-gradient(120% 100% at 50% 0%,#fff 0%,#f7f1e8 70%,#f1e8da 100%);
+    border:1.5px solid var(--gold);border-radius:18px;box-shadow:var(--shadow);
+    padding:16px 16px 15px;margin-bottom:13px;cursor:pointer;text-align:center}
+  .hh-top{display:flex;justify-content:space-between;align-items:center}
+  .hh-dd{background:var(--ink);color:#fff;font-size:12px;font-weight:800;padding:5px 12px;border-radius:999px;letter-spacing:.05em}
+  .hh-ic{font-size:32px;margin-top:2px}
+  .hh-nm{font-size:21px;margin-top:5px;color:#463f36}
+  .hh-nm .typ{font-size:11px;color:var(--sage-d);font-weight:700}
+  .hh-dt{font-size:12.5px;color:var(--muted);margin-top:7px;line-height:1.7}
+  .hh-btns{margin-top:12px}
+  .homehero.mem{background:linear-gradient(180deg,#3a352f,#2c2823);border-color:#575047}
+  .homehero.mem .hh-nm{color:#e8e0d2}.homehero.mem .hh-dt{color:#a99e8e}
+  .homehero.mem .hh-dd{background:#d8cdbb;color:#26221d}
+  html[data-theme="dark"] .homehero{background:linear-gradient(180deg,#332e28,#2a2621)}
+  html[data-theme="dark"] .hh-nm{color:#ece5da}
+  /* 접이식 섹션 */
+  details.fold{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);margin-bottom:14px}
+  details.fold>summary{padding:14px 16px;font-weight:700;font-size:14px;cursor:pointer;list-style:none;color:var(--ink)}
+  details.fold>summary::-webkit-details-marker{display:none}
+  details.fold>summary::after{content:'▾';float:right;color:var(--muted);font-size:12px}
+  details.fold[open]>summary::after{content:'▴'}
+  details.fold>.fold-body{padding:0 16px 16px}
+  details.fold>.fold-body .card{border:0;box-shadow:none;padding:0;margin-bottom:0}
+  .mi-sec{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.06em;padding:12px 14px 4px}
   .card-thumb.on{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary)}
   .card-preview{border-radius:12px;overflow:hidden;border:1px solid var(--line);max-width:280px;margin:6px auto 0;box-shadow:var(--shadow)}
   .card-preview svg{display:block;width:100%;height:auto}
@@ -790,13 +816,33 @@ function goLanding(){ try{ abortTutorial(); }catch(e){} try{ pruneDraft(); }catc
   S.ui.entered=false; save(); render(); window.scrollTo(0,0); }
 
 /* ---------- 호스트 ---------- */
+function hostFoldSet(k,v){ if(!S.ui.hostFold)S.ui.hostFold={}; S.ui.hostFold[k]=v; }
 function hostView(){
   const ev=hostEvent(); const c=cfg(ev); const led=ledgerStats(ev);
+  const hf=S.ui.hostFold||{};
+  const infoDone=!!(ev.partyA&&ev.date);
+  const acctDone=!!(ev.accounts[0]&&ev.accounts[0].number);
+  const infoOpen = hf.info!==undefined? hf.info : !infoDone;
+  const acctOpen = hf.acct!==undefined? hf.acct : (infoDone&&!acctDone);
+  const budOpen  = hf.bud===true;
   return `
   <button class="backbtn" onclick="backFromHost()">‹ 내 경조사</button>
+
   <div class="card">
-    <h3>① 행사 정보</h3>
-    <p class="sub">경조사 유형을 고르면 화면과 라벨이 자동으로 바뀝니다.</p>
+    <h3>📨 하객에게 보내기</h3>
+    <p class="sub">단톡방에 링크 하나 — 받은 분들이 각자 저장하고, 캘린더·${c.money}까지 한 번에.</p>
+    <div class="stack" style="margin-top:10px">
+      <button class="btn btn-kakao" onclick="shareEvent(hostEvent())">💬 이음으로 보내기</button>
+      ${ev.externalUrl?`<button class="btn btn-line btn-sm" onclick="shareExternal(hostEvent())">🖼️ 청첩장 원본 그대로 보내기</button>`:''}
+    </div>
+    <label style="margin-top:12px">모바일 ${c.doc} 링크 연결 <span style="font-weight:400;color:var(--muted)">(선택 — 전문업체 제작본)</span></label>
+    <input placeholder="https://... (바른손/더카드 등)" value="${esc(ev.externalUrl)}" onchange="updEv('externalUrl',this.value)">
+    <p class="lblnote">${ev.externalUrl?'✓ 연결됨 — 하객이 원본 청첩장도 볼 수 있어요':'연결하면 원본 썸네일로도 보낼 수 있어요'}</p>
+  </div>
+
+  <details class="fold" ${infoOpen?'open':''} ontoggle="hostFoldSet('info',this.open)">
+    <summary>✏️ 행사 정보 ${infoDone?`<span style="font-weight:400;color:var(--muted);font-size:12px">· ${esc(evNamePlain(ev))} · ${ev.date}</span>`:`<span class="pchip" style="background:#f6e7e4;color:var(--danger)">입력 필요</span>`}</summary>
+    <div class="fold-body">
     <label>경조사 유형</label>
     <div class="seg2">
       ${['wedding','hwahon','memorial'].map(t=>`<button class="${ev.type===t?'on':''}" onclick="setType('${t}')">${TYPES[t].icon} ${TYPES[t].label}</button>`).join('')}
@@ -812,29 +858,19 @@ function hostView(){
     <label>${c.venueL}</label><input value="${esc(ev.venue)}" onchange="updEv('venue',this.value)">
     <label>주소</label><input value="${esc(ev.address)}" onchange="updEv('address',this.value)">
     <label>인사말</label><textarea rows="3" onchange="updEv('message',this.value)">${esc(ev.message)}</textarea>
-  </div>
-
-  <div class="card">
-    <h3>② 모바일 ${c.doc} 링크 연계</h3>
-    <p class="sub">전문업체에서 제작한 ${c.doc} 링크를 붙여넣으면, 그 ${c.doc}으로 발송됩니다. 이음은 캘린더·송금·정산을 함께 얹어줍니다.</p>
-    <label>외부 ${c.doc} URL</label>
-    <input placeholder="https://... (바른손/더카드 등 제작 링크)" value="${esc(ev.externalUrl)}" onchange="updEv('externalUrl',this.value)">
-    <p class="lblnote">${ev.externalUrl?'✓ 연결됨 — 공유 시 이 링크로 열립니다':'미입력 시 이음 기본 화면으로 공유됩니다'}</p>
-    <div class="stack" style="margin-top:12px">
-      <button class="btn btn-kakao" onclick="shareEvent(hostEvent())">💬 이음으로 보내기 (썸네일 + 캘린더·송금)</button>
-      ${ev.externalUrl?`<button class="btn btn-line" onclick="shareExternal(hostEvent())">🖼️ 청첩장 그대로 보내기 (청첩장 썸네일)</button>`:''}
     </div>
-    <div class="note">💡 <b>이음으로 보내기</b>: 단톡방에 링크를 뿌리면 각자 열어 '수락'하고, 캘린더 저장·${c.money} 송금까지 각자 진행해요(이음 썸네일 표시).${ev.externalUrl?` <b>청첩장 그대로 보내기</b>는 연결한 모바일청첩장의 원본 썸네일이 뜨는 대신 이음 기능은 빠집니다.`:' 모바일청첩장을 연결하면 원본 썸네일로도 보낼 수 있어요.'}</div>
-  </div>
+  </details>
 
-  <div class="card">
-    <h3>${c.money} 받을 계좌</h3>
-    <p class="sub">하객은 이 계좌로 '딥링크 송금화면'을 통해 직접 보냅니다. 이음은 자금을 만지지 않습니다.</p>
+  <details class="fold" ${acctOpen?'open':''} ontoggle="hostFoldSet('acct',this.open)">
+    <summary>🏦 ${c.money} 받을 계좌 ${acctDone?`<span style="font-weight:400;color:var(--ok);font-size:12px">· 등록됨</span>`:`<span style="font-weight:400;color:var(--muted);font-size:12px">· 미입력</span>`}</summary>
+    <div class="fold-body">
+    <p class="sub">하객은 이 계좌로 직접 보냅니다. 이음은 자금을 만지지 않아요.</p>
     ${ev.accounts.map((a,i)=>acctEditor(i,a)).join('')}
-  </div>
+    </div>
+  </details>
 
   <div class="card">
-    <div class="secthead"><div class="t">③ 정산 장부</div><div class="c">하객 ${ev.guests.length}명</div></div>
+    <div class="secthead"><div class="t">📒 정산 장부</div><div class="c">하객 ${ev.guests.length}명</div></div>
     <p class="sub">이음으로 받은 금액은 자동 표시되고, <b>현금·계좌 수령분</b>은 각 하객 칸에 직접 입력·정산하세요.</p>
     <div class="stats">
       <div class="stat"><div class="v">${led.attend}</div><div class="k">${c.counts?'참석 응답':'조문 응답'}</div></div>
@@ -856,7 +892,10 @@ function hostView(){
       <div class="glist">${ev.guests.filter(x=>x.unregistered).map(x=>rowHost(ev,x)).join('')}</div>`:''}
   </div>
 
-  ${budgetCard(ev)}
+  <details class="fold" ${budOpen?'open':''} ontoggle="hostFoldSet('bud',this.open)">
+    <summary>📈 예상 하객·예산 계산기</summary>
+    <div class="fold-body">${budgetCard(ev)}</div>
+  </details>
 
   <div class="card">
     <h3>부가 기능</h3>
@@ -907,30 +946,7 @@ function rowHost(ev,x){
 }
 
 /* ---------- 하객: 경조사 목록(앱 내 캘린더) ---------- */
-function guestList(){
-  if(!S.events.filter(e=>!(e.draft&&!evHasContent(e))).length){ return `
-  <div class="listhead"><div class="t serif">내 경조사</div></div>
-  <div class="card" style="text-align:center;padding:30px 18px">
-    <div style="font-size:36px">🎁</div>
-    <div style="font-weight:800;font-size:16px;margin-top:8px">아직 등록된 경조사가 없어요</div>
-    <p class="sub" style="margin-top:6px;margin-bottom:0">받은 청첩장을 가져오거나 직접 추가해<br/>한곳에서 관리하세요.</p>
-    <div class="stack" style="margin-top:16px">
-      <button class="btn btn-primary" onclick="openImport()">📥 카카오톡 청첩장 가져오기</button>
-      <button class="btn btn-ghost" onclick="openAdd()">＋ 직접 추가</button>
-    </div>
-  </div>`; }
-  const evs=S.events.filter(e=>!(e.draft&&!evHasContent(e))).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
-  const upcoming=evs.filter(e=>new Date(e.date+'T'+(e.time||'00:00'))>=new Date(new Date().toDateString())).length;
-  return `
-  <div class="listhead"><div class="t serif">내 경조사</div><div class="c">다가오는 일정 ${upcoming}건</div></div>
-  ${reminderBanner()}
-  ${backupBanner()}
-  ${iosInstallBanner()}
-  <div class="row" style="margin-bottom:13px">
-    <button class="badge-add" style="margin:0" onclick="openImport()">📥 가져오기</button>
-    <button class="badge-add" style="margin:0" onclick="openAdd()">＋ 직접 추가</button>
-  </div>
-  ${evs.map(ev=>{const c=cfg(ev);return `
+function evcardHTML(ev){ const c=cfg(ev); return `
     <div class="evcard" onclick="openEvent('${ev.id}')">
       <div class="ic">${c.icon}</div>
       <div class="info">
@@ -938,9 +954,46 @@ function guestList(){
         <div class="dt">${dateText(ev)} · ${esc(ev.venue||'장소 미정')}</div>
       </div>
       <div class="right"><span class="dd">${dday(ev)}</span><span class="chev">›</span></div>
-    </div>`;}).join('')}
-  <button class="btn btn-sage" style="margin:6px 0 14px" onclick="saveAllICS()">📅 전체 일정 내 캘린더로 저장</button>
-  ${calendarHTML()}`;
+    </div>`; }
+function homeHero(ev){ const c=cfg(ev); const mem=ev.type==='memorial';
+  return `<div class="homehero${mem?' mem':''}" onclick="openEvent('${ev.id}')">
+    <div class="hh-top"><span class="hh-dd">${dday(ev)}</span>
+      <button class="rm-noti ${S.ui.noti?'on':''}" onclick="event.stopPropagation();toggleNoti()">${S.ui.noti?'✓ 알림':'🔔 알림'}</button></div>
+    <div class="hh-ic">${c.icon}</div>
+    <div class="hh-nm serif">${esc(evNamePlain(ev))||'(이름 미입력)'} <span class="typ">${c.label}</span></div>
+    <div class="hh-dt">${dateText(ev)}<br/>${esc(ev.venue||'장소 미정')}</div>
+    <div class="hh-btns"><button class="btn ${mem?'btn-ghost':'btn-primary'} btn-sm" onclick="event.stopPropagation();openEvent('${ev.id}')">${mem?'🕊️ 조의 전하기':'💸 마음 전하기'}</button></div>
+  </div>`; }
+function guestList(){
+  const all=S.events.filter(e=>!(e.draft&&!evHasContent(e)));
+  if(!all.length){ return `
+  <div class="listhead"><div class="t serif">내 경조사</div></div>
+  ${iosInstallBanner()}
+  <div class="card" style="text-align:center;padding:30px 18px">
+    <div style="font-size:36px">🎁</div>
+    <div style="font-weight:800;font-size:16px;margin-top:8px">아직 등록된 경조사가 없어요</div>
+    <p class="sub" style="margin-top:6px;margin-bottom:0">카톡으로 받은 청첩장을 붙여넣으면<br/>날짜·장소·계좌까지 자동으로 채워져요.</p>
+    <div class="stack" style="margin-top:16px">
+      <button class="btn btn-primary" onclick="openImport()">＋ 청첩장 추가</button>
+    </div>
+    <button class="backbtn" style="margin-top:10px" onclick="openAdd()">✏️ 직접 입력하기</button>
+  </div>`; }
+  const evs=all.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  const now=new Date(new Date().toDateString());
+  const up=evs.filter(e=>e.date&&new Date(e.date+'T'+(e.time||'00:00'))>=now);
+  const past=evs.filter(e=>!e.date||new Date(e.date+'T'+(e.time||'00:00'))<now).reverse();
+  const rest=up.slice(1);
+  return `
+  <div class="listhead"><div class="t serif">내 경조사</div><div class="c">다가오는 ${up.length}건</div></div>
+  ${backupBanner()}
+  ${iosInstallBanner()}
+  ${up.length?homeHero(up[0]):''}
+  <button class="badge-add" style="margin-bottom:13px" onclick="openImport()">＋ 청첩장 추가 <span style="font-weight:400;font-size:12px">· 카톡 링크 붙여넣으면 자동 인식</span></button>
+  ${rest.length?`<div class="secthead" style="margin:2px 2px 8px"><div class="t">다음 일정</div><div class="c">${rest.length}건</div></div>${rest.map(evcardHTML).join('')}`:''}
+  ${past.length?`<details class="fold" ${S.ui.pastOpen?'open':''} ontoggle="S.ui.pastOpen=this.open">
+    <summary>🕰️ 지난 경조사 ${past.length}건</summary><div class="fold-body">${past.map(evcardHTML).join('')}</div></details>`:''}
+  <details class="fold" ${S.ui.calOpen?'open':''} ontoggle="S.ui.calOpen=this.open">
+    <summary>📅 이음 달력</summary><div class="fold-body">${calendarHTML()}</div></details>`;
 }
 
 /* ---------- 이음 달력 ---------- */
@@ -1013,20 +1066,40 @@ function guestDetail(){
     <div class="when">${dateText(ev)}<br/>${esc(ev.venue)}</div>
     <div class="dday-pill">${dday(ev)}</div>
   </div>
+  ${ev.message?`<p class="quote serif" style="margin:2px 6px 14px">${esc(ev.message).replace(/\n/g,'<br/>')}</p>`:''}
+
   <div class="card">
-    <p class="quote serif">${esc(ev.message).replace(/\n/g,'<br/>')}</p>
-    <div class="divider"></div>
-    <button class="btn ${ev.externalUrl?'btn-primary':'btn-ghost'}" onclick="openExternal(curEvent())">
-      🔗 ${ev.externalUrl?`${c.doc} 전체보기 (전문업체)`:`${c.doc} 보기 (외부 링크 미연결)`}</button>
-    <div class="stack" style="margin-top:9px">
-      <button class="btn btn-sage" onclick="saveICS(curEvent())">📅 캘린더에 저장 (.ics)</button>
-      <button class="btn btn-ghost" onclick="googleCal(curEvent())">🗓️ 구글 캘린더에 추가</button>
+    <h3>💸 마음 전하기 (${c.money})</h3>
+    <p class="sub">금액을 입력하면 <b>토스는 자동완성</b> — 3초면 끝나요.</p>
+    ${ev.accounts.length>1?`<div class="seg2">${ev.accounts.map((a,i)=>`<button class="${i===idx?'on':''}" onclick="setAcct(${i})">${esc(a.label)}</button>`).join('')}</div>`:''}
+    ${acc?`<div class="acct" style="margin-top:8px"><div class="b">${esc(acc.bank)} ${esc(acc.number)}<small>예금주 ${esc(acc.holder)}</small></div>
+      <button class="minibtn" onclick="copyAcct(curEvent().accounts[${idx}]||curEvent().accounts[0])">복사</button></div>`
+      :`<div class="note" style="margin-top:8px">받을 계좌 정보가 아직 없어요.</div>`}
+    <label>보낼 금액 <button class="minibtn" style="float:right;padding:4px 9px" onclick="openReco(curEvent().id)">💡 얼마가 적당할까?</button></label>
+    <input id="sendamt" type="number" inputmode="numeric" placeholder="예: 100000" value="${me&&me.pay&&me.pay.amount!=null?me.pay.amount:''}">
+    <div class="stack" style="margin-top:10px">
+      ${acc?`<button class="btn btn-toss" onclick="payViaApp('toss')">토스로 송금 · 금액 자동완성</button>
+      <div class="row">${acc.kakaopay?`<button class="btn btn-kakao btn-sm" onclick="payViaApp('kakao')">카카오페이</button>`:''}
+        <button class="btn btn-ghost btn-sm" onclick="payViaApp('account')">계좌 복사</button></div>`:''}
     </div>
+    ${me&&me.pay&&me.pay.amount!=null?`<div class="note" style="margin-top:10px">✓ <b>${won(me.pay.amount)}</b> 보냄 기록 — 가계부에 자동 정리됐어요.</div>`:''}
+    <p class="lblnote" style="margin-top:9px">현금으로 준비하시나요? <button class="minibtn" style="padding:4px 9px" onclick="openEnvelope(curEvent().id)">🧧 봉투 쓰는 법</button> · 이음은 자금을 거치지 않아요.</p>
   </div>
 
   <div class="card">
-    <h3>${ev.type==='memorial'?'조문 의사':'참석 의사 (RSVP)'}</h3>
-    <p class="sub">${ev.type==='memorial'?'상주에게 마음을 전합니다.':'신랑·신부에게 참석 여부를 알려주세요.'}</p>
+    <h3>📅 일정 · ${c.doc}</h3>
+    <div class="stack" style="margin-top:10px">
+      <div class="row">
+        <button class="btn btn-sage btn-sm" onclick="saveICS(curEvent())">📅 캘린더 저장</button>
+        <button class="btn btn-ghost btn-sm" onclick="googleCal(curEvent())">🗓️ 구글 캘린더</button>
+      </div>
+      ${ev.externalUrl?`<button class="btn btn-line btn-sm" onclick="openExternal(curEvent())">🔗 ${c.doc} 전체보기</button>`:''}
+    </div>
+  </div>
+
+  <details class="fold" ${me?'open':''}>
+    <summary>🙋 ${ev.type==='memorial'?'조문 여부 알리기':'참석 여부 알리기 (RSVP)'} <span style="font-weight:400;color:var(--muted);font-size:12px">· 선택</span></summary>
+    <div class="fold-body">
     <label>성함</label>
     <input id="gname" placeholder="이름을 입력하세요" value="${esc(nm)}" onchange="setGuestName(this.value)">
     <label>${ev.type==='memorial'?'조문 여부':'참석 여부'}</label>
@@ -1041,31 +1114,8 @@ function guestDetail(){
         <option value="1" ${me.rsvp.meal?'selected':''}>예정</option><option value="0" ${!me.rsvp.meal?'selected':''}>안 함</option>
       </select></div></div>`:''}
     ${me?`<div class="note" style="margin-top:10px">✓ ${esc(me.name)}님 응답이 호스트 장부에 전달되었습니다.</div>`:''}
-  </div>
-
-  <div class="card">
-    <h3>마음 전하기 (${c.money})</h3>
-    <p class="sub">금액을 입력하면 <b>토스는 금액이 자동완성</b>돼요. 카카오페이·다른 은행 앱은 계좌 복사로 간편하게 보낼 수 있어요.</p>
-    ${ev.accounts.length>1?`<label>받는 분</label><div class="seg2">${ev.accounts.map((a,i)=>`<button class="${i===idx?'on':''}" onclick="setAcct(${i})">${esc(a.label)}</button>`).join('')}</div>`:''}
-    ${acc?`<div class="acct" style="margin-top:8px"><div class="b">${esc(acc.bank)} ${esc(acc.number)}<small>예금주 ${esc(acc.holder)}</small></div>
-      <button class="minibtn" onclick="copyAcct(curEvent().accounts[${idx}]||curEvent().accounts[0])">복사</button></div>`
-      :`<div class="note" style="margin-top:8px">받을 계좌 정보가 아직 없어요.</div>`}
-    <label>보낼 금액</label>
-    <input id="sendamt" type="number" inputmode="numeric" placeholder="예: 100000" value="${me&&me.pay&&me.pay.amount!=null?me.pay.amount:''}">
-    <div class="chips" style="margin-top:8px">${['가족','친척','친구','직장','지인'].map(r=>`<button class="chip ${ev.myRelation===r?'on':''}" onclick="setMyRelation('${r}')">${r}</button>`).join('')}</div>
-    <button class="btn btn-line btn-sm" style="margin-top:9px" onclick="openReco(curEvent().id)">💰 얼마 낼지 추천받기</button>
-    <div class="stack" style="margin-top:9px">
-      ${acc?`<button class="btn btn-toss" onclick="payViaApp('toss')">토스로 송금 · 금액 자동완성</button>
-      ${acc.kakaopay?`<button class="btn btn-kakao" onclick="payViaApp('kakao')">카카오페이로 보내기</button>`:''}
-      <button class="btn btn-ghost" onclick="payViaApp('account')">계좌 복사 (모든 은행 앱)</button>`:''}
-      <button class="btn btn-ghost btn-sm" onclick="openEnvelope(curEvent().id)">🧧 봉투 쓰는 법</button>
     </div>
-    ${me&&me.pay&&me.pay.amount!=null?`<div class="note" style="margin-top:10px">✓ 이음으로 <b>${won(me.pay.amount)}</b> 보냄 기록 — 호스트 정산장부에 '이음 송금'으로 표시돼요.</div>`:''}
-    <div class="note">이음은 자금을 거치지 않습니다. 실제 송금은 토스/뱅킹 앱에서 이뤄져요.</div>
-  </div>
-  <div class="card">
-    <button class="btn btn-disabled" onclick="soon('비대면 답례품 보내기')">🎁 답례품 보내기 (참석 못하는 분) <span class="lock">· 추후</span></button>
-  </div>
+  </details>
   <button class="backbtn" style="color:var(--danger);margin:0 4px 10px" onclick="delEvent('${ev.id}')">🗑️ 이 경조사 삭제</button>`;
 }
 
@@ -1622,17 +1672,34 @@ function groupView(){ const g=groupState(); const r=groupCalc();
 
 /* ======================= 더보기 ======================= */
 function moreItem(ic,t,d,fn){ return `<button class="more-item" onclick="${fn}"><span class="mi-ic">${ic}</span><span class="mi-tx"><span class="mi-t">${t}</span><span class="mi-d">${d}</span></span><span class="mi-go">›</span></button>`; }
+function openThanksSafe(){ const he=S.events.find(e=>e.role==='host'&&evHasContent(e));
+  if(he){ S.ui.hostEventId=he.id; openThanks(); }
+  else { toast('먼저 호스트에서 내 행사를 만들어 주세요'); setTab('host'); } }
+function saveAllICSSafe(){ if(!S.events.filter(e=>!(e.draft&&!evHasContent(e))).length){ toast('내보낼 경조사가 없어요'); return; } saveAllICS(); }
 function moreView(){ return `
-  <div class="listhead"><div class="t serif">더보기</div></div>
-  <div class="card" style="padding:5px 4px">
-    ${moreItem('🧧','봉투 쓰는 법','경조사 유형별 문구·예절',"openEnvelope('')")}
-    ${moreItem('🧮','그룹 합산 축의','팀·모임 1/N 분담 계산','openGroup()')}
-    ${moreItem('🔔', S.ui.noti?'알림 켜짐 ✓':'알림 받기','다가오는 경조사 미리 알림','toggleNoti()')}
-    ${moreItem('✍️','호스트 — 내 행사 만들기','청첩장·정산·하객 관리',"setTab('host')")}
-    ${moreItem('📖','튜토리얼','기본 기능 안내 다시 보기','startTutorial()')}
-    ${moreItem('⚙️','설정','프로필 · 백업 · 약관','openSettings()')}
+  <div class="listhead"><div class="t serif">전체 기능</div></div>
+  <p class="sub" style="margin:0 2px 12px">메인은 간단하게, 필요한 건 전부 여기에.</p>
+  <div class="card" style="padding:0 4px 5px">
+    <div class="mi-sec">자주 쓰는 도구</div>
+    ${moreItem('🧮','축의금·조의금 추천','관계·참석만 고르면 시세 기준 금액','openReco()')}
+    ${moreItem('🧧','봉투 쓰는 법','유형별 문구·지폐 방향·금액 예절',"openEnvelope('')")}
+    ${moreItem('👥','그룹 합산 (1/N)','팀·모임 축의금 분담 계산','openGroup()')}
+    ${moreItem('🔍','주고받은 사람','이름 검색 · 지난 주고받은 금액','openPeople()')}
   </div>
-  <p class="land-foot" style="margin-top:6px">이음 prototype · 마음을 잇다</p>`;
+  <div class="card" style="padding:0 4px 5px">
+    <div class="mi-sec">행사 · 기록</div>
+    ${moreItem('✍️','호스트 — 내 행사 만들기','청첩장 보내기 · 정산 장부 · 하객 관리',"setTab('host')")}
+    ${moreItem('✉️','감사카드 보내기','파스텔 카드에 사진·문구 담아 카톡으로','openThanksSafe()')}
+    ${moreItem('💰','경조사비 가계부','낸 돈·받은 돈·연간 리포트','openLedger()')}
+    ${moreItem('📆','전체 일정 캘린더로 내보내기','모든 경조사를 .ics 파일로','saveAllICSSafe()')}
+  </div>
+  <div class="card" style="padding:0 4px 5px">
+    <div class="mi-sec">설정 · 도움말</div>
+    ${moreItem('🔔', S.ui.noti?'알림 켜짐 ✓':'알림 받기','다가오는 경조사 미리 알림','toggleNoti()')}
+    ${moreItem('📖','튜토리얼','기본 기능 안내 다시 보기','startTutorial()')}
+    ${moreItem('⚙️','설정','내 이름 · 테마 · 백업/복원 · 약관','openSettings()')}
+  </div>
+  <p class="land-foot" style="margin-top:6px">이음 · 마음을 잇다</p>`;
 }
 
 /* ======================= 리마인더 · 알림 ======================= */
@@ -1939,6 +2006,7 @@ function importView(){
     <textarea id="impText" rows="5" placeholder="카톡 청첩장 메시지 또는 링크(https://...)만 붙여넣기&#10;예) https://mcard.example.com/abc123">${esc(t)}</textarea>
     <button class="btn btn-primary" style="margin-top:10px" onclick="analyzeImport()" ${S.ui.importFetching?'disabled':''}>${S.ui.importFetching?'🔗 청첩장 페이지 분석 중…':'🔍 분석하기'}</button>
     <div class="note">💡 ① 메시지·링크 <b>복사 → 붙여넣기</b> 또는 ② (안드로이드) 청첩장 링크 <b>공유 → 이음</b>. 링크 분석은 공개 중계서버를 경유하며 내용은 저장되지 않아요. 일부 청첩장은 계좌가 안 읽힐 수 있어요(직접 입력).</div>
+    <button class="backbtn" style="margin-top:8px" onclick="openAdd()">✏️ 청첩장 없이 직접 입력하기</button>
   </div>
   ${S.ui.importFetching?`<div class="card" style="text-align:center;padding:22px">
     <div style="font-size:26px">🔗</div>
@@ -2014,10 +2082,10 @@ function budgetCard(ev){ const c=cfg(ev), pl=ev.plan||{}, {sent,rate,meal,gift}=
 // 단, 편집 흔적이 있는 데모(순정 지문 불일치)는 삭제하지 않고 실데이터로 승격(demo 해제).
 const TUT={on:false,i:0,last:-1};
 const TUT_STEPS=[
- {at:'list', v:()=>{S.ui.tab='guest';S.ui.guestView='list';}, sel:'.evcard',
-  t:'내 경조사가 한곳에', x:'카톡 속에 흩어진 청첩장·부고를 모아 디데이로 관리해요. (지금 보이는 건 연습용 데모 — 끝나면 지워져요)'},
- {at:'list', v:()=>{S.ui.tab='guest';S.ui.guestView='list';}, sel:'.calgrid',
-  t:'이음 달력', x:'경조사가 있는 날엔 점이 콕 찍혀요. 한 달 일정이 한눈에 들어와요.'},
+ {at:'list', v:()=>{S.ui.tab='guest';S.ui.guestView='list';}, sel:'.homehero',
+  t:'다음 경조사가 맨 위에', x:'가장 가까운 일정이 크게 떠요. 카드를 누르면 상세로, 아래엔 나머지 일정이 모여요. (지금 보이는 건 연습용 데모 — 끝나면 지워져요)'},
+ {at:'list', v:()=>{S.ui.tab='guest';S.ui.guestView='list';S.ui.calOpen=true;}, sel:'.calgrid',
+  t:'이음 달력', x:'경조사가 있는 날엔 점이 콕 찍혀요. 평소엔 접혀 있고, 필요할 때 펼쳐 보세요.'},
  {at:'detail', ev:'e2', v:()=>{S.ui.tab='guest';S.ui.guestView='detail';S.ui.currentEventId='e2';}, sel:'.hero',
   t:'청첩장 상세', x:'날짜·장소 확인부터 내 캘린더 저장(.ics·구글)까지 여기서 한 번에 끝나요.'},
  {at:'detail', ev:'e2', v:()=>{S.ui.tab='guest';S.ui.guestView='detail';S.ui.currentEventId='e2';}, sel:'.btn-toss',
