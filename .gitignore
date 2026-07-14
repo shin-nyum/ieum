@@ -16,3 +16,4 @@ native/node_modules/
 native/www/
 test_payment.py
 payments-worker/.wrangler/
+__pycache__/
