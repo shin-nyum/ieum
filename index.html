@@ -1604,7 +1604,7 @@ function ledgerSummaryCard(){ const s=myStats(); const nc=s.net>=0?'var(--ok)':'
   </div>`; }
 function ledgerView(){ const s=myStats();
   const rel=Object.entries(s.byRel).sort((a,b)=>b[1]-a[1]); const mx=Math.max(1,...rel.map(x=>x[1]));
-  const all=txAll(); const gave=all.filter(t=>t.dir==='gave'); const recv=all.filter(t=>t.dir==='received');
+  const all=txAll();
   return `
   <div class="listhead"><div class="t serif">품앗이 가계부</div></div>
   <div class="card reco-cta" onclick="openPeople()" style="border-color:var(--sage)">
@@ -1620,13 +1620,9 @@ function ledgerView(){ const s=myStats();
     </div>
     <div class="note">'품앗이'는 주고받는 마음입니다. 항목을 누르면 전체 내역을 은행 앱처럼 볼 수 있어요.</div>
   </div>
-  <div class="card"><div class="secthead"><div class="t">보낸 내역</div><div class="c">${gave.length}건</div></div>
-    <div class="glist">${gave.slice(0,3).map(txRow).join('')||'<div class="empty">아직 보낸 내역이 없어요.</div>'}</div>
-    ${gave.length>3?`<button class="backbtn" style="margin:8px 0 0" onclick="openTx('gave')">더보기 · ${gave.length}건 전체 ›</button>`:''}
-  </div>
-  <div class="card"><div class="secthead"><div class="t">받은 내역</div><div class="c">${recv.length}건</div></div>
-    <div class="glist">${recv.slice(0,3).map(txRow).join('')||'<div class="empty">아직 받은 내역이 없어요.</div>'}</div>
-    ${recv.length>3?`<button class="backbtn" style="margin:8px 0 0" onclick="openTx('received')">더보기 · ${recv.length}건 전체 ›</button>`:''}
+  <div class="card"><div class="secthead"><div class="t">최근 내역</div><div class="c">${all.length}건</div></div>
+    <div class="glist">${all.slice(0,3).map(txRow).join('')||'<div class="empty">아직 주고받은 내역이 없어요.</div>'}</div>
+    ${all.length>=4?`<button class="backbtn" style="margin:8px 0 0" onclick="openTx('all')">＋ 더보기 · ${all.length}건 전체 ›</button>`:''}
   </div>
   ${monthlyChart()}
   ${rel.length?`<div class="card"><div class="secthead"><div class="t">관계별 보낸 경조사비</div></div>
