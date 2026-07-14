@@ -17,3 +17,4 @@ native/www/
 test_payment.py
 payments-worker/.wrangler/
 __pycache__/
+shots_tone/
