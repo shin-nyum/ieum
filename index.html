@@ -1607,6 +1607,11 @@ function ledgerView(){ const s=myStats();
   const all=txAll(); const gave=all.filter(t=>t.dir==='gave'); const recv=all.filter(t=>t.dir==='received');
   return `
   <div class="listhead"><div class="t serif">품앗이 가계부</div></div>
+  <div class="card reco-cta" onclick="openPeople()" style="border-color:var(--sage)">
+    <div class="rc-ic">🔎</div>
+    <div class="rc-tx"><div class="rc-t" style="color:var(--sage-d)">주고받은 사람</div><div class="rc-d">이름 검색 · 지난 주고받은 금액 참고</div></div>
+    <div class="rc-go" style="color:var(--sage-d)">›</div>
+  </div>
   <div class="card">
     <div class="stats">
       <div class="stat" style="cursor:pointer" onclick="openTx('gave')"><div class="v">${won(s.given)}</div><div class="k">보낸 경조사비 (${s.gaveCount}) ›</div></div>
@@ -1622,11 +1627,6 @@ function ledgerView(){ const s=myStats();
   <div class="card"><div class="secthead"><div class="t">받은 내역</div><div class="c">${recv.length}건</div></div>
     <div class="glist">${recv.slice(0,3).map(txRow).join('')||'<div class="empty">아직 받은 내역이 없어요.</div>'}</div>
     ${recv.length>3?`<button class="backbtn" style="margin:8px 0 0" onclick="openTx('received')">더보기 · ${recv.length}건 전체 ›</button>`:''}
-  </div>
-  <div class="card reco-cta" onclick="openPeople()" style="border-color:var(--sage)">
-    <div class="rc-ic">🔎</div>
-    <div class="rc-tx"><div class="rc-t" style="color:var(--sage-d)">주고받은 사람</div><div class="rc-d">이름 검색 · 지난 주고받은 금액 참고</div></div>
-    <div class="rc-go" style="color:var(--sage-d)">›</div>
   </div>
   ${monthlyChart()}
   ${rel.length?`<div class="card"><div class="secthead"><div class="t">관계별 보낸 경조사비</div></div>
