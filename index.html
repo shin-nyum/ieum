@@ -1597,7 +1597,7 @@ function ledgerSummaryCard(){ const s=myStats(); const nc=s.net>=0?'var(--ok)':'
     <div class="stats">
       <div class="stat"><div class="v">${won(s.given)}</div><div class="k">보낸 경조사비 (${s.gaveCount})</div></div>
       <div class="stat"><div class="v">${won(s.received)}</div><div class="k">받은 경조사비 (${s.recvCount})</div></div>
-      <div class="stat"><div class="v big" style="color:${nc}">${(s.net>=0?'+':'−')+won(Math.abs(s.net))}</div><div class="k">수지(받은−낸)</div></div>
+      <div class="stat"><div class="v big" style="color:${nc}">${(s.net>=0?'+':'−')+won(Math.abs(s.net))}</div><div class="k">합계(받은−보낸)</div></div>
     </div>
   </div>`; }
 function ledgerView(){ const s=myStats();
@@ -1610,7 +1610,7 @@ function ledgerView(){ const s=myStats();
     <div class="stats">
       <div class="stat"><div class="v">${won(s.given)}</div><div class="k">보낸 경조사비 (${s.gaveCount})</div></div>
       <div class="stat"><div class="v">${won(s.received)}</div><div class="k">받은 경조사비 (${s.recvCount})</div></div>
-      <div class="stat"><div class="v big" style="color:${s.net>=0?'var(--ok)':'var(--danger)'}">${(s.net>=0?'+':'−')+won(Math.abs(s.net))}</div><div class="k">수지</div></div>
+      <div class="stat"><div class="v big" style="color:${s.net>=0?'var(--ok)':'var(--danger)'}">${(s.net>=0?'+':'−')+won(Math.abs(s.net))}</div><div class="k">합계</div></div>
     </div>
     <div class="note">'품앗이'는 주고받는 마음입니다. 보낸 내역과 받은 내역을 한눈에 볼 수 있어요.</div>
   </div>
@@ -1619,7 +1619,7 @@ function ledgerView(){ const s=myStats();
     <div class="rc-tx"><div class="rc-t" style="color:var(--sage-d)">주고받은 사람</div><div class="rc-d">이름 검색 · 지난 주고받은 금액 참고</div></div>
     <div class="rc-go" style="color:var(--sage-d)">›</div>
   </div>
-  ${yearReportCard()}
+  ${monthlyChart()}
   ${rel.length?`<div class="card"><div class="secthead"><div class="t">관계별 낸 경조사비</div></div>
     ${rel.map(([r,v])=>`<div class="relrow"><span class="rl">${esc(r)}</span><div class="bar"><div class="fill" style="width:${Math.round(v/mx*100)}%"></div></div><span class="rv">${won(v)}</span></div>`).join('')}
   </div>`:''}
@@ -2568,27 +2568,27 @@ function fireDueNotis(){ if(!S.ui.noti||!('Notification' in window)||Notificatio
       new Notification(`${evNamePlain(ev)} ${cfg(ev).label} ${dday(ev)}`, {body:`${dateText(ev)} · ${ev.venue||''}`+reciTxt, icon:'icon-192.png', tag:'ieum-'+ev.id}); }catch(e){} } }); }
 
 /* ======================= 연간 경조사비 리포트 (공유) ======================= */
-function yearGave(y){ return S.events.filter(e=>e.role!=='host'&&e.myGift>0&&(e.date||'').startsWith(String(y))); }
-function manualGaveYear(y){ let sum=0,count=0; // 사람 탭 수기 '보냄' 이력
-  (S.people||[]).forEach(p=>(p.items||[]).forEach(it=>{
-    if(it.dir==='gave'&&it.amount>0&&(it.date||'').startsWith(String(y))){ sum+=it.amount; count++; } }));
-  return {sum,count}; }
-function yearReportCard(){ const y=new Date().getFullYear(); const gave=yearGave(y); const mg=manualGaveYear(y);
-  if(!gave.length&&!mg.count) return '';
-  const total=gave.reduce((s,e)=>s+e.myGift,0)+mg.sum; const byType={};
-  gave.forEach(e=>{const l=cfg(e).label; byType[l]=(byType[l]||0)+e.myGift;});
-  if(mg.sum>0) byType['직접 기록']=mg.sum;
-  return `<div class="card" style="background:var(--tint2);border-color:var(--primary)">
-    <div class="secthead"><div class="t">📤 ${y}년 내 경조사비</div><button class="minibtn" onclick="reportShare(${y})">공유</button></div>
-    <div style="text-align:center;padding:8px 0 4px"><div style="font-size:29px;font-weight:700;color:var(--primary-d)">${won(total)}</div>
-      <div class="sub" style="margin:3px 0 0">${gave.length+mg.count}건 · ${Object.entries(byType).map(([k,v])=>`${k} ${won(v)}`).join(' · ')}</div></div>
-    <div class="note" style="margin-top:6px">'올해 이만큼 마음 전했어요' — 친구에게 공유해 보세요.</div>
-  </div>`; }
-function reportShare(y){ const gave=yearGave(y); const mg=manualGaveYear(y); const total=gave.reduce((s,e)=>s+e.myGift,0)+mg.sum;
-  const text=`${y}년 내 경조사비 ${won(total)} (${gave.length+mg.count}건)\n— 이음(마음을 잇다)에서 정리했어요`;
-  const url=location.href.split('?')[0].split('#')[0];
-  if(navigator.share){ navigator.share({title:'이음 경조사 리포트',text,url}).catch(()=>{}); }
-  else { copy(text+'\n'+url); toast('리포트를 복사했어요 — 친구에게 붙여넣기'); } }
+function monthlyChart(){ // 최근 6개월 보냄/받음 막대 — 자랑용 공유 없이 나를 위한 요약
+  const now=new Date(); const months=[];
+  for(let i=5;i>=0;i--){ const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    months.push({ym:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), label:(d.getMonth()+1)+'월', sent:0, recv:0}); }
+  const idx={}; months.forEach(m=>idx[m.ym]=m);
+  S.events.forEach(e=>{ if(e.demo||e.tut) return; const m=idx[(e.date||'').slice(0,7)]; if(!m) return;
+    if(e.role==='host'){ m.recv+=ledgerStats(e).total; } else if(e.myGift>0){ m.sent+=e.myGift; } });
+  (S.people||[]).forEach(p=>{ if(p.demo||p.tut) return; (p.items||[]).forEach(it=>{ const m=idx[(it.date||'').slice(0,7)];
+    if(!m||!(it.amount>0)) return; if(it.dir==='gave') m.sent+=it.amount; else m.recv+=it.amount; }); });
+  if(!months.some(m=>m.sent||m.recv)) return '';
+  const max=Math.max(1,...months.map(m=>Math.max(m.sent,m.recv)));
+  return `<div class="card"><div class="secthead"><div class="t">월별 경조사비 · 최근 6개월</div>
+      <div class="c"><span style="color:var(--primary)">■</span> 보냄 <span style="color:var(--sage)">■</span> 받음</div></div>
+    <div style="display:flex;gap:6px;align-items:flex-end;height:112px;margin-top:12px">
+      ${months.map(m=>`<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;height:100%">
+        <div style="display:flex;gap:2px;align-items:flex-end;justify-content:center;width:100%;height:90px">
+          <div style="width:38%;max-width:14px;height:${Math.round(m.sent/max*100)}%;min-height:${m.sent?3:0}px;background:var(--primary);border-radius:3px 3px 0 0"></div>
+          <div style="width:38%;max-width:14px;height:${Math.round(m.recv/max*100)}%;min-height:${m.recv?3:0}px;background:var(--sage);border-radius:3px 3px 0 0"></div>
+        </div>
+        <div style="font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums">${m.label}</div></div>`).join('')}
+    </div></div>`; }
 
 /* ======================= 봉투 문구 ======================= */
 const ENV={ wedding:{front:['祝 結婚','축 결혼'], alts:['祝 華婚 (축 화혼)']},
@@ -3043,7 +3043,7 @@ const TUT_STEPS=[
  {at:'reco', v:()=>{S.ui.tab='guest';S.ui.guestView='reco'; recoState();}, sel:'.reco-result',
   t:'얼마가 예의일까?', x:'관계·참석 여부만 고르면 한국 시세 기준으로 추천해요. 4·6·8만은 알아서 피해드려요.'},
  {at:'ledger', v:()=>{S.ui.tab='guest';S.ui.guestView='ledger';}, sel:'.stats',
-  t:'경조사비 가계부', x:'보낸 돈·받은 돈·수지가 자동으로 정리돼요. 사람 이름으로 지난 기록도 검색!'},
+  t:'경조사비 가계부', x:'보낸 돈·받은 돈·합계가 자동으로 정리돼요. 사람 이름으로 지난 기록도 검색!'},
  {at:'list', v:()=>{S.ui.tab='guest';S.ui.guestView='list';}, sel:'.badge-add',
   t:'청첩장 가져오기', x:'카톡으로 받은 청첩장 링크를 붙여넣으면 이름·날짜·계좌까지 자동으로 채워져요.\n\n튜토리얼 끝! 데모는 지워지고, 이제 진짜 경조사를 담아보세요 🎉'},
 ];
