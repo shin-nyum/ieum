@@ -190,6 +190,17 @@
   details.fold>.fold-body{padding:0 16px 16px}
   details.fold>.fold-body .card{border:0;box-shadow:none;padding:0;margin-bottom:0}
   .mi-sec{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.06em;padding:12px 14px 4px}
+  /* 송금 수단 카테고리 (브랜드 버튼은 하위에 — 중립 우선) */
+  .paycat{border:1px solid var(--line);border-radius:12px;background:var(--field);margin-top:8px}
+  .paycat>summary{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;list-style:none}
+  .paycat>summary::-webkit-details-marker{display:none}
+  .paycat>summary .pc-t{flex:1}
+  .paycat>summary b{font-size:14px;color:var(--ink)}
+  .paycat>summary small{display:block;color:var(--muted);font-size:11.5px;margin-top:1px}
+  .paycat>summary .pc-ar{color:var(--muted);font-size:12px;transition:.15s}
+  .paycat[open]>summary .pc-ar{transform:rotate(180deg)}
+  .paycat[open]{background:var(--card);box-shadow:0 2px 10px rgba(57,52,46,.06)}
+  .pc-body{padding:2px 12px 12px}
   .card-thumb.on{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary)}
   .card-preview{border-radius:12px;overflow:hidden;border:1px solid var(--line);max-width:280px;margin:6px auto 0;box-shadow:var(--shadow)}
   .card-preview svg{display:block;width:100%;height:auto}
@@ -723,11 +734,11 @@ function payViaApp(method){ const ev=curEvent(); if(!ev)return;
   if(!nm){toast('성함을 먼저 입력하세요');return;}
   const amt=Number($('#sendamt')&&$('#sendamt').value); if(!amt){toast('보낼 금액을 입력하세요');return;}
   const acc=ev.accounts[S.ui.guestSession.acctIdx||0]||ev.accounts[0];
-  if(!acc){toast('받을 계좌 정보가 없어요');return;}
+  if(!acc && method!=='cash'){toast('받을 계좌 정보가 없어요');return;}
   own(ev); // 검증 통과 후에만 승격 (실패 탭이 데모를 승격시키지 않도록)
   S.ui.guestSession.name=nm;
   let x=ev.guests.find(g=>g.name===nm); if(!x){x=mkGuest(nm,ev.myRelation||'지인',S.ui.guestSession.acctIdx||0);x.unregistered=true;ev.guests.push(x);}
-  x.pay={amount:amt, source:'app', method};
+  x.pay={amount:amt, source:method==='cash'?'manual':'app', method};
   ev.myGift=amt; save();
   if(method==='toss'){ let ok=false; try{ window.location.href=tossLink(acc,amt); ok=true; }catch(e){}
     if(!ok){ copyAcct(acc); } setTimeout(()=>toast(ok?'토스에 금액이 자동으로 채워져요':'토스를 열 수 없어 계좌를 복사했어요'),300); }
@@ -735,6 +746,7 @@ function payViaApp(method){ const ev=curEvent(); if(!ev)return;
     if(link){ copy(`${acc.bank} ${acc.number} ${acc.holder}`); try{ window.location.href=link; }catch(e){ try{window.open(link,'_blank');}catch(e2){} }
       setTimeout(()=>toast('카카오페이로 이동 — 금액을 입력해 보내세요'),300); }
     else { copyAcct(acc); toast('카카오페이 링크가 없어 계좌를 복사했어요'); } }
+  else if(method==='cash'){ toast('현금 전달로 기록했어요 — 가계부에 반영됩니다'); }
   else { copyAcct(acc); toast('계좌 복사됨 — 뱅킹앱에서 송금하세요'); }
   render(); }
 
@@ -901,7 +913,7 @@ function hostView(){
     <h3>부가 기능</h3>
     <p class="sub">정산이 끝나면 엑셀로 정리하고, 참석·축의한 분들께 감사 인사를 준비하세요.</p>
     <div class="stack">
-      <button class="btn btn-ghost" onclick="withPass('csv',exportLedgerCSV)">📊 축의금 엑셀(CSV) 내보내기 ${passChip(ev)}</button>
+      <button class="btn btn-ghost" onclick="withPass('xlsx',exportLedgerXLSX)">📊 정산표 엑셀 내보내기 · 서식 포함 ${passChip(ev)}</button>
       <button class="btn btn-ghost" onclick="openThanks()">✉️ 감사 인사 준비하기 ${hasPass(ev)?'':'<span class="pchip">일부 PASS</span>'}</button>
       <button class="btn btn-disabled" onclick="soon('청첩모임 만들기')">🍽️ 청첩모임 만들기 <span class="lock">· 추후</span></button>
     </div>
@@ -1077,13 +1089,31 @@ function guestDetail(){
       :`<div class="note" style="margin-top:8px">받을 계좌 정보가 아직 없어요.</div>`}
     <label>보낼 금액 <button class="minibtn" style="float:right;padding:4px 9px" onclick="openReco(curEvent().id)">💡 얼마가 적당할까?</button></label>
     <input id="sendamt" type="number" inputmode="numeric" placeholder="예: 100000" value="${me&&me.pay&&me.pay.amount!=null?me.pay.amount:''}">
-    <div class="stack" style="margin-top:10px">
-      ${acc?`<button class="btn btn-toss" onclick="payViaApp('toss')">토스로 송금 · 금액 자동완성</button>
-      <div class="row">${acc.kakaopay?`<button class="btn btn-kakao btn-sm" onclick="payViaApp('kakao')">카카오페이</button>`:''}
-        <button class="btn btn-ghost btn-sm" onclick="payViaApp('account')">계좌 복사</button></div>`:''}
-    </div>
+    <label style="margin-top:12px">보낼 방법</label>
+    ${acc?`
+    <details class="paycat" ${(S.ui.payCat||'easy')==='easy'?'open':''} ontoggle="if(this.open)S.ui.payCat='easy'">
+      <summary><span class="pc-t"><b>⚡ 간편송금</b><small>토스 · 카카오페이 — 앱에서 바로</small></span><span class="pc-ar">▾</span></summary>
+      <div class="pc-body">
+        <button class="btn btn-toss" onclick="payViaApp('toss')">토스로 보내기 · 금액 자동완성</button>
+        ${acc.kakaopay?`<button class="btn btn-kakao" style="margin-top:8px" onclick="payViaApp('kakao')">카카오페이로 보내기</button>`:''}
+      </div>
+    </details>
+    <details class="paycat" ${S.ui.payCat==='bank'?'open':''} ontoggle="if(this.open)S.ui.payCat='bank'">
+      <summary><span class="pc-t"><b>🏦 계좌이체</b><small>모든 은행 · 증권 앱</small></span><span class="pc-ar">▾</span></summary>
+      <div class="pc-body">
+        <button class="btn btn-ghost" onclick="payViaApp('account')">계좌번호 복사 → 내 뱅킹앱에서 이체</button>
+        <p class="lblnote" style="margin-top:6px">${esc(acc.bank)} ${esc(acc.number)} 가 복사돼요</p>
+      </div>
+    </details>`:''}
+    <details class="paycat" ${S.ui.payCat==='cash'?'open':''} ontoggle="if(this.open)S.ui.payCat='cash'">
+      <summary><span class="pc-t"><b>🧧 현금 · 봉투</b><small>${ev.type==='memorial'?'조문 시':'식장에서'} 직접 전달</small></span><span class="pc-ar">▾</span></summary>
+      <div class="pc-body">
+        <button class="btn btn-ghost btn-sm" onclick="payViaApp('cash')">현금으로 전달했어요 · 기록만</button>
+        <button class="btn btn-line btn-sm" style="margin-top:8px" onclick="openEnvelope(curEvent().id)">🧧 봉투 쓰는 법 보기</button>
+      </div>
+    </details>
     ${me&&me.pay&&me.pay.amount!=null?`<div class="note" style="margin-top:10px">✓ <b>${won(me.pay.amount)}</b> 보냄 기록 — 가계부에 자동 정리됐어요.</div>`:''}
-    <p class="lblnote" style="margin-top:9px">현금으로 준비하시나요? <button class="minibtn" style="padding:4px 9px" onclick="openEnvelope(curEvent().id)">🧧 봉투 쓰는 법</button> · 이음은 자금을 거치지 않아요.</p>
+    <p class="lblnote" style="margin-top:9px">이음은 자금을 거치지 않아요 — 송금은 내 금융앱에서 직접 이루어집니다.</p>
   </div>
 
   <div class="card">
@@ -1546,6 +1576,84 @@ function withPass(key,fn){ const ev=hostEvent(); passTrack(key);
   if(hasPass(ev)){ fn(); return; } passPrompt(fn); }
 function passChip(ev){ return hasPass(ev)?'':`<span class="pchip">PASS</span>`; }
 
+/* ---- 예쁜 정산표 엑셀(.xlsx) — ExcelJS 지연 로드, 실패 시 CSV 폴백 ---- */
+function loadExcelJS(cb,fail){ if(window.ExcelJS){ cb(); return; }
+  const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
+  s.onload=cb; s.onerror=()=>{ if(fail)fail(); }; document.head.appendChild(s); }
+function exportLedgerXLSX(){ const ev=hostEvent(); const c=cfg(ev);
+  toast('정산표를 만드는 중…');
+  loadExcelJS(async ()=>{ try{
+    const led=ledgerStats(ev);
+    const wb=new ExcelJS.Workbook(); wb.creator='이음';
+    const ws=wb.addWorksheet('정산 장부',{views:[{showGridLines:false}]});
+    ws.columns=[{width:16},{width:10},{width:11},{width:11},{width:8},{width:15},{width:13}];
+    const BORDER={style:'thin',color:{argb:'FFE7E0D5'}};
+    const allB={top:BORDER,left:BORDER,bottom:BORDER,right:BORDER};
+    // 타이틀
+    ws.mergeCells('A1:G1'); const t=ws.getCell('A1');
+    t.value=`이음 정산 장부 — ${evNamePlain(ev)} ${c.label}`;
+    t.font={name:'Malgun Gothic',size:15,bold:true,color:{argb:'FFFFFFFF'}};
+    t.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFA87F6A'}};
+    t.alignment={horizontal:'center',vertical:'middle'}; ws.getRow(1).height=32;
+    ws.mergeCells('A2:G2'); const st=ws.getCell('A2');
+    st.value=`${dateText(ev)} · ${ev.venue||''}   (내보낸 날짜: ${todayStr()})`;
+    st.font={name:'Malgun Gothic',size:9,color:{argb:'FF8B8378'}};
+    st.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF6F0E8'}};
+    st.alignment={horizontal:'center',vertical:'middle'}; ws.getRow(2).height=18;
+    // 요약 4스탯
+    const sums=[['참석 응답',led.attend+'명'],['마음 전한 분',led.paid+'명'],['총 '+c.money,led.total],['이음/현금',`${won(led.appSum)} / ${won(led.manualSum)}`]];
+    sums.forEach((s2,i)=>{ const col=String.fromCharCode(65+i*2); const col2=String.fromCharCode(66+i*2);
+      if(i<3){ ws.mergeCells(`${col}4:${col2}4`); }
+      const cell=ws.getCell(`${col}4`); cell.value=s2[0]; cell.font={name:'Malgun Gothic',size:9,color:{argb:'FF8B8378'}};
+      cell.alignment={horizontal:'center'};
+      if(i<3){ ws.mergeCells(`${col}5:${col2}5`); }
+      const v=ws.getCell(`${col}5`); v.value=s2[1];
+      v.font={name:'Malgun Gothic',size:12,bold:true,color:{argb:'FF8F6852'}};
+      v.alignment={horizontal:'center'};
+      if(typeof s2[1]==='number') v.numFmt='₩#,##0';
+    });
+    ws.getRow(4).height=16; ws.getRow(5).height=22;
+    // 헤더
+    const HEAD=['이름','관계','측','응답','인원','금액','출처'];
+    const hr=ws.getRow(7); HEAD.forEach((h,i)=>{ const cell=hr.getCell(i+1); cell.value=h;
+      cell.font={name:'Malgun Gothic',size:10,bold:true,color:{argb:'FF6B5744'}};
+      cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEFE4D6'}};
+      cell.alignment={horizontal:'center',vertical:'middle'};
+      cell.border={...allB,bottom:{style:'medium',color:{argb:'FFC9B79E'}}}; });
+    hr.height=22;
+    // 데이터
+    const SRC={app:{t:'이음 송금',c:'FF3A6EA5'},cash:{t:'현금',c:'FF9A7D3E'},manual:{t:'직접 입력',c:'FF8B8378'}};
+    let r=8;
+    ev.guests.forEach((g,gi)=>{ const p=g.pay||{}; const row=ws.getRow(r);
+      const srcKey=p.amount!=null?(p.source==='app'?'app':(p.method==='cash'?'cash':'manual')):null;
+      const rsvpTxt=g.rsvp.status==='yes'?(c.counts?'참석':'조문'):g.rsvp.status==='no'?'불참':'미응답';
+      const vals=[g.name,g.relation,(ev.accounts[g.side]||{}).label||'',rsvpTxt,c.counts?(g.rsvp.count||''):'',p.amount!=null?p.amount:'',srcKey?SRC[srcKey].t:''];
+      vals.forEach((v,i)=>{ const cell=row.getCell(i+1); cell.value=v;
+        cell.font={name:'Malgun Gothic',size:10,color:{argb:i===3?(g.rsvp.status==='yes'?'FF2E7D4F':g.rsvp.status==='no'?'FFB3564A':'FF8B8378'):(i===6&&srcKey?SRC[srcKey].c:'FF39342E')},bold:i===5&&v!==''};
+        cell.alignment={horizontal:i===0?'left':'center',vertical:'middle'};
+        cell.border=allB;
+        if(gi%2) cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFBF8F3'}};
+        if(i===5&&v!=='') cell.numFmt='₩#,##0'; });
+      row.height=19; r++; });
+    // 합계
+    const tr=ws.getRow(r); ws.mergeCells(`A${r}:E${r}`);
+    tr.getCell(1).value='합계'; tr.getCell(1).font={name:'Malgun Gothic',size:11,bold:true};
+    tr.getCell(1).alignment={horizontal:'center'};
+    tr.getCell(6).value=led.total; tr.getCell(6).numFmt='₩#,##0';
+    tr.getCell(6).font={name:'Malgun Gothic',size:11,bold:true,color:{argb:'FF8F6852'}};
+    tr.getCell(7).value=`이음 ${led.appSum.toLocaleString()} · 직접 ${led.manualSum.toLocaleString()}`;
+    tr.getCell(7).font={name:'Malgun Gothic',size:8,color:{argb:'FF8B8378'}};
+    for(let i=1;i<=7;i++){ tr.getCell(i).border={top:{style:'double',color:{argb:'FFA87F6A'}},bottom:BORDER,left:BORDER,right:BORDER};
+      tr.getCell(i).fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF6F0E8'}}; }
+    tr.height=24;
+    ws.getCell(`A${r+2}`).value='이음(마음을 잇다) — 데이터는 내 기기에만 저장됩니다';
+    ws.getCell(`A${r+2}`).font={name:'Malgun Gothic',size:8,color:{argb:'FFB0A698'}};
+    const buf=await wb.xlsx.writeBuffer();
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    exportFile(blob, `이음_정산장부_${evNamePlain(ev)}.xlsx`, '이음 정산 장부', '정산표 엑셀을 내보냈어요 (서식 포함)');
+  }catch(e){ toast('엑셀 생성 실패 — CSV로 대신 내보내요'); exportLedgerCSV(); }
+  }, ()=>{ toast('엑셀 모듈 로드 실패 — CSV로 대신 내보내요'); exportLedgerCSV(); });
+}
 function exportLedgerCSV(){ const ev=hostEvent(); const c=cfg(ev);
   const rows=[['이름','관계','측','응답','인원','금액','출처']];
   ev.guests.forEach(g=>{ const p=g.pay||{}; rows.push([ g.name, g.relation, (ev.accounts[g.side]||{}).label||'',
@@ -1555,36 +1663,113 @@ function exportLedgerCSV(){ const ev=hostEvent(); const c=cfg(ev);
   const csv='﻿'+rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\r\n');
   exportFile(new Blob([csv],{type:'text/csv;charset=utf-8'}), `${evNamePlain(ev)}_정산장부.csv`, '이음 정산장부', '엑셀(CSV)로 내보냈어요'); }
 function openThanks(){ S.ui.hostSub='thanks'; S.ui.tab='host'; save(); render(); window.scrollTo(0,0); }
+/* ===== 감사카드 v2 — 시중 카드 수준의 일러스트 장식 시스템 ===== */
+// pal: f1/f2 꽃, leaf/leaf2 잎, core 꽃심 · deco: 장식 배치 타입 · mood:'mourn'=조의(부고 전용 우선)
 const CARDS=[
-  {bg:['#fde8ef','#f9d0df'], ink:'#7d4a5c', accent:'#e491ac', motif:'floral'},
-  {bg:['#efe9fb','#ddd0f3'], ink:'#5a4a86', accent:'#a48fd6', motif:'dots'},
-  {bg:['#e3f3f0','#c9e7df'], ink:'#3d6b62', accent:'#7cc2b4', motif:'leaf'},
-  {bg:['#fff2e2','#ffdcc0'], ink:'#8a5a3c', accent:'#f0a878', motif:'hearts'},
-  {bg:['#fffbe0','#f4edbf'], ink:'#7d6f38', accent:'#d8c56a', motif:'dots'},
-  {bg:['#e6f2fd','#cde3fb'], ink:'#3f5f86', accent:'#7db0e6', motif:'hearts'},
-  {bg:['#eef3ea','#dbe7d3'], ink:'#4f6045', accent:'#93ac7e', motif:'floral'},
-  {bg:['#ffeaec','#fbcfd4'], ink:'#8a4a50', accent:'#ef97a0', motif:'floral'},
-  {bg:['#faf3e2','#efe2c4'], ink:'#7a6238', accent:'#cdae74', motif:'leaf'},
-  {bg:['#f2efe9','#e3dacb'], ink:'#5f5647', accent:'#b0a189', motif:'dots'}
+ {bg:['#fdf3f0','#f9dfe2'], ink:'#7d4a56', accent:'#c98a97', deco:'corners',  pal:{f1:'#f2aebe',f2:'#f7cdd6',leaf:'#a8c5a5',leaf2:'#c4d8c0',core:'#fff6f0'}},
+ {bg:['#f4f0fb','#e3d9f4'], ink:'#5d4d88', accent:'#9a86c8', deco:'wreath',   pal:{f1:'#c3b1e8',f2:'#e0d3f5',leaf:'#a5b8a0',leaf2:'#c8d6c2',core:'#fbf8ff'}},
+ {bg:['#f0f6f1','#dcebe0'], ink:'#42604f', accent:'#7d9c85', deco:'branches', pal:{f1:'#e9f2ea',f2:'#cfe3d2',leaf:'#8fb096',leaf2:'#b3ccb6',core:'#f6fbf5'}},
+ {bg:['#fdf4ec','#f9e0cd'], ink:'#8a5a3c', accent:'#d29b6e', deco:'arch',     pal:{f1:'#f4c39a',f2:'#f9dcc0',leaf:'#c6b287',leaf2:'#dccfa8',core:'#fffaf2'}},
+ {bg:['#fdfaf0','#f6ecc9'], ink:'#7d6a34', accent:'#c8ac57', deco:'scallop',  pal:{f1:'#f0d879',f2:'#f7e8ab',leaf:'#b7bd86',leaf2:'#d2d6a8',core:'#fffdf4'}},
+ {bg:['#eff5fc','#d9e7f7'], ink:'#3f5f86', accent:'#7fa3cf', deco:'ribbon',   pal:{f1:'#a9c6e8',f2:'#cfdff4',leaf:'#a9bfa8',leaf2:'#c8d8c6',core:'#f8fbff'}},
+ {bg:['#f3f5ec','#e2e8d2'], ink:'#4f6045', accent:'#8aa06b', deco:'lineleaf', pal:{f1:'#d6e0ba',f2:'#e8eed3',leaf:'#97ab72',leaf2:'#b5c493',core:'#f9fbf1'}},
+ {bg:['#fdf1f2','#f9d8dc'], ink:'#8a4a50', accent:'#d38f97', deco:'petals',   pal:{f1:'#f2b7bf',f2:'#f8d5da',leaf:'#b9c6a2',leaf2:'#d3dcbd',core:'#fff7f6'}},
+ {bg:['#fbf6ea','#f1e3c3'], ink:'#7a6238', accent:'#bd9d5e', deco:'goldframe',pal:{f1:'#e3c887',f2:'#f0deb3',leaf:'#b3a878',leaf2:'#cec49a',core:'#fffcf3'}},
+ {bg:['#f5f2ec','#e7dfd2'], ink:'#5f5647', accent:'#a4947c', deco:'sealdots', pal:{f1:'#d8c9b4',f2:'#e8ddcc',leaf:'#b0ab93',leaf2:'#c9c5af',core:'#fbf8f2'}},
+ {bg:['#f5f4f1','#e4e2dc'], ink:'#565049', accent:'#8f8a80', deco:'mum',      pal:{f1:'#ffffff',f2:'#f0eee8',leaf:'#9aa694',leaf2:'#b8c1b2',core:'#e8e4da'}, mood:'mourn'},
+ {bg:['#eef1ec','#d9e0d6'], ink:'#48544a', accent:'#7c8b7c', deco:'halfwreath',pal:{f1:'#fbfcf8',f2:'#c3cfc0',leaf:'#8a9c8a',leaf2:'#aebcae',core:'#dfe6da'}, mood:'mourn'}
 ];
-function motifRow(type,y,accent){ const xs=[130,222,315,408,500,593,685];
-  const sh=x=> type==='hearts'?`<path d="M${x} ${y+7} C${x-6} ${y-5},${x-22} ${y-3},${x-22} ${y+7} C${x-22} ${y+16},${x-10} ${y+20},${x} ${y+28} C${x+10} ${y+20},${x+22} ${y+16},${x+22} ${y+7} C${x+22} ${y-3},${x+6} ${y-5},${x} ${y+7} Z" fill="${accent}" opacity=".8"/>`
-   : type==='floral'?`<g fill="${accent}" opacity=".85">${[0,72,144,216,288].map(a=>`<circle cx="${(x+9*Math.cos(a*Math.PI/180)).toFixed(1)}" cy="${(y+9*Math.sin(a*Math.PI/180)).toFixed(1)}" r="6.5"/>`).join('')}</g><circle cx="${x}" cy="${y}" r="4" fill="#fff"/>`
-   : type==='leaf'?`<ellipse cx="${x}" cy="${y}" rx="6" ry="14" fill="${accent}" opacity=".78" transform="rotate(28 ${x} ${y})"/><ellipse cx="${x}" cy="${y}" rx="6" ry="14" fill="${accent}" opacity=".55" transform="rotate(-28 ${x} ${y})"/>`
-   : `<circle cx="${x}" cy="${y}" r="6" fill="${accent}" opacity=".7"/>`;
-  return `<g>${xs.map(sh).join('')}</g>`; }
+/* --- SVG 장식 요소 라이브러리 --- */
+function _flower(cx,cy,r,fill,core,rot,op){ // 5잎 베지어 플라워
+  const p=`M0 ${-r} C ${r*.52} ${-r*.78} ${r*.58} ${-r*.12} 0 0 C ${-r*.58} ${-r*.12} ${-r*.52} ${-r*.78} 0 ${-r} Z`;
+  return `<g transform="translate(${cx} ${cy}) rotate(${rot||0})" opacity="${op==null?1:op}">${[0,72,144,216,288].map(a=>`<path d="${p}" fill="${fill}" transform="rotate(${a})"/>`).join('')}<circle r="${r*.2}" fill="${core}"/></g>`; }
+function _mumFlower(cx,cy,r,fill,fill2,core){ // 국화(다층 12+12잎)
+  const p=(rr)=>`M0 ${-rr} C ${rr*.3} ${-rr*.85} ${rr*.3} ${-rr*.1} 0 0 C ${-rr*.3} ${-rr*.1} ${-rr*.3} ${-rr*.85} 0 ${-rr} Z`;
+  return `<g transform="translate(${cx} ${cy})">${Array.from({length:12},(_,i)=>`<path d="${p(r)}" fill="${fill2}" transform="rotate(${i*30+15})"/>`).join('')}${Array.from({length:12},(_,i)=>`<path d="${p(r*.72)}" fill="${fill}" transform="rotate(${i*30})"/>`).join('')}<circle r="${r*.16}" fill="${core}"/></g>`; }
+function _leafE(cx,cy,len,w,fill,rot,op){ return `<ellipse cx="${cx}" cy="${cy}" rx="${w}" ry="${len}" fill="${fill}" opacity="${op==null?0.9:op}" transform="rotate(${rot} ${cx} ${cy})"/>`; }
+function _branch(x,y,len,rot,fill,fill2){ let s=`<g transform="translate(${x} ${y}) rotate(${rot})"><path d="M0 0 Q ${len*.12} ${-len*.5} 0 ${-len}" stroke="${fill}" stroke-width="3.5" fill="none" opacity=".75"/>`;
+  for(let i=1;i<=6;i++){ const ly=-len*i/6.8, sd=i%2?1:-1;
+    s+=`<ellipse cx="${sd*11}" cy="${ly}" rx="7.5" ry="15" fill="${i%3?fill:fill2}" opacity="${0.92-i*0.06}" transform="rotate(${sd*42} ${sd*11} ${ly})"/>`; }
+  return s+'</g>'; }
+function _cluster(cx,cy,pal,scale,rot){ return `<g transform="translate(${cx} ${cy}) rotate(${rot||0}) scale(${scale||1})">
+  ${_leafE(-30,-4,24,9,pal.leaf,-42)}${_leafE(28,-8,26,9,pal.leaf2,36)}${_leafE(2,-30,22,8,pal.leaf,-4,.7)}
+  ${_flower(0,0,30,pal.f1,pal.core)}${_flower(36,18,17,pal.f2,pal.core,25,.95)}
+  <circle cx="-26" cy="20" r="5.5" fill="${pal.f2}"/><circle cx="14" cy="-34" r="4" fill="${pal.f2}" opacity=".85"/></g>`; }
+function _divider(y,pal){ return `<g>${_leafE(352,y,10,4,pal.leaf,-90,.8)}<circle cx="400" cy="${y}" r="4.5" fill="${pal.f1}"/>${_leafE(448,y,10,4,pal.leaf,90,.8)}</g>`; }
+function _decoSVG(c,photo){ const P=c.pal;
+  switch(c.deco){
+   case 'corners': return _cluster(95,95,P,1,-18)+_cluster(705,95,P,1,18)+_cluster(95,905,P,.9,198)+_cluster(705,905,P,.9,162);
+   case 'wreath': { const r=photo?196:170, cy=photo?350:322; let s='';
+     for(let i=0;i<28;i++){ const a=i/28*2*Math.PI, lx=400+Math.cos(a)*r, ly=cy+Math.sin(a)*r;
+       s+=_leafE(lx,ly,17,6.5,i%2?P.leaf:P.leaf2,a*180/Math.PI+90,.85); }
+     s+=_flower(400-r*.71,cy-r*.71,18,P.f1,P.core,-20)+_flower(400+r*.71,cy-r*.71,18,P.f1,P.core,20)
+       +_flower(400,cy+r,22,P.f2,P.core)+`<circle cx="${400-r}" cy="${cy}" r="5" fill="${P.f2}"/><circle cx="${400+r}" cy="${cy}" r="5" fill="${P.f2}"/>`;
+     return s; }
+   case 'branches': return _branch(120,940,300,28,P.leaf,P.leaf2)+_branch(680,60,300,208,P.leaf,P.leaf2)
+     +_flower(140,890,16,P.f2,P.core,0,.9)+_flower(662,108,16,P.f2,P.core,0,.9);
+   case 'arch': { const s=`<path d="M120 940 L120 300 A280 280 0 0 1 680 300 L680 940" fill="none" stroke="${c.accent}" stroke-width="3" opacity=".55"/>
+     <path d="M145 940 L145 305 A255 255 0 0 1 655 305 L655 940" fill="none" stroke="${c.accent}" stroke-width="1.5" opacity=".4"/>`;
+     return s+_cluster(120,300,P,.8,-10)+_cluster(680,300,P,.8,10); }
+   case 'scallop': { let path='M60 60'; for(let x=60;x<740;x+=40) path+=` A20 20 0 0 1 ${x+40} 60`;
+     for(let y=60;y<940;y+=40) path+=` A20 20 0 0 1 740 ${y+40}`;
+     for(let x=740;x>60;x-=40) path+=` A20 20 0 0 1 ${x-40} 940`;
+     for(let y=940;y>60;y-=40) path+=` A20 20 0 0 1 60 ${y-40}`;
+     return `<path d="${path} Z" fill="none" stroke="${c.accent}" stroke-width="2.5" opacity=".5"/>`
+       +_branch(96,180,150,150,P.leaf,P.leaf2)+_branch(704,820,150,-30,P.leaf,P.leaf2); }
+   case 'ribbon': { const conf=[[120,230],[205,140],[595,150],[680,240],[150,760],[650,780],[255,885],[545,895],[100,520],[700,560]];
+     return `<path d="M232 130 L200 172 L245 165 L262 196 Z" fill="${P.f2}"/>
+      <path d="M568 130 L600 172 L555 165 L538 196 Z" fill="${P.f2}"/>
+      <rect x="240" y="76" width="320" height="52" rx="26" fill="${P.f1}"/>
+      <rect x="240" y="76" width="320" height="52" rx="26" fill="none" stroke="#ffffff" stroke-width="2" opacity=".6"/>`
+      +conf.map(([x,y],i)=>i%2?`<circle cx="${x}" cy="${y}" r="${5+(i%3)*2}" fill="${i%3?P.f1:P.f2}" opacity=".75"/>`
+        :`<rect x="${x}" y="${y}" width="11" height="11" rx="3" fill="${P.leaf}" opacity=".65" transform="rotate(${20+i*9} ${x} ${y})"/>`).join(''); }
+   case 'lineleaf': return `<rect x="70" y="70" width="660" height="860" rx="26" fill="none" stroke="${c.accent}" stroke-width="2" opacity=".55"/>
+     <rect x="86" y="86" width="628" height="828" rx="18" fill="none" stroke="${c.accent}" stroke-width="1" opacity=".4"/>`
+     +_branch(70,330,190,180,P.leaf,P.leaf2)+_branch(730,670,190,0,P.leaf,P.leaf2);
+   case 'petals': { const pts=[[110,150,-20],[220,90,15],[620,110,30],[700,190,-15],[90,420,25],[715,500,-30],[140,820,10],[660,860,-20],[300,935,18],[520,70,-25]];
+     return pts.map(([x,y,r],i)=>`<path d="M0 -16 C 9 -12 10 -2 0 0 C -10 -2 -9 -12 0 -16 Z" fill="${i%2?P.f1:P.f2}" opacity=".85" transform="translate(${x} ${y}) rotate(${r}) scale(${1+(i%3)*.3})"/>`).join('')
+       +_flower(120,105,22,P.f1,P.core,-10)+_flower(680,860,22,P.f1,P.core,15); }
+   case 'goldframe': return `<rect x="64" y="64" width="672" height="872" fill="none" stroke="${c.accent}" stroke-width="3" opacity=".7"/>
+     <rect x="78" y="78" width="644" height="844" fill="none" stroke="${c.accent}" stroke-width="1.2" opacity=".55"/>
+     ${[[64,64,0],[736,64,90],[736,936,180],[64,936,270]].map(([x,y,r])=>`<g transform="translate(${x} ${y}) rotate(${r})">
+       <path d="M0 0 C 30 4 40 18 42 42 M0 0 C 4 30 18 40 42 42" stroke="${c.accent}" stroke-width="2.5" fill="none" opacity=".8"/>
+       ${_leafE(24,24,12,5,P.leaf,45,.8)}</g>`).join('')}`;
+   case 'sealdots': { let dots=''; for(let gy=0;gy<12;gy++)for(let gx=0;gx<9;gx++){ dots+=`<circle cx="${76+gx*81}" cy="${76+gy*77.5}" r="2.6" fill="${c.accent}" opacity=".22"/>`; }
+     return dots+`<circle cx="400" cy="120" r="34" fill="${P.f1}" opacity=".95"/><circle cx="400" cy="120" r="34" fill="none" stroke="${P.core}" stroke-width="2" stroke-dasharray="3 4"/>
+     <path d="M400 112 C 396 105 385 106 385 114 C 385 121 393 124 400 130 C 407 124 415 121 415 114 C 415 106 404 105 400 112 Z" fill="${P.core}"/>`; }
+   case 'mum': return _mumFlower(190,878,52,P.f1,P.f2,P.core)+_mumFlower(280,910,38,P.f1,P.f2,P.core)+_mumFlower(120,925,30,P.f1,P.f2,P.core)
+     +_leafE(240,860,26,9,P.leaf,-35,.8)+_leafE(150,880,24,8,P.leaf2,40,.8)+_leafE(330,885,22,8,P.leaf,25,.7)
+     +`<line x1="120" y1="140" x2="680" y2="140" stroke="${c.accent}" stroke-width="1.5" opacity=".5"/>`;
+   case 'halfwreath': { let s=''; const cy=photo?350:330, r=photo?196:165;
+     for(let i=0;i<16;i++){ const a=Math.PI*(0.9+i/15*1.2), lx=400+Math.cos(a)*r, ly=cy+Math.sin(a)*r*0.95;
+       s+=_leafE(lx,ly,16,6,i%2?P.leaf:P.leaf2,a*180/Math.PI+90,.8); }
+     return s+_mumFlower(400-r*.74,cy-r*.62,30,P.f1,P.f2,P.core)+_mumFlower(400+r*.74,cy-r*.62,30,P.f1,P.f2,P.core)
+       +_leafE(400-r*.45,cy-r*.85,14,5,P.leaf,-30,.7)+_leafE(400+r*.45,cy-r*.85,14,5,P.leaf2,30,.7); }
+  } return ''; }
 function wrapText(s,per){ const out=[]; (s||'').split('\n').forEach(para=>{ let line=''; para.split(' ').forEach(w=>{ if(line && [...(line+' '+w)].length>per){out.push(line);line=w;} else {line=line?line+' '+w:w;} }); if(line)out.push(line); }); return out.slice(0,7); }
-function cardSVG(idx,greeting,hostNames,photo){ const c=CARDS[idx]||CARDS[0];
-  const grad=`<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">${c.bg.map((col,i)=>`<stop offset="${i/(c.bg.length-1)}" stop-color="${col}"/>`).join('')}</linearGradient>`;
-  const lines=wrapText(greeting, photo?15:17); const baseY=photo?600:(500-lines.length*22);
-  const textLines=lines.map((ln,i)=>`<text x="400" y="${baseY+i*46}" text-anchor="middle" font-family="'Nanum Myeongjo','Apple SD Gothic Neo',serif" font-size="29" fill="${c.ink}">${esc(ln)}</text>`).join('');
-  const ph=photo?`<clipPath id="pc"><circle cx="400" cy="335" r="150"/></clipPath><image href="${photo}" x="250" y="185" width="300" height="300" preserveAspectRatio="xMidYMid slice" clip-path="url(#pc)"/><circle cx="400" cy="335" r="150" fill="none" stroke="${c.accent}" stroke-width="5"/>`:'';
+function cardSVG(idx,greeting,hostNames,photo){ const c=CARDS[idx]||CARDS[0]; const mourn=c.mood==='mourn';
+  const gid='cg'+idx, pcid='pc'+idx; // 여러 카드가 한 화면에 렌더돼도 id 충돌 없도록
+  const grad=`<linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">${c.bg.map((col,i)=>`<stop offset="${i/(c.bg.length-1)}" stop-color="${col}"/>`).join('')}</linearGradient>`;
+  const inWreath=(c.deco==='wreath'||c.deco==='halfwreath')&&!photo; // 리스 안에 제목을 앉히는 구도
+  const lines=wrapText(greeting, photo?15:16);
+  const baseY = photo?618:(inWreath?560:500-Math.min(lines.length,5)*16);
+  const textLines=lines.map((ln,i)=>`<text x="400" y="${baseY+i*47}" text-anchor="middle" font-family="'Nanum Myeongjo','Apple SD Gothic Neo',serif" font-size="29" fill="${c.ink}">${esc(ln)}</text>`).join('');
+  // 사진: 아치형 프레임 (요즘 청첩장 감성)
+  const ph=photo?`<clipPath id="${pcid}"><path d="M262 358 A138 138 0 0 1 538 358 L538 512 L262 512 Z"/></clipPath>
+    <image href="${photo}" x="262" y="212" width="276" height="300" preserveAspectRatio="xMidYMid slice" clip-path="url(#${pcid})"/>
+    <path d="M262 358 A138 138 0 0 1 538 358 L538 512 L262 512 Z" fill="none" stroke="${c.accent}" stroke-width="4"/>
+    <path d="M252 358 A148 148 0 0 1 548 358 L548 522" fill="none" stroke="${c.accent}" stroke-width="1.5" opacity=".5"/>`:'';
+  const title=mourn?'감사드립니다':'감 사 합 니 다';
+  const titleY = c.deco==='ribbon'?109 : (mourn&&c.deco==='mum'?120 : (inWreath?325:172));
+  const titleSub = inWreath?`<text x="400" y="368" text-anchor="middle" font-family="'Nanum Myeongjo',serif" font-size="15" letter-spacing="3" fill="${c.ink}" opacity=".55">WITH GRATITUDE</text>`:'';
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000"><defs>${grad}</defs>`+
-    `<rect width="800" height="1000" fill="url(#bg)"/>${motifRow(c.motif,120,c.accent)}`+
-    `<text x="400" y="${photo?165:180}" text-anchor="middle" font-family="'Nanum Myeongjo',serif" font-size="27" letter-spacing="7" fill="${c.accent}">감 사 합 니 다</text>`+
+    `<rect width="800" height="1000" fill="url(#${gid})"/>`+
+    `<rect x="34" y="34" width="732" height="932" rx="20" fill="#ffffff" opacity="${c.deco==='sealdots'||c.deco==='goldframe'||c.deco==='lineleaf'?0:0.35}"/>`+
+    _decoSVG(c,!!photo)+
+    `<text x="400" y="${titleY}" text-anchor="middle" font-family="'Nanum Myeongjo',serif" font-size="${c.deco==='ribbon'?24:(inWreath?30:27)}" letter-spacing="${mourn?4:(inWreath?5:7)}" fill="${c.deco==='ribbon'?'#fff':c.accent}" font-weight="600">${title}</text>${titleSub}`+
     `${ph}${textLines}`+
-    `<text x="400" y="895" text-anchor="middle" font-family="'Nanum Myeongjo',serif" font-size="24" fill="${c.ink}">— ${esc(hostNames)} 올림</text>`+
-    `${motifRow(c.motif,945,c.accent)}</svg>`; }
+    _divider(838,c.pal)+
+    `<text x="400" y="893" text-anchor="middle" font-family="'Nanum Myeongjo',serif" font-size="24" fill="${c.ink}">— ${esc(hostNames)} ${mourn?'배상':'올림'}</text></svg>`; }
 function svgToPngBlob(svg,w,h,cb){ try{ const img=new Image(); img.onload=()=>{ try{ const cv=document.createElement('canvas'); cv.width=w; cv.height=h; const ctx=cv.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); ctx.drawImage(img,0,0,w,h); cv.toBlob(cb,'image/png'); }catch(e){cb(null);} }; img.onerror=()=>cb(null); img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg); }catch(e){cb(null);} }
 function thankSamples(ev){ return cfg(ev).label==='부고'
   ? ['{이름}님, 큰 슬픔 중에 함께해 주시고 위로해 주셔서 진심으로 감사드립니다. 덕분에 큰 힘이 되었습니다.',
@@ -1597,8 +1782,10 @@ function thankSamples(ev){ return cfg(ev).label==='부고'
 function cardState(ev){ if(!ev.thankCard)ev.thankCard={design:0,msg:''}; return ev.thankCard; }
 function hostSig(ev){ return ev.partyB?`${ev.partyA}·${ev.partyB}`:ev.partyA; }
 function personGreeting(ev,name){ const c=cardState(ev); const m=(c.msg&&c.msg.trim())?c.msg:thankSamples(ev)[0]; return m.replace(/\{이름\}/g, name||'○○'); }
+function isFreeCard(i,ev){ // 기본 3종 무료 + 부고 행사에선 조의 카드 무료(예의 기능에 과금 안 함)
+  return i<FREE_CARDS || (ev && ev.type==='memorial' && CARDS[i] && CARDS[i].mood==='mourn'); }
 function setCardDesign(i){ const ev=hostEvent();
-  if(i>=FREE_CARDS && !hasPass(ev)){ passTrack('cardDesign'); passPrompt(()=>{ cardState(ev).design=i; save(); render(); }); return; }
+  if(!isFreeCard(i,ev) && !hasPass(ev)){ passTrack('cardDesign'); passPrompt(()=>{ cardState(ev).design=i; save(); render(); }); return; }
   cardState(ev).design=i; save(); render(); }
 function setCardMsg(v){ cardState(hostEvent()).msg=v; renderCardPreview(); }
 function useSample(i){ const ev=hostEvent(); cardState(ev).msg=thankSamples(ev)[i]; save(); render(); }
@@ -1618,8 +1805,11 @@ function thanksView(){ const ev=hostEvent(); const c=cardState(ev); const sample
   <p class="sub" style="margin:0 2px 12px">파스텔 카드에 사진·메시지를 담아 예쁜 감사 인사를 보내세요. <b>내 문자·카톡</b>으로 직접 전송해요.</p>
   <div class="card">
     <label>카드 디자인</label>
-    <div class="card-thumbs">${CARDS.map((cc,i)=>`<button class="card-thumb ${c.design===i?'on':''}" onclick="setCardDesign(${i})" style="background:linear-gradient(135deg,${cc.bg[0]},${cc.bg[cc.bg.length-1]})"><span style="color:${cc.accent}">♥</span>${i>=FREE_CARDS&&!hasPass(ev)?'<span class="pbdg">P</span>':''}</button>`).join('')}</div>
-    ${!hasPass(ev)?`<p class="lblnote">‘P’ 디자인은 <b>호스트 패스</b>(정식 출시 후 ${PASS_PRICE} · 지금은 무료)로 열 수 있어요.</p>`:''}
+    <div class="card-thumbs">${CARDS.map((cc,i)=>({cc,i})).sort((a,b)=>{ // 부고 행사: 조의 카드 우선 노출
+        if(ev.type!=='memorial') return a.i-b.i;
+        return (b.cc.mood==='mourn')-(a.cc.mood==='mourn') || a.i-b.i;
+      }).map(({cc,i})=>`<button class="card-thumb ${c.design===i?'on':''}" onclick="setCardDesign(${i})" style="background:linear-gradient(135deg,${cc.bg[0]},${cc.bg[cc.bg.length-1]})"><span style="color:${cc.mood==='mourn'?cc.ink:cc.accent}">${cc.mood==='mourn'?'❀':'♥'}</span>${!isFreeCard(i,ev)&&!hasPass(ev)?'<span class="pbdg">P</span>':''}</button>`).join('')}</div>
+    ${!hasPass(ev)?`<p class="lblnote">‘P’ 디자인은 <b>호스트 패스</b>(정식 출시 후 ${PASS_PRICE} · 지금은 무료)로 열 수 있어요.${ev.type==='memorial'?' 조의 카드(❀)는 무료예요.':''}</p>`:''}
     <label style="margin-top:13px">메시지 <span style="font-weight:600;color:var(--muted);font-size:11px">· {이름}은 하객 이름으로 바뀜</span></label>
     <div class="chips" style="margin-bottom:8px">${samples.map((s,i)=>`<button class="chip" onclick="useSample(${i})">샘플 ${i+1}</button>`).join('')}</div>
     <textarea rows="3" oninput="setCardMsg(this.value)" placeholder="직접 입력하거나 위 샘플을 골라보세요">${esc(c.msg)}</textarea>
