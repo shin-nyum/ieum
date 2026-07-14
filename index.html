@@ -1012,8 +1012,8 @@ function hostView(){
       ${ev.externalUrl?`<button class="btn btn-line btn-sm" onclick="shareFromHost('ext')">🖼️ 청첩장 원본 그대로 보내기</button>`:''}
     </div>
     <label style="margin-top:12px">모바일 ${c.doc} 링크 연결 <span style="font-weight:400;color:var(--muted)">(선택 — 전문업체 제작본)</span></label>
-    <input placeholder="https://... (바른손/더카드 등)" value="${esc(ev.externalUrl)}" onchange="updEv('externalUrl',this.value)">
-    <p class="lblnote">${ev.externalUrl?'✓ 연결됨 — 하객이 원본 청첩장도 볼 수 있어요':'연결하면 원본 썸네일로도 보낼 수 있어요'}</p>
+    <input placeholder="https://... (바른손/더카드 등)" value="${esc(ev.externalUrl)}" onchange="hostUrlChanged(this.value)">
+    <p class="lblnote">${_hostFetching?'⏳ 청첩장 정보를 가져오는 중…':(ev.externalUrl?'✓ 연결됨 — 하객이 원본 청첩장도 볼 수 있어요':'링크를 넣으면 이름·날짜·계좌 자동 입력을 제안해요')}</p>
   </div>
 
   <details class="fold" ${infoOpen?'open':''} ontoggle="hostFoldSet('info',this.open)">
@@ -2640,6 +2640,45 @@ async function fetchImportUrl(){
   } finally { _impFetching=false; S.ui.importFetching=false; render();
     setTimeout(()=>{ const el=document.getElementById('imp-result'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); },80); }
 }
+/* ---- 호스트: 모바일 청첩장 링크 → 행사 정보 초벌 입력 (하객용 파서 재사용) ---- */
+let _hostFetching=false;
+function hostUrlChanged(v){ const ev=own(hostEvent()); if(!ev) return;
+  const prev=(ev.externalUrl||'').trim(); ev.externalUrl=(v||'').trim(); save();
+  const url=(ev.externalUrl.match(/https?:\/\/[^\s]+/)||[])[0];
+  if(!url || url===prev){ render(); return; } // 링크 제거·동일 링크 재입력은 조용히 저장만
+  if(confirm(`모바일 ${cfg(ev).doc}에서 정보를 가져와 빈칸을 채울까요?\n(이름·날짜·장소·계좌 초벌 입력 — 이미 입력한 값은 그대로 둡니다)`)){
+    hostFetchFromUrl(url);
+  } else { render(); } }
+async function hostFetchFromUrl(url){ if(_hostFetching) return; _hostFetching=true;
+  const evId=S.ui.hostEventId; toast('청첩장 정보를 가져오는 중…'); render();
+  try{
+    const html=await fetchInviteHtml(url);
+    const ev=S.events.find(e=>e.id===evId); if(!ev) return; // 화면을 떠났으면 중단
+    if(!html){ toast('청첩장 페이지를 읽지 못했어요 — 직접 입력해 주세요 (링크는 저장됨)'); return; }
+    const p=parseInviteHtml(html,url); own(ev);
+    const filled=[];
+    const names=(p.names||'').split(/[♥❤♡·]|그리고/).map(s=>s.trim()).filter(Boolean);
+    if(!ev.partyA&&names[0]){ ev.partyA=names[0]; filled.push('이름'); }
+    if(!ev.partyB&&names[1]){ ev.partyB=names[1]; if(!filled.includes('이름')) filled.push('이름'); }
+    if(!ev.date&&p.date){ ev.date=p.date; if(p.time) ev.time=p.time; filled.push('날짜'); } // 시간은 날짜와 세트로만 (기본값 오염 방지)
+    if(!ev.venue&&p.venue){ // og:description 통짜가 올 수 있어 날짜·요일·시간 조각은 걷어냄
+      const v=p.venue.replace(/20\d{2}\s*[년.\-\/]\s*\d{1,2}\s*[월.\-\/]\s*\d{1,2}\s*일?/g,'')
+        .replace(/\(?[월화수목금토일]\s*요일\)?|\([월화수목금토일]\)/g,'')
+        .replace(/(오전|오후)\s*\d{1,2}\s*시\s*(\d{1,2}\s*분)?|\d{1,2}\s*:\s*\d{2}/g,'')
+        .replace(/\s{2,}/g,' ').trim();
+      if(v){ ev.venue=v; filled.push('장소'); } }
+    if(p.img&&!ev.shareImg){ ev.shareImg=p.img; filled.push('공유 썸네일'); }
+    if(p.accounts&&p.accounts.length){ let acctN=0;
+      p.accounts.forEach(pa=>{ // 같은 라벨의 빈 슬롯 우선, 없으면 아무 빈 슬롯 — 채워진 계좌는 건드리지 않음
+        const slot=ev.accounts.find(a=>a.label===pa.label&&!a.number) || ev.accounts.find(a=>!a.number);
+        if(slot){ slot.bank=pa.bank; slot.number=pa.number; if(pa.holder) slot.holder=pa.holder; acctN++; } });
+      if(acctN) filled.push(`계좌 ${acctN}개`); }
+    save();
+    if(filled.length){ hostFoldSet('info',true); $('#ddayTop').textContent=dday(ev);
+      toast(`청첩장에서 ${filled.join('·')}를 채웠어요 — 행사 정보에서 확인해 주세요`); }
+    else toast('페이지에서 새 정보를 찾지 못했어요 — 직접 입력해 주세요');
+  } finally { _hostFetching=false; render(); } }
+
 function addImported(){
   const names=($('#ip_names').value||'').split(/[♥❤♡·]|그리고/).map(s=>s.trim()).filter(Boolean);
   // 계좌 입력칸(자동 검출값 포함)에서 읽기 — 번호가 있는 행만 채택
