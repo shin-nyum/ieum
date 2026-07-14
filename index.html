@@ -207,6 +207,12 @@
     font-size:10px;font-weight:700;color:#fff;font-family:inherit;box-shadow:0 1px 4px rgba(0,0,0,.15);padding:0}
   .inksw.on{outline:2.5px solid var(--primary);outline-offset:2px}
   .inksw.custom{background:conic-gradient(#e66,#eb3,#6c6,#5ac,#96e,#e66);font-size:15px}
+  /* 송금=인연 기록 강조 */
+  .tienote{background:linear-gradient(135deg,#fdf3ee,#f9e7ea);border:1px solid #eed3d4;border-radius:11px;
+    padding:11px 13px;font-size:12.5px;line-height:1.7;color:#6d5350;margin-bottom:12px}
+  .tienote b{color:#a05a63}
+  html[data-theme="dark"] .tienote{background:#382e2c;border-color:#4a3c39;color:#cdb3ae}
+  html[data-theme="dark"] .tienote b{color:#dfa0a8}
   .card-thumb.on{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary)}
   .card-preview{border-radius:12px;overflow:hidden;border:1px solid var(--line);max-width:280px;margin:6px auto 0;box-shadow:var(--shadow)}
   .card-preview svg{display:block;width:100%;height:auto}
@@ -656,6 +662,66 @@ function shareEvent(ev){
   copy(text+'\n'+link);
   toast(`${c.doc} 링크를 복사했어요 — 단톡방에 붙여넣으세요`);
 }
+/* ---- 초대카드 이미지 공유: 문자·라인·인스타 DM 등 OG 썸네일이 없는 채널에서도 따뜻한 카드로 전달 ---- */
+function inviteCardSVG(ev){ // 800x1000 좌표계(감사카드 장식 재활용) — 결혼=꽃 코너, 부고=국화 조의톤
+  const mem=ev.type==='memorial'; const c=mem?CARDS[10]:CARDS[0]; const P=c.pal;
+  const grad=`<linearGradient id="ivg" x1="0" y1="0" x2="0" y2="1">${c.bg.map((col,i)=>`<stop offset="${i/(c.bg.length-1)}" stop-color="${col}"/>`).join('')}</linearGradient>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000"><defs>${grad}</defs>`+
+    `<rect width="800" height="1000" fill="url(#ivg)"/>`+
+    `<rect x="34" y="34" width="732" height="932" rx="20" fill="#ffffff" opacity=".38"/>`+
+    _decoSVG(c,false)+
+    (mem?'':_divider(560,P))+
+    `</svg>`; }
+function inviteCardLayout(ev){ const mem=ev.type==='memorial'; const c=mem?CARDS[10]:CARDS[0];
+  return { mem, c,
+    lead: mem?'부  고':(ev.type==='hwahon'?'화혼 청첩':'결혼 청첩'),
+    names: evNamePlain(ev)||'', dday: dday(ev),
+    date: dateText(ev), venue: ev.venue||'',
+    hint: mem?'이음에서 부고 확인 · 조의 전하기':'이음에서 청첩장 확인 · 캘린더 저장 · 마음 전하기' }; }
+function inviteCardPaint(ctx,L){ // 캔버스 텍스트(명조 웹폰트)
+  ctx.textAlign='center';
+  const ink=L.c.ink, accent=L.c.accent;
+  ctx.fillStyle=accent; ctx.font=`600 24px 'Nanum Myeongjo', serif`;
+  try{ ctx.letterSpacing='8px'; }catch(e){}
+  ctx.fillText(L.lead,404,168);
+  try{ ctx.letterSpacing='0px'; }catch(e){}
+  ctx.fillStyle=ink; ctx.font=`700 52px 'Nanum Myeongjo', serif`;
+  ctx.fillText(L.names,400,L.mem?330:320);
+  if(L.dday){ const w=110; ctx.fillStyle=ink; roundRect(ctx,400-w/2,L.mem?362:352,w,44,22); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font=`700 22px 'Malgun Gothic',sans-serif`; ctx.fillText(L.dday,400,(L.mem?362:352)+30); }
+  ctx.fillStyle=ink; ctx.globalAlpha=.85; ctx.font=`26px 'Nanum Myeongjo', serif`;
+  ctx.fillText(L.date,400,486);
+  if(L.venue) ctx.fillText(L.venue,400,528);
+  ctx.globalAlpha=.7; ctx.font=`21px 'Malgun Gothic',sans-serif`;
+  ctx.fillText(L.hint,400,626);
+  ctx.globalAlpha=1;
+  // 하단 브랜드: 링 로고 + 이음
+  ctx.strokeStyle=accent; ctx.lineWidth=4;
+  ctx.beginPath(); ctx.arc(372,880,16,0,7); ctx.stroke();
+  ctx.beginPath(); ctx.arc(390,880,16,0,7); ctx.stroke();
+  ctx.fillStyle=ink; ctx.font=`600 26px 'Nanum Myeongjo', serif`; ctx.textAlign='left';
+  ctx.fillText('이음',418,890); ctx.textAlign='center';
+  ctx.globalAlpha=.6; ctx.font=`15px 'Malgun Gothic',sans-serif`;
+  ctx.fillText('마음을 잇다',400,928); ctx.globalAlpha=1;
+}
+function roundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function shareInviteCard(ev){ // 카드 PNG + 링크 → OS 공유시트(문자·라인·인스타·카톡 어디로든)
+  const link=inviteLink(ev); const c=cfg(ev);
+  const text=`${evNamePlain(ev)} ${ev.subtitle}\n${dateText(ev)} · ${ev.venue||''}\n${link}`;
+  toast('초대카드를 만드는 중…');
+  loadCardFonts(['myeongjo'], ()=>{
+    const L=inviteCardLayout(ev);
+    svgToPngBlob(inviteCardSVG(ev),1080,1350, blob=>{ // 4:5 (인스타 친화)
+      if(!blob){ copy(text); toast('카드 생성 실패 — 내용을 복사했어요'); return; }
+      const file=new File([blob],`이음_${c.doc}_${evNamePlain(ev)}.png`,{type:'image/png'});
+      const fb=()=>{ if(isIOS()&&isStandalone()){ copy(text); toast('링크를 복사했어요 — 원하는 앱에 붙여넣으세요'); return; }
+        dlBlob(blob,`이음_${c.doc}.png`); copy(text); toast('카드 저장 + 링크 복사 — 원하는 앱에 첨부하세요'); };
+      try{ if(navigator.canShare && navigator.canShare({files:[file]})){
+        navigator.share({files:[file], text}).catch(err=>{ if(err&&err.name==='AbortError')return; fb(); }); return; } }catch(e){}
+      fb();
+    }, ctx=>{ ctx.save(); ctx.scale(1080/800,1350/1000); inviteCardPaint(ctx,L); ctx.restore(); });
+  });
+}
 /* 외부 모바일청첩장 링크를 그대로 공유 → 그 청첩장의 썸네일이 카카오톡에 뜸 */
 function shareExternal(ev){ if(!ev.externalUrl){ toast('연결된 모바일청첩장이 없어요'); return; }
   const text=`${evNamePlain(ev)} ${ev.subtitle}\n${dateText(ev)} · ${ev.venue}`;
@@ -850,7 +916,8 @@ function hostView(){
     <h3>📨 하객에게 보내기</h3>
     <p class="sub">단톡방에 링크 하나 — 받은 분들이 각자 저장하고, 캘린더·${c.money}까지 한 번에.</p>
     <div class="stack" style="margin-top:10px">
-      <button class="btn btn-kakao" onclick="shareEvent(hostEvent())">💬 이음으로 보내기</button>
+      <button class="btn btn-kakao" onclick="shareEvent(hostEvent())">💬 카카오톡으로 보내기</button>
+      <button class="btn btn-ghost" onclick="shareInviteCard(hostEvent())">🌸 초대카드로 보내기 <span style="font-weight:400;font-size:11.5px;opacity:.75">· 문자·라인·인스타 등</span></button>
       ${ev.externalUrl?`<button class="btn btn-line btn-sm" onclick="shareExternal(hostEvent())">🖼️ 청첩장 원본 그대로 보내기</button>`:''}
     </div>
     <label style="margin-top:12px">모바일 ${c.doc} 링크 연결 <span style="font-weight:400;color:var(--muted)">(선택 — 전문업체 제작본)</span></label>
@@ -1089,6 +1156,9 @@ function guestDetail(){
   <div class="card">
     <h3>💸 마음 전하기 (${c.money})</h3>
     <p class="sub">금액을 입력하면 <b>토스는 자동완성</b> — 3초면 끝나요.</p>
+    <div class="tienote">${ev.type==='memorial'
+      ?`🕊️ 이음으로 전한 위로는 상주의 <b>마음 장부에 이름과 함께 기록</b>돼요 — 슬픔의 곁을 지켜준 마음, 오래 기억됩니다.`
+      :`💞 이음으로 전하면 호스트의 <b>마음 장부에 내 이름이 기록</b>돼요 — 언젠가 내 경조사에서 서로의 마음이 다시 이어집니다.`}</div>
     ${ev.accounts.length>1?`<div class="seg2">${ev.accounts.map((a,i)=>`<button class="${i===idx?'on':''}" onclick="setAcct(${i})">${esc(a.label)}</button>`).join('')}</div>`:''}
     ${acc?`<div class="acct" style="margin-top:8px"><div class="b">${esc(acc.bank)} ${esc(acc.number)}<small>예금주 ${esc(acc.holder)}</small></div>
       <button class="minibtn" onclick="copyAcct(curEvent().accounts[${idx}]||curEvent().accounts[0])">복사</button></div>`
