@@ -930,6 +930,19 @@ function curAcct(){ const ev=curEvent(); if(!ev)return null; // 번호 있는 �
   const a=(ev.accounts||[]).filter(x=>x&&x.number);
   return a[Math.min(S.ui.guestSession.acctIdx||0, Math.max(0,a.length-1))]||null; }
 function copyCurAcct(){ const a=curAcct(); if(a) copyAcct(a); }
+/* 하객이 받을 계좌를 직접 입력 (직접 추가한 행사 등 계좌가 비어있을 때) */
+function openGuestAcct(){ captureAmt(); S.ui.gacctOpen=true; render();
+  setTimeout(()=>{ const el=$('#ga_num'); if(el){ try{ el.scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){} setTimeout(()=>el.focus(),300); } },60); }
+function saveGuestAcct(){ const ev=curEvent(); if(!ev) return;
+  const num=gv('ga_num').trim();
+  if(!num){ toast('계좌번호를 입력해 주세요'); const el=$('#ga_num'); if(el) el.focus(); return; }
+  captureAmt(); own(ev);
+  const slot=(ev.accounts||[]).find(a=>a&&!a.number); // 빈 슬롯(신랑측 등 라벨 유지) 우선
+  if(slot){ slot.bank=gv('ga_bank')||slot.bank; slot.number=num; slot.holder=gv('ga_hold').trim()||slot.holder; }
+  else { if(!ev.accounts) ev.accounts=[];
+    ev.accounts.push({label:ev.type==='memorial'?'상주측':'받는분', bank:gv('ga_bank')||'카카오뱅크', number:num, holder:gv('ga_hold').trim()}); }
+  S.ui.gacctOpen=false; S.ui.guestSession.acctIdx=0; save(); render();
+  toast('계좌를 저장했어요 — 이제 바로 보낼 수 있어요'); }
 function focusGname(){ const el=$('#gname'); if(el){ try{ el.scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){} setTimeout(()=>el.focus(),350); } }
 function payViaApp(method){ const ev=curEvent(); if(!ev)return;
   const nm=(S.ui.guestSession.name||($('#gname')&&$('#gname').value.trim())||(S.settings&&S.settings.name)||'').trim();
@@ -938,7 +951,7 @@ function payViaApp(method){ const ev=curEvent(); if(!ev)return;
   if(!nm){toast('성함을 입력해 주세요');focusGname();return;}
   if(!amt){toast('보낼 금액을 입력하세요');return;}
   const acc=curAcct();
-  if(!acc && method!=='cash'){toast('받을 계좌 정보가 없어요 — 현금·봉투로 기록해 주세요');return;}
+  if(!acc && method!=='cash'){toast('받을 계좌를 먼저 입력해 주세요');openGuestAcct();return;}
   own(ev); // 검증 통과 후에만 승격 (실패 탭이 데모를 승격시키지 않도록)
   S.ui.guestSession.name=nm;
   let x=ev.guests.find(g=>g.name===nm); if(!x){x=mkGuest(nm,ev.myRelation||'지인',S.ui.guestSession.acctIdx||0);x.unregistered=true;ev.guests.push(x);}
@@ -1363,7 +1376,16 @@ function guestDetail(){
     ${accts.length>1?`<div class="seg2">${accts.map((a,i)=>`<button class="${i===idx?'on':''}" onclick="setAcct(${i})">${esc(a.label)}</button>`).join('')}</div>`:''}
     ${acc?`<div class="acct" style="margin-top:8px"><div class="b">${esc(acc.bank)} ${esc(acc.number)}<small>예금주 ${esc(acc.holder)}</small></div>
       <button class="minibtn" onclick="copyCurAcct()">복사</button></div>`
-      :`<div class="note" style="margin-top:8px">받을 계좌 정보가 아직 없어요 — 아래 <b>현금·봉투</b>로 기록하거나, 호스트가 보낸 청첩장 링크로 열면 계좌가 채워져요.</div>`}
+      :`<div class="note" style="margin-top:8px">받을 계좌 정보가 아직 없어요 — ${c.doc} 문자에 있는 계좌를 아래에 입력하면 간편송금·계좌이체를 바로 쓸 수 있어요.</div>
+    <details id="gacct" style="margin-top:8px" ${S.ui.gacctOpen?'open':''} ontoggle="S.ui.gacctOpen=this.open">
+      <summary style="cursor:pointer;font-size:12.5px;font-weight:600;color:var(--primary-d)">＋ 받을 계좌 직접 입력</summary>
+      <div class="row" style="margin-top:8px">
+        <div style="max-width:34%"><select id="ga_bank">${BANKS.map(b=>`<option>${b}</option>`).join('')}</select></div>
+        <div><input id="ga_num" inputmode="numeric" placeholder="계좌번호"></div>
+      </div>
+      <input id="ga_hold" style="margin-top:6px" placeholder="예금주 (선택)">
+      <button class="btn btn-sage btn-sm" style="margin-top:8px" onclick="saveGuestAcct()">계좌 저장</button>
+    </details>`}
     <label>보내는 분 성함</label>
     <input id="gname" placeholder="이름 (호스트가 알아볼 수 있게)" value="${esc(nm)}" onchange="setGuestName(this.value)">
     <label>보낼 금액 <button class="minibtn" style="float:right;padding:4px 9px" onclick="openReco(curEvent().id)">${ev.type==='memorial'?'얼마가 적당할까요':'💡 얼마가 적당할까?'}</button></label>
@@ -1387,7 +1409,20 @@ function guestDetail(){
         <button class="btn btn-ghost" onclick="payViaApp('account')">계좌번호 복사 → 내 뱅킹앱에서 이체</button>
         <p class="lblnote" style="margin-top:6px">${esc(acc.bank)} ${esc(acc.number)} 가 복사돼요</p>
       </div>
-    </details>`:''}
+    </details>`:`
+    <details class="paycat" ${(S.ui.payCat||'easy')==='easy'?'open':''} ontoggle="if(this.open)S.ui.payCat='easy'">
+      <summary><span class="pc-t"><b>${ev.type==='memorial'?'간편송금':'⚡ 간편송금'}</b><small>토스 · 카카오페이 — 앱에서 바로</small></span><span class="pc-ar">▾</span></summary>
+      <div class="pc-body">
+        <button class="btn btn-toss" onclick="openGuestAcct()">계좌 입력하고 토스로 보내기</button>
+        <p class="lblnote" style="margin-top:6px">위 [받을 계좌 직접 입력]에 넣으면 금액 자동완성으로 바로 보내져요.</p>
+      </div>
+    </details>
+    <details class="paycat" ${S.ui.payCat==='bank'?'open':''} ontoggle="if(this.open)S.ui.payCat='bank'">
+      <summary><span class="pc-t"><b>${ev.type==='memorial'?'계좌이체':'🏦 계좌이체'}</b><small>모든 은행 · 증권 앱</small></span><span class="pc-ar">▾</span></summary>
+      <div class="pc-body">
+        <button class="btn btn-ghost" onclick="openGuestAcct()">계좌 입력하고 복사하기</button>
+      </div>
+    </details>`}
     <details class="paycat" ${S.ui.payCat==='cash'?'open':''} ontoggle="if(this.open)S.ui.payCat='cash'">
       <summary><span class="pc-t"><b>${ev.type==='memorial'?'✉️ 현금 · 부의 봉투':'🧧 현금 · 봉투'}</b><small>${ev.type==='memorial'?'조문 시':'식장에서'} 직접 전달</small></span><span class="pc-ar">▾</span></summary>
       <div class="pc-body">
