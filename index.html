@@ -298,6 +298,12 @@
   .evcard{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);
     border-radius:var(--radius);padding:13px;margin-bottom:10px;box-shadow:var(--shadow);cursor:pointer;transition:.12s}
   .evcard:active{transform:scale(.99)}
+  /* 다음 일정 요약용 납작 카드 */
+  .evcard.slim{padding:8px 11px;margin-bottom:7px;gap:10px}
+  .evcard.slim .ic{width:34px;height:34px;font-size:17px;border-radius:9px}
+  .evcard.slim .nm{font-size:13.5px}
+  .evcard.slim .dt{font-size:11px;margin-top:1px}
+  .evcard.slim .dd{font-size:11px;padding:3px 8px}
   .evcard .ic{font-size:24px;width:48px;height:48px;flex:none;display:flex;align-items:center;
     justify-content:center;background:var(--ic-bg);border-radius:13px}
   .evcard .info{flex:1;min-width:0}
@@ -1196,8 +1202,8 @@ function rowHost(ev,x){
 }
 
 /* ---------- 하객: 경조사 목록(앱 내 캘린더) ---------- */
-function evcardHTML(ev){ const c=cfg(ev); return `
-    <div class="evcard" onclick="openEvent('${ev.id}')">
+function evcardHTML(ev,slim){ const c=cfg(ev); return `
+    <div class="evcard${slim?' slim':''}" onclick="openEvent('${ev.id}')">
       <div class="ic">${c.icon}</div>
       <div class="info">
         <div class="nm">${esc(evNamePlain(ev))||'(이름 미입력)'}<span class="typ">${c.label}${ev.role==='host'?' · 내 행사':''}</span></div>
@@ -1243,7 +1249,7 @@ function evBodyHTML(){
   const q=EVQ.trim();
   if(q){ const hit=all.filter(e=>((evNamePlain(e)||'')+(e.venue||'')+(e.myRelation||'')).includes(q))
       .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-    return `${hit.length?hit.map(evcardHTML).join(''):`<div class="empty">'${esc(q)}' 검색 결과가 없어요</div>`}
+    return `${hit.length?hit.map(e=>evcardHTML(e)).join(''):`<div class="empty">'${esc(q)}' 검색 결과가 없어요</div>`}
     <button class="backbtn" style="margin-top:8px" onclick="EVQ='';render()">✕ 검색 지우기 — 전체 보기</button>`; }
   const evs=all.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
   const now=new Date(new Date().toDateString());
@@ -1251,12 +1257,14 @@ function evBodyHTML(){
   const past=evs.filter(e=>!e.date||new Date(e.date+'T'+(e.time||'00:00'))<now).reverse();
   const rest=up.slice(1);
   return `${up.length?homeHero(up[0]):''}
-  <button class="badge-add" style="margin-bottom:7px" onclick="openImport()">＋ 청첩장 추가 <span style="font-weight:400;font-size:12px">· 카톡 링크 붙여넣으면 자동 인식</span></button>
-  <button class="badge-add" style="margin-bottom:13px;border-color:var(--line);color:var(--ink)" onclick="openCalPopup()">＋ 직접 경조사 추가 <span style="font-weight:400;font-size:12px;color:var(--muted)">· 달력에서 날짜 선택</span></button>
+  ${rest.length?`<div class="secthead" style="margin:2px 2px 7px"><div class="t">다음 일정</div><div class="c">${rest.length}건</div></div>
+    ${rest.slice(0,2).map(e=>evcardHTML(e,true)).join('')}
+    ${rest.length>2?`<p class="lblnote" style="text-align:center;margin:0 0 10px">외 ${rest.length-2}건은 아래 달력에서 확인하세요</p>`:''}`:''}
   ${calendarHTML()}
-  ${rest.length?`<div class="secthead" style="margin:2px 2px 8px"><div class="t">다음 일정</div><div class="c">${rest.length}건</div></div>${rest.map(evcardHTML).join('')}`:''}
   ${past.length?`<details class="fold" ${S.ui.pastOpen?'open':''} ontoggle="S.ui.pastOpen=this.open">
-    <summary>🕰️ 지난 경조사 ${past.length}건</summary><div class="fold-body">${past.map(evcardHTML).join('')}</div></details>`:''}`;
+    <summary>🕰️ 지난 경조사 ${past.length}건</summary><div class="fold-body">${past.map(e=>evcardHTML(e)).join('')}</div></details>`:''}
+  <button class="badge-add" style="margin-bottom:7px" onclick="openImport()">＋ 청첩장 추가 <span style="font-weight:400;font-size:12px">· 카톡 링크 붙여넣으면 자동 인식</span></button>
+  <button class="badge-add" style="margin-bottom:13px;border-color:var(--line);color:var(--ink)" onclick="openCalPopup()">＋ 직접 경조사 추가 <span style="font-weight:400;font-size:12px;color:var(--muted)">· 달력에서 날짜 선택</span></button>`;
 }
 function renderEvBody(){ const el=document.getElementById('ev-body'); if(el) el.innerHTML=evBodyHTML(); }
 
