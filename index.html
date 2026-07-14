@@ -1637,10 +1637,12 @@ function txAll(){ const arr=[];
   (S.people||[]).forEach(p=>{ if(p.demo||p.tut) return; (p.items||[]).forEach(it=>{ if(it.amount>0)
     arr.push({dir:it.dir,amount:it.amount,label:p.name,sub:(it.label||'경조사')+' · 직접 기록',date:it.date||''}); }); });
   return arr.sort((a,b)=>(b.date||'').localeCompare(a.date||'')); }
-function txRow(t){ return `<div class="calevrow" style="cursor:default">
+function txRow(t){ const g=t.dir==='gave'; // 부호 대신 뱃지 — 보냄=은은한 붉은톤, 받음=은은한 초록톤
+  return `<div class="calevrow" style="cursor:default">
   <span style="flex:none;font-size:11px;color:var(--muted);width:64px;font-variant-numeric:tabular-nums">${t.date||'날짜 없음'}</span>
   <span class="cnm">${esc(t.label)}<span style="color:var(--muted);font-weight:400;font-size:11px"> · ${esc(t.sub)}</span></span>
-  <span class="rv" style="color:${t.dir==='gave'?'var(--ink)':'var(--ok)'}">${t.dir==='gave'?'−':'+'}${won(t.amount).slice(1)}</span></div>`; }
+  <span class="pill ${g?'pill-no':'pill-ok'}" style="flex:none">${g?'보냄':'받음'}</span>
+  <span class="rv" style="color:${g?'var(--danger)':'var(--ok)'}">${won(t.amount)}</span></div>`; }
 function openTx(f){ S.ui.txFilter=f||'all'; if(!S.ui.txPeriod)S.ui.txPeriod='3m'; S.ui.guestView='tx'; save(); render(); window.scrollTo(0,0); }
 function txSetF(f){ S.ui.txFilter=f; save(); render(); }
 function txSetP(p){ S.ui.txPeriod=p; save(); render(); }
