@@ -201,6 +201,12 @@
   .paycat[open]>summary .pc-ar{transform:rotate(180deg)}
   .paycat[open]{background:var(--card);box-shadow:0 2px 10px rgba(57,52,46,.06)}
   .pc-body{padding:2px 12px 12px}
+  /* 카드 글자색 스와치 */
+  .inkrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .inksw{width:36px;height:36px;border-radius:50%;border:2px solid rgba(255,255,255,.9);cursor:pointer;
+    font-size:10px;font-weight:700;color:#fff;font-family:inherit;box-shadow:0 1px 4px rgba(0,0,0,.15);padding:0}
+  .inksw.on{outline:2.5px solid var(--primary);outline-offset:2px}
+  .inksw.custom{background:conic-gradient(#e66,#eb3,#6c6,#5ac,#96e,#e66);font-size:15px}
   .card-thumb.on{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary)}
   .card-preview{border-radius:12px;overflow:hidden;border:1px solid var(--line);max-width:280px;margin:6px auto 0;box-shadow:var(--shadow)}
   .card-preview svg{display:block;width:100%;height:auto}
@@ -1662,7 +1668,9 @@ function exportLedgerCSV(){ const ev=hostEvent(); const c=cfg(ev);
   const led=ledgerStats(ev); rows.push(['','','','','','','']); rows.push(['합계','','','','', led.total, `이음 ${led.appSum}/직접 ${led.manualSum}`]);
   const csv='﻿'+rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\r\n');
   exportFile(new Blob([csv],{type:'text/csv;charset=utf-8'}), `${evNamePlain(ev)}_정산장부.csv`, '이음 정산장부', '엑셀(CSV)로 내보냈어요'); }
-function openThanks(){ S.ui.hostSub='thanks'; S.ui.tab='host'; save(); render(); window.scrollTo(0,0); }
+function openThanks(){ S.ui.hostSub='thanks'; S.ui.tab='host'; save();
+  try{ loadCardFonts(Object.keys(CARD_FONTS)); }catch(e){} // 글씨체 칩 미리보기용 프리로드
+  render(); window.scrollTo(0,0); }
 /* ===== 감사카드 v2 — 시중 카드 수준의 일러스트 장식 시스템 ===== */
 // pal: f1/f2 꽃, leaf/leaf2 잎, core 꽃심 · deco: 장식 배치 타입 · mood:'mourn'=조의(부고 전용 우선)
 const CARDS=[
@@ -1746,31 +1754,82 @@ function _decoSVG(c,photo){ const P=c.pal;
      return s+_mumFlower(400-r*.74,cy-r*.62,30,P.f1,P.f2,P.core)+_mumFlower(400+r*.74,cy-r*.62,30,P.f1,P.f2,P.core)
        +_leafE(400-r*.45,cy-r*.85,14,5,P.leaf,-30,.7)+_leafE(400+r*.45,cy-r*.85,14,5,P.leaf2,30,.7); }
   } return ''; }
+/* ---- 카드 타이포 커스텀: 글씨체(한글 웹폰트)·크기·색상 ---- */
+const CARD_FONTS={
+ myeongjo:{label:'명조',   css:"'Nanum Myeongjo','Apple SD Gothic Neo',serif", g:'Nanum+Myeongjo:wght@400;700', scale:1},
+ gowun:   {label:'돋움',   css:"'Gowun Dodum',sans-serif",                     g:'Gowun+Dodum',                 scale:.97},
+ pen:     {label:'손글씨', css:"'Nanum Pen Script',cursive",                   g:'Nanum+Pen+Script',            scale:1.32},
+ gaegu:   {label:'귀염체', css:"'Gaegu',cursive",                              g:'Gaegu:wght@400;700',          scale:1.12},
+ brush:   {label:'붓글씨', css:"'Nanum Brush Script',cursive",                 g:'Nanum+Brush+Script',          scale:1.38},
+};
+const CARD_SIZES={s:{label:'작게',v:25,per:18,pp:17}, m:{label:'보통',v:29,per:16,pp:15}, l:{label:'크게',v:34,per:13,pp:12}};
+const CARD_INKS=['', '#5b4636','#3a3f45','#7a3b47','#2f4560','#3d5a48','#9a7b3f']; // ''=디자인 기본색
+const _fontsLoaded={};
+function loadCardFonts(keys,cb){ // 구글폰트 CSS 지연 주입(+캔버스용 로드 대기)
+  const need=(keys||Object.keys(CARD_FONTS)).filter(k=>CARD_FONTS[k]&&!_fontsLoaded[k]);
+  need.forEach(k=>{ _fontsLoaded[k]=true;
+    const l=document.createElement('link'); l.rel='stylesheet';
+    l.href='https://fonts.googleapis.com/css2?family='+CARD_FONTS[k].g+'&display=swap';
+    document.head.appendChild(l); });
+  if(!cb) return;
+  try{ Promise.all((keys||[]).map(k=>document.fonts.load(`29px ${CARD_FONTS[k].css.split(',')[0]}`,'가나다 감사합니다')))
+    .then(()=>document.fonts.ready).then(()=>cb()).catch(()=>cb()); }
+  catch(e){ setTimeout(cb,600); }
+}
+function cardOpts(ev){ const st=cardState(ev); const f=CARD_FONTS[st.font]||CARD_FONTS.myeongjo; const sz=CARD_SIZES[st.size]||CARD_SIZES.m;
+  return { fontKey:st.font||'myeongjo', css:f.css, size:Math.round(sz.v*f.scale), per:sz.per, pp:sz.pp, color:st.color||'' }; }
 function wrapText(s,per){ const out=[]; (s||'').split('\n').forEach(para=>{ let line=''; para.split(' ').forEach(w=>{ if(line && [...(line+' '+w)].length>per){out.push(line);line=w;} else {line=line?line+' '+w:w;} }); if(line)out.push(line); }); return out.slice(0,7); }
-function cardSVG(idx,greeting,hostNames,photo){ const c=CARDS[idx]||CARDS[0]; const mourn=c.mood==='mourn';
+function cardLayout(idx,greeting,photo,opts){ // 미리보기(SVG 텍스트)와 내보내기(캔버스 텍스트)가 공유하는 레이아웃
+  const c=CARDS[idx]||CARDS[0]; const mourn=c.mood==='mourn';
+  const o=opts||{}; const css=o.css||CARD_FONTS.myeongjo.css; const size=o.size||29;
+  const bodyColor=o.color||c.ink;
+  const inWreath=(c.deco==='wreath'||c.deco==='halfwreath')&&!photo;
+  const lines=wrapText(greeting, photo?(o.pp||15):(o.per||16));
+  const lineH=Math.round(size*1.62);
+  const baseY = photo?618:(inWreath?560:500-Math.min(lines.length,5)*Math.round(size*0.55));
+  return { c, mourn, inWreath, css, size, bodyColor, lines, lineH, baseY,
+    title: mourn?'감사드립니다':'감 사 합 니 다',
+    titleY: c.deco==='ribbon'?109:(mourn&&c.deco==='mum'?120:(inWreath?325:172)),
+    titleSize: c.deco==='ribbon'?24:(inWreath?30:27),
+    titleLS: mourn?4:(inWreath?5:7),
+    titleColor: c.deco==='ribbon'?'#fff':c.accent,
+    sub: inWreath?{text:'WITH GRATITUDE',y:368,size:15,ls:3,color:c.ink}:null,
+    sigY:893, sigSize:24, sigSuffix: mourn?'배상':'올림' };
+}
+function cardSVG(idx,greeting,hostNames,photo,opts){ const L=cardLayout(idx,greeting,photo,opts); const c=L.c;
   const gid='cg'+idx, pcid='pc'+idx; // 여러 카드가 한 화면에 렌더돼도 id 충돌 없도록
   const grad=`<linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">${c.bg.map((col,i)=>`<stop offset="${i/(c.bg.length-1)}" stop-color="${col}"/>`).join('')}</linearGradient>`;
-  const inWreath=(c.deco==='wreath'||c.deco==='halfwreath')&&!photo; // 리스 안에 제목을 앉히는 구도
-  const lines=wrapText(greeting, photo?15:16);
-  const baseY = photo?618:(inWreath?560:500-Math.min(lines.length,5)*16);
-  const textLines=lines.map((ln,i)=>`<text x="400" y="${baseY+i*47}" text-anchor="middle" font-family="'Nanum Myeongjo','Apple SD Gothic Neo',serif" font-size="29" fill="${c.ink}">${esc(ln)}</text>`).join('');
+  const textLines=L.lines.map((ln,i)=>`<text x="400" y="${L.baseY+i*L.lineH}" text-anchor="middle" font-family="${L.css.replace(/"/g,'&quot;')}" font-size="${L.size}" fill="${L.bodyColor}">${esc(ln)}</text>`).join('');
   // 사진: 아치형 프레임 (요즘 청첩장 감성)
   const ph=photo?`<clipPath id="${pcid}"><path d="M262 358 A138 138 0 0 1 538 358 L538 512 L262 512 Z"/></clipPath>
     <image href="${photo}" x="262" y="212" width="276" height="300" preserveAspectRatio="xMidYMid slice" clip-path="url(#${pcid})"/>
     <path d="M262 358 A138 138 0 0 1 538 358 L538 512 L262 512 Z" fill="none" stroke="${c.accent}" stroke-width="4"/>
     <path d="M252 358 A148 148 0 0 1 548 358 L548 522" fill="none" stroke="${c.accent}" stroke-width="1.5" opacity=".5"/>`:'';
-  const title=mourn?'감사드립니다':'감 사 합 니 다';
-  const titleY = c.deco==='ribbon'?109 : (mourn&&c.deco==='mum'?120 : (inWreath?325:172));
-  const titleSub = inWreath?`<text x="400" y="368" text-anchor="middle" font-family="'Nanum Myeongjo',serif" font-size="15" letter-spacing="3" fill="${c.ink}" opacity=".55">WITH GRATITUDE</text>`:'';
+  const texts = opts&&opts.noText ? '' :
+    `<text x="400" y="${L.titleY}" text-anchor="middle" font-family="'Nanum Myeongjo',serif" font-size="${L.titleSize}" letter-spacing="${L.titleLS}" fill="${L.titleColor}" font-weight="600">${L.title}</text>`+
+    (L.sub?`<text x="400" y="${L.sub.y}" text-anchor="middle" font-family="'Nanum Myeongjo',serif" font-size="${L.sub.size}" letter-spacing="${L.sub.ls}" fill="${L.sub.color}" opacity=".55">${L.sub.text}</text>`:'')+
+    textLines+
+    `<text x="400" y="${L.sigY}" text-anchor="middle" font-family="${L.css.replace(/"/g,'&quot;')}" font-size="${L.sigSize}" fill="${L.bodyColor}">— ${esc(hostNames)} ${L.sigSuffix}</text>`;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000"><defs>${grad}</defs>`+
     `<rect width="800" height="1000" fill="url(#${gid})"/>`+
     `<rect x="34" y="34" width="732" height="932" rx="20" fill="#ffffff" opacity="${c.deco==='sealdots'||c.deco==='goldframe'||c.deco==='lineleaf'?0:0.35}"/>`+
     _decoSVG(c,!!photo)+
-    `<text x="400" y="${titleY}" text-anchor="middle" font-family="'Nanum Myeongjo',serif" font-size="${c.deco==='ribbon'?24:(inWreath?30:27)}" letter-spacing="${mourn?4:(inWreath?5:7)}" fill="${c.deco==='ribbon'?'#fff':c.accent}" font-weight="600">${title}</text>${titleSub}`+
-    `${ph}${textLines}`+
-    _divider(838,c.pal)+
-    `<text x="400" y="893" text-anchor="middle" font-family="'Nanum Myeongjo',serif" font-size="24" fill="${c.ink}">— ${esc(hostNames)} ${mourn?'배상':'올림'}</text></svg>`; }
-function svgToPngBlob(svg,w,h,cb){ try{ const img=new Image(); img.onload=()=>{ try{ const cv=document.createElement('canvas'); cv.width=w; cv.height=h; const ctx=cv.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); ctx.drawImage(img,0,0,w,h); cv.toBlob(cb,'image/png'); }catch(e){cb(null);} }; img.onerror=()=>cb(null); img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg); }catch(e){cb(null);} }
+    `${ph}${texts}`+
+    _divider(838,c.pal)+`</svg>`; }
+function cardPaintText(ctx,L,hostNames){ // 내보내기: 웹폰트를 캔버스로 직접 그림(SVG-이미지는 웹폰트 미적용)
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+  const ls=(px)=>{ try{ ctx.letterSpacing=px+'px'; }catch(e){} };
+  ctx.fillStyle=L.titleColor; ctx.font=`600 ${L.titleSize}px 'Nanum Myeongjo', serif`; ls(L.titleLS);
+  ctx.fillText(L.title,400+L.titleLS/2,L.titleY);
+  if(L.sub){ ctx.globalAlpha=.55; ctx.font=`${L.sub.size}px 'Nanum Myeongjo', serif`; ls(L.sub.ls);
+    ctx.fillStyle=L.sub.color; ctx.fillText(L.sub.text,400+L.sub.ls/2,L.sub.y); ctx.globalAlpha=1; }
+  ls(0);
+  ctx.fillStyle=L.bodyColor; ctx.font=`${L.size}px ${L.css}`;
+  L.lines.forEach((ln,i)=>ctx.fillText(ln,400,L.baseY+i*L.lineH));
+  ctx.font=`${L.sigSize}px ${L.css}`;
+  ctx.fillText(`— ${hostNames} ${L.sigSuffix}`,400,L.sigY);
+}
+function svgToPngBlob(svg,w,h,cb,paint){ try{ const img=new Image(); img.onload=()=>{ try{ const cv=document.createElement('canvas'); cv.width=w; cv.height=h; const ctx=cv.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); ctx.drawImage(img,0,0,w,h); if(paint)paint(ctx); cv.toBlob(cb,'image/png'); }catch(e){cb(null);} }; img.onerror=()=>cb(null); img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg); }catch(e){cb(null);} }
 function thankSamples(ev){ return cfg(ev).label==='부고'
   ? ['{이름}님, 큰 슬픔 중에 함께해 주시고 위로해 주셔서 진심으로 감사드립니다. 덕분에 큰 힘이 되었습니다.',
      '{이름}님, 바쁘신 중에도 걸음 해주셔서 감사합니다. 베풀어주신 마음 잊지 않겠습니다.',
@@ -1779,7 +1838,16 @@ function thankSamples(ev){ return cfg(ev).label==='부고'
      '{이름}님, 바쁘신 중에도 함께해 주셔서 감사합니다. 받은 사랑 나누며 행복하게 잘 살겠습니다.',
      '{이름}님, 먼 길 마다않고 축하해 주셔서 감사합니다. 좋은 일에 꼭 함께하겠습니다.',
      '{이름}님, 소중한 마음 감사히 받았습니다. 늘 건강하고 행복하시길 바랍니다.']; }
-function cardState(ev){ if(!ev.thankCard)ev.thankCard={design:0,msg:''}; return ev.thankCard; }
+function cardState(ev){ if(!ev.thankCard)ev.thankCard={design:0,msg:''};
+  const t=ev.thankCard; if(!t.font)t.font='myeongjo'; if(!t.size)t.size='m'; if(t.color==null)t.color=''; return t; }
+function setCardFont(k){ const ev=hostEvent(); cardState(ev).font=k; save(); loadCardFonts([k],()=>render()); render(); }
+function setCardSize(k){ cardState(hostEvent()).size=k; save(); render(); }
+function setCardInk(c){ cardState(hostEvent()).color=c; save(); render(); }
+function pickCardInk(){ const inp=document.createElement('input'); inp.type='color'; inp.value=cardState(hostEvent()).color||'#5b4636';
+  inp.style.cssText='position:fixed;left:-9999px'; document.body.appendChild(inp);
+  inp.oninput=()=>{ cardState(hostEvent()).color=inp.value; save(); renderCardPreview(); };
+  inp.onchange=()=>{ try{inp.remove();}catch(e){} render(); };
+  inp.click(); }
 function hostSig(ev){ return ev.partyB?`${ev.partyA}·${ev.partyB}`:ev.partyA; }
 function personGreeting(ev,name){ const c=cardState(ev); const m=(c.msg&&c.msg.trim())?c.msg:thankSamples(ev)[0]; return m.replace(/\{이름\}/g, name||'○○'); }
 function isFreeCard(i,ev){ // 기본 3종 무료 + 부고 행사에선 조의 카드 무료(예의 기능에 과금 안 함)
@@ -1796,7 +1864,7 @@ function setCardPhoto(){ const inp=document.createElement('input'); inp.type='fi
 function clearCardPhoto(){ S.ui.cardPhoto=null; render(); }
 function renderCardPreview(){ const el=document.getElementById('card-preview'); if(!el)return; const ev=hostEvent();
   const rn=(ev.guests.find(g=>g.rsvp.status==='yes'||(g.pay&&g.pay.amount!=null))||{}).name||'○○';
-  el.innerHTML=cardSVG(cardState(ev).design, personGreeting(ev,rn), hostSig(ev), S.ui.cardPhoto); }
+  el.innerHTML=cardSVG(cardState(ev).design, personGreeting(ev,rn), hostSig(ev), S.ui.cardPhoto, cardOpts(ev)); }
 function thanksView(){ const ev=hostEvent(); const c=cardState(ev); const samples=thankSamples(ev);
   const recip=ev.guests.filter(g=>g.rsvp.status==='yes'||(g.pay&&g.pay.amount!=null));
   const previewName=(recip[0]||{}).name||'○○';
@@ -1810,6 +1878,18 @@ function thanksView(){ const ev=hostEvent(); const c=cardState(ev); const sample
         return (b.cc.mood==='mourn')-(a.cc.mood==='mourn') || a.i-b.i;
       }).map(({cc,i})=>`<button class="card-thumb ${c.design===i?'on':''}" onclick="setCardDesign(${i})" style="background:linear-gradient(135deg,${cc.bg[0]},${cc.bg[cc.bg.length-1]})"><span style="color:${cc.mood==='mourn'?cc.ink:cc.accent}">${cc.mood==='mourn'?'❀':'♥'}</span>${!isFreeCard(i,ev)&&!hasPass(ev)?'<span class="pbdg">P</span>':''}</button>`).join('')}</div>
     ${!hasPass(ev)?`<p class="lblnote">‘P’ 디자인은 <b>호스트 패스</b>(정식 출시 후 ${PASS_PRICE} · 지금은 무료)로 열 수 있어요.${ev.type==='memorial'?' 조의 카드(❀)는 무료예요.':''}</p>`:''}
+    <label style="margin-top:13px">글씨체</label>
+    <div class="chips">${Object.entries(CARD_FONTS).map(([k,f])=>`<button class="chip ${c.font===k?'on':''}" style="font-family:${f.css};font-size:14px" onclick="setCardFont('${k}')">${f.label}</button>`).join('')}</div>
+    <div class="row" style="margin-top:11px;align-items:flex-end">
+      <div><label style="margin:0 0 5px">글자 크기</label>
+        <div class="seg2" style="margin:0">${Object.entries(CARD_SIZES).map(([k,s])=>`<button class="${c.size===k?'on':''}" onclick="setCardSize('${k}')">${s.label}</button>`).join('')}</div></div>
+    </div>
+    <label style="margin-top:11px">글자 색</label>
+    <div class="inkrow">
+      <button class="inksw ${!c.color?'on':''}" style="background:${CARDS[c.design]?CARDS[c.design].ink:'#7d4a56'}" onclick="setCardInk('')" title="디자인 기본색">기본</button>
+      ${CARD_INKS.filter(x=>x).map(cl=>`<button class="inksw ${c.color===cl?'on':''}" style="background:${cl}" onclick="setCardInk('${cl}')"></button>`).join('')}
+      <button class="inksw custom ${c.color&&!CARD_INKS.includes(c.color)?'on':''}" onclick="pickCardInk()" title="직접 선택">🎨</button>
+    </div>
     <label style="margin-top:13px">메시지 <span style="font-weight:600;color:var(--muted);font-size:11px">· {이름}은 하객 이름으로 바뀜</span></label>
     <div class="chips" style="margin-bottom:8px">${samples.map((s,i)=>`<button class="chip" onclick="useSample(${i})">샘플 ${i+1}</button>`).join('')}</div>
     <textarea rows="3" oninput="setCardMsg(this.value)" placeholder="직접 입력하거나 위 샘플을 골라보세요">${esc(c.msg)}</textarea>
@@ -1820,7 +1900,7 @@ function thanksView(){ const ev=hostEvent(); const c=cardState(ev); const sample
   </div>
   <div class="card">
     <label>미리보기 (${esc(previewName)}님 예시)</label>
-    <div id="card-preview" class="card-preview">${cardSVG(c.design, personGreeting(ev,previewName), hostSig(ev), S.ui.cardPhoto)}</div>
+    <div id="card-preview" class="card-preview">${cardSVG(c.design, personGreeting(ev,previewName), hostSig(ev), S.ui.cardPhoto, cardOpts(ev))}</div>
   </div>
   <div class="card"><div class="secthead"><div class="t">받는 사람</div><div class="c">${recip.length}명</div></div>
     <div class="glist">${recip.map(g=>`<div class="calevrow">
@@ -1831,14 +1911,17 @@ function thanksView(){ const ev=hostEvent(); const c=cardState(ev); const sample
   </div>`;
 }
 function sendCard(name){ const ev=hostEvent(); const greeting=personGreeting(ev,name);
-  const svg=cardSVG(cardState(ev).design, greeting, hostSig(ev), S.ui.cardPhoto);
+  const st=cardState(ev); const o=cardOpts(ev);
+  const svg=cardSVG(st.design, greeting, hostSig(ev), S.ui.cardPhoto, {...o, noText:true}); // 텍스트는 캔버스에서(웹폰트 유지)
+  const L=cardLayout(st.design, greeting, S.ui.cardPhoto, o);
+  loadCardFonts([st.font,'myeongjo'], ()=>
   svgToPngBlob(svg,800,1000, blob=>{ if(!blob){ copy(greeting); toast('이미지 생성 실패 — 문구를 복사했어요'); return; }
     const file=new File([blob],`감사카드_${name}.png`,{type:'image/png'});
     const fb=()=>{ if(isIOS()&&isStandalone()){ copy(greeting); toast('문구를 복사했어요 — 카톡에 붙여넣어 보내세요'); return; }
       dlBlob(blob,`감사카드_${name}.png`); copy(greeting); toast('카드 이미지 저장 + 문구 복사 — 문자/카톡에 첨부하세요'); };
     try{ if(navigator.canShare && navigator.canShare({files:[file]})){
       navigator.share({files:[file],text:greeting}).catch(err=>{ if(err&&err.name==='AbortError')return; fb(); }); return; } }catch(e){}
-    fb(); }); }
+    fb(); }, ctx=>cardPaintText(ctx,L,hostSig(ev)) )); }
 function backFromHost2(){ S.ui.hostSub=null; save(); render(); window.scrollTo(0,0); }
 
 /* ======================= 하단 탭 내비 ======================= */
