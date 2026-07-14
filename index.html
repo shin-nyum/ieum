@@ -802,7 +802,7 @@ function googleCal(ev){
 function tossLink(acc,amount){const num=(acc.number||'').replace(/[^0-9]/g,'');return `supertoss://send?bank=${encodeURIComponent(acc.bank)}&accountNo=${num}`+(amount?`&amount=${amount}`:'');}
 function copyAcct(acc){copy(`${acc.bank} ${acc.number} ${acc.holder}`);toast('계좌번호를 복사했어요');}
 function payViaApp(method){ const ev=curEvent(); if(!ev)return;
-  const nm=(S.ui.guestSession.name||($('#gname')&&$('#gname').value.trim())||'').trim();
+  const nm=(S.ui.guestSession.name||($('#gname')&&$('#gname').value.trim())||(S.settings&&S.settings.name)||'').trim();
   if(!nm){toast('성함을 먼저 입력하세요');return;}
   const amt=Number($('#sendamt')&&$('#sendamt').value); if(!amt){toast('보낼 금액을 입력하세요');return;}
   const acc=ev.accounts[S.ui.guestSession.acctIdx||0]||ev.accounts[0];
@@ -829,7 +829,8 @@ function render(){
   const bn=document.getElementById('bottomnav');
   if(!S.ui.entered){ if(bn)bn.style.display='none'; $('#ddayTop').textContent=''; $('#app').innerHTML=landingView(); return; }
   if(S.ui.tab==='host'){ if(bn)bn.style.display='none'; const he=hostEvent()||ensureHostEvent();
-    $('#ddayTop').textContent = he?dday(he):''; $('#app').innerHTML = S.ui.hostSub==='thanks'?thanksView():hostView(); return; }
+    $('#ddayTop').textContent = he?dday(he):''; $('#app').innerHTML = S.ui.hostSub==='thanks'?thanksView():hostView();
+    try{ histGuard(); }catch(e){} return; }
   if(bn){ bn.style.display='flex'; }
   $('#ddayTop').textContent='';
   const v=S.ui.guestView;
@@ -850,6 +851,7 @@ function render(){
     : v==='detail' ? guestDetail() : guestList();
   updateBottomNav();
   if(typeof TUT!=='undefined' && TUT.on) setTimeout(tutApply,30); // 렌더 후 코치마크 재적용
+  try{ histGuard(); }catch(e){} // 세부 화면이면 백버튼 가드 장전
 }
 
 /* ---------- 시작(진입) 화면 ---------- */
@@ -901,6 +903,11 @@ function goLanding(){ try{ abortTutorial(); }catch(e){} try{ pruneDraft(); }catc
 
 /* ---------- 호스트 ---------- */
 function hostFoldSet(k,v){ if(!S.ui.hostFold)S.ui.hostFold={}; S.ui.hostFold[k]=v; }
+function shareFromHost(kind){ const ev=hostEvent(); if(!ev)return;
+  if(!ev.partyA || !ev.date){ // 빈 청첩장 발송 방지
+    toast('행사 정보(이름·날짜)를 먼저 입력해 주세요');
+    hostFoldSet('info',true); render(); window.scrollTo(0,0); return; }
+  if(kind==='card') shareInviteCard(ev); else if(kind==='ext') shareExternal(ev); else shareEvent(ev); }
 function hostView(){
   const ev=hostEvent(); const c=cfg(ev); const led=ledgerStats(ev);
   const hf=S.ui.hostFold||{};
@@ -916,9 +923,9 @@ function hostView(){
     <h3>📨 하객에게 보내기</h3>
     <p class="sub">단톡방에 링크 하나 — 받은 분들이 각자 저장하고, 캘린더·${c.money}까지 한 번에.</p>
     <div class="stack" style="margin-top:10px">
-      <button class="btn btn-kakao" onclick="shareEvent(hostEvent())">💬 카카오톡으로 보내기</button>
-      <button class="btn btn-ghost" onclick="shareInviteCard(hostEvent())">🌸 초대카드로 보내기 <span style="font-weight:400;font-size:11.5px;opacity:.75">· 문자·라인·인스타 등</span></button>
-      ${ev.externalUrl?`<button class="btn btn-line btn-sm" onclick="shareExternal(hostEvent())">🖼️ 청첩장 원본 그대로 보내기</button>`:''}
+      <button class="btn btn-kakao" onclick="shareFromHost('kakao')">💬 카카오톡으로 보내기</button>
+      <button class="btn btn-ghost" onclick="shareFromHost('card')">🌸 초대카드로 보내기 <span style="font-weight:400;font-size:11.5px;opacity:.75">· 문자·라인·인스타 등</span></button>
+      ${ev.externalUrl?`<button class="btn btn-line btn-sm" onclick="shareFromHost('ext')">🖼️ 청첩장 원본 그대로 보내기</button>`:''}
     </div>
     <label style="margin-top:12px">모바일 ${c.doc} 링크 연결 <span style="font-weight:400;color:var(--muted)">(선택 — 전문업체 제작본)</span></label>
     <input placeholder="https://... (바른손/더카드 등)" value="${esc(ev.externalUrl)}" onchange="updEv('externalUrl',this.value)">
@@ -1091,6 +1098,7 @@ function calNav(delta){ ensureCalYM(); let [y,m]=S.ui.calYM.split('-').map(Numbe
   const idx=y*12+(m-1)+delta; y=Math.floor(idx/12); m=idx%12+1;
   S.ui.calYM=y+'-'+String(m).padStart(2,'0'); S.ui.calSelDate=null; save(); render(); }
 function calPick(ds){ S.ui.calSelDate = (S.ui.calSelDate===ds ? null : ds); save(); render(); }
+function calToday(){ S.ui.calYM=ymToday(); S.ui.calSelDate=null; save(); render(); }
 function addEventOnDate(ds,type){
   const isMem=type==='memorial';
   const ev={ id:uid('e'), role:'host', type, partyA:'', partyB:'',
@@ -1131,7 +1139,8 @@ function calendarHTML(){
   }
   return `<div class="card">
     <div class="calhead"><button class="calnav" onclick="calNav(-1)">‹</button>
-      <div class="caltitle">${y}년 ${m}월</div><button class="calnav" onclick="calNav(1)">›</button></div>
+      <div class="caltitle">${y}년 ${m}월 ${S.ui.calYM!==ymToday()?`<button class="minibtn" style="padding:3px 9px;font-size:11px;margin-left:6px" onclick="calToday()">오늘</button>`:''}</div>
+      <button class="calnav" onclick="calNav(1)">›</button></div>
     <div class="calgrid">${dows.map((w,i)=>`<div class="caldow${i===0?' sun':''}">${w}</div>`).join('')}${cells}</div>
     ${below}
     <div class="note">💡 이음 달력 — 날짜를 누르면 그 날의 경조사를 선택하거나, 빈 날짜엔 새 경조사를 추가할 수 있어요.</div>
@@ -1141,7 +1150,7 @@ function calendarHTML(){
 /* ---------- 하객: 상세(청첩장 + 송금) ---------- */
 function guestDetail(){
   const ev=curEvent(); if(!ev){S.ui.guestView='list';return guestList();}
-  const c=cfg(ev); const nm=S.ui.guestSession.name; const me=nm?ev.guests.find(x=>x.name===nm):null;
+  const c=cfg(ev); const nm=S.ui.guestSession.name||(S.settings&&S.settings.name)||''; const me=nm?ev.guests.find(x=>x.name===nm):null;
   const idx=S.ui.guestSession.acctIdx||0; const acc=ev.accounts[idx]||ev.accounts[0];
   return `
   <button class="backbtn" onclick="backToList()">‹ 내 경조사</button>
@@ -1164,7 +1173,11 @@ function guestDetail(){
       <button class="minibtn" onclick="copyAcct(curEvent().accounts[${idx}]||curEvent().accounts[0])">복사</button></div>`
       :`<div class="note" style="margin-top:8px">받을 계좌 정보가 아직 없어요.</div>`}
     <label>보낼 금액 <button class="minibtn" style="float:right;padding:4px 9px" onclick="openReco(curEvent().id)">💡 얼마가 적당할까?</button></label>
-    <input id="sendamt" type="number" inputmode="numeric" placeholder="예: 100000" value="${me&&me.pay&&me.pay.amount!=null?me.pay.amount:''}">
+    <input id="sendamt" type="number" inputmode="numeric" placeholder="예: 100000" value="${me&&me.pay&&me.pay.amount!=null?me.pay.amount:''}" oninput="amtPreview()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:7px">
+      <div class="chips">${[50000,100000,150000,200000].map(a=>`<button class="chip" style="padding:5px 11px;font-size:12px" onclick="setAmt(${a})">${a/10000}만</button>`).join('')}</div>
+      <b id="amtPrev" style="font-size:13px;color:var(--primary-d)">${me&&me.pay&&me.pay.amount!=null?won(me.pay.amount):''}</b>
+    </div>
     <label style="margin-top:12px">보낼 방법</label>
     ${acc?`
     <details class="paycat" ${(S.ui.payCat||'easy')==='easy'?'open':''} ontoggle="if(this.open)S.ui.payCat='easy'">
@@ -1244,7 +1257,8 @@ function setType(t){
 function updAcct(i,f,v){const ev=own(hostEvent());ev.accounts[i][f]=v;save();}
 function addGuestInline(){ const n=gv('hg_name').trim(); if(!n){toast('하객 이름을 입력하세요');return;}
   const ev=own(hostEvent()); const side=Math.min(Number(gv('hg_side')||0), Math.max(0,ev.accounts.length-1));
-  ev.guests.push(mkGuest(n,'친구',side)); save(); render(); toast(n+'님을 추가했어요'); }
+  ev.guests.push(mkGuest(n,'친구',side)); save(); render(); toast(n+'님을 추가했어요');
+  setTimeout(()=>{ const el=$('#hg_name'); if(el){ el.focus(); } },50); } // 연속 추가 편의
 function delGuest(id){const ev=hostEvent();const x=ev.guests.find(g=>g.id===id);
   if(x && !confirm(`${x.name}님을 명단에서 삭제할까요?`))return;
   ev.guests=ev.guests.filter(g=>g.id!==id);save();render();toast('삭제했어요');}
@@ -1265,8 +1279,11 @@ function toggleCash(id){const ev=own(hostEvent());const x=ev.guests.find(g=>g.id
 function promote(id){const x=hostEvent().guests.find(g=>g.id===id);if(!x)return;x.unregistered=false;save();render();toast('명단으로 옮겼어요');}
 
 function setGuestName(v){S.ui.guestSession.name=v.trim();save();render();}
+function setAmt(v){ const el=$('#sendamt'); if(el){ el.value=v; amtPreview(); } }
+function amtPreview(){ const el=$('#sendamt'), p=$('#amtPrev'); if(!el||!p) return;
+  const n=Number(el.value); p.textContent = n>0 ? won(n) : ''; }
 function setAcct(i){S.ui.guestSession.acctIdx=i;save();render();}
-function rsvp(status){const ev=curEvent();if(!ev)return;const nm=S.ui.guestSession.name||($('#gname')&&$('#gname').value.trim());
+function rsvp(status){const ev=curEvent();if(!ev)return;const nm=S.ui.guestSession.name||($('#gname')&&$('#gname').value.trim())||(S.settings&&S.settings.name)||'';
   if(!nm){toast('성함을 먼저 입력하세요');return;}own(ev);S.ui.guestSession.name=nm;
   let x=ev.guests.find(g=>g.name===nm);if(!x){x=mkGuest(nm,'친구',S.ui.guestSession.acctIdx||0);x.unregistered=true;ev.guests.push(x);}
   x.rsvp.status=status;save();render();toast(status==='yes'?'전달했어요':'전달했어요');}
@@ -1971,6 +1988,7 @@ function thanksView(){ const ev=hostEvent(); const c=cardState(ev); const sample
   <div class="card">
     <label>미리보기 (${esc(previewName)}님 예시)</label>
     <div id="card-preview" class="card-preview">${cardSVG(c.design, personGreeting(ev,previewName), hostSig(ev), S.ui.cardPhoto, cardOpts(ev))}</div>
+    <button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="sendCard('${jsq(previewName)}')">📤 이 카드 먼저 공유해 보기 <span style="font-weight:400;font-size:11px;opacity:.75">· 나에게 테스트</span></button>
   </div>
   <div class="card"><div class="secthead"><div class="t">받는 사람</div><div class="c">${recip.length}명</div></div>
     <div class="glist">${recip.map(g=>`<div class="calevrow">
@@ -2380,7 +2398,8 @@ async function fetchImportUrl(){
     save();
     const got=[cur.names&&'이름',cur.date&&'날짜',cur.venue&&'장소',(cur.accounts&&cur.accounts.length)&&`계좌 ${cur.accounts.length}개`].filter(Boolean);
     toast(got.length?`청첩장에서 ${got.join('·')}을 가져왔어요`:'페이지에서 정보를 찾지 못했어요 — 직접 입력해 주세요');
-  } finally { _impFetching=false; S.ui.importFetching=false; render(); }
+  } finally { _impFetching=false; S.ui.importFetching=false; render();
+    setTimeout(()=>{ const el=document.getElementById('imp-result'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); },80); }
 }
 function addImported(){
   const names=($('#ip_names').value||'').split(/[♥❤♡·]|그리고/).map(s=>s.trim()).filter(Boolean);
@@ -2445,7 +2464,7 @@ function importView(){
     <div style="font-weight:800;margin-top:6px">청첩장 페이지에서 정보를 가져오는 중…</div>
     <p class="sub" style="margin:6px 0 0">이름 · 날짜 · 장소 · 계좌번호를 찾고 있어요</p>
   </div>`:''}
-  ${p&&!S.ui.importFetching?`<div class="card">
+  ${p&&!S.ui.importFetching?`<div class="card" id="imp-result">
     <h3>찾은 정보 · 확인 후 추가</h3>
     <p class="sub">자동으로 채운 값입니다. 틀린 곳은 직접 고쳐주세요.</p>
     <label>이름</label><input id="ip_names" value="${esc(p.names)}" placeholder="예: 김민준 ♥ 이서연">
@@ -2618,6 +2637,31 @@ function cleanupDemo(){ let changed=false;
   if(S.ui.hostEventId && !S.events.find(e=>e.id===S.ui.hostEventId)) S.ui.hostEventId=null;
   if(changed) save(); return changed; }
 window.addEventListener('resize', ()=>{ try{ if(TUT.on){ const el=document.querySelector(TUT_STEPS[TUT.i].sel); const box=document.getElementById('tutbox'); if(el&&box) tutPlace(el,box); } }catch(e){} });
+
+/* ======================= 안드로이드 뒤로가기 지원 ======================= */
+// 세부 화면에서 하드웨어 백버튼 = 앱 종료가 아니라 '한 단계 위로'. 가드 엔트리 1개 유지 패턴.
+let _histGuard=false;
+function atTopLevel(){ return !S.ui.entered ||
+  (S.ui.tab==='guest' && ['list','ledger','reco','more'].includes(S.ui.guestView)
+   && !(typeof TUT!=='undefined'&&TUT.on) && !document.getElementById('paysheet')); }
+function histGuard(){ if(_histGuard || atTopLevel()) return;
+  _histGuard=true; try{ history.pushState({ieum:1},''); }catch(e){} }
+window.addEventListener('popstate', ()=>{
+  _histGuard=false;
+  if(atTopLevel()) return; // 최상위면 그대로 — 한 번 더 누르면 종료
+  try{
+    if(document.getElementById('paysheet')) declinePass();
+    else if(typeof TUT!=='undefined'&&TUT.on) endTutorial(false);
+    else if(S.ui.tab==='host'){ if(S.ui.hostSub==='thanks'){ backFromHost2(); } else { backFromHost(); } }
+    else { const v=S.ui.guestView;
+      if(v==='invite') declineInvite();
+      else if(v==='person') openPeople();
+      else if(v==='people') setGuestTab('ledger');
+      else if(v==='settings'||v==='doc'||v==='group'||v==='envelope') setGuestTab('more');
+      else backToList(); }
+  }catch(e){}
+  histGuard(); // 여전히 세부 화면이면 가드 재장전
+});
 
 /* ======================= 부팅 ======================= */
 window.addEventListener('error', ()=>{ try{ toast('일시적인 문제가 발생했어요'); }catch(e){} });
