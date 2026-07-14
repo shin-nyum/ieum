@@ -2121,6 +2121,26 @@ function passTrack(k){ if(!S.meta.passStats)S.meta.passStats={shown:0,accepted:0
   else S.meta.passStats.used[k]=(S.meta.passStats.used[k]||0)+1; }
 /* ---- 결제 시트: 정식 오픈 시 이 자리에 PG(토스페이먼츠 위젯 등)가 붙는다.
         테스터 기간엔 무료 해제 + '선호 결제수단' 설문 계측. ---- */
+/* ---- Google Play 결제 (TWA 전용): Play 설치 앱 안에서는 정책상 Play Billing만 사용 ---- */
+const PLAY={ sku:'host_pass' }; // Play Console 인앱 상품 ID (₩4,900 1회성) — PAYMENTS.md 참조
+let PLAYB=false;
+(async()=>{ try{ if('getDigitalGoodsService' in window){
+  const s=await window.getDigitalGoodsService('https://play.google.com/billing'); PLAYB=!!s; } }catch(e){} })();
+async function playPurchase(){ try{ hidePassSheet();
+  await window.getDigitalGoodsService('https://play.google.com/billing'); // 가용성 재확인
+  const pr=new PaymentRequest([{supportedMethods:'https://play.google.com/billing', data:{sku:PLAY.sku}}],
+    {total:{label:'이음 호스트 패스', amount:{currency:'KRW', value:String(PASS_AMOUNT)}}});
+  const resp=await pr.show();
+  const token=(resp.details&&resp.details.purchaseToken)||null;
+  await resp.complete('success');
+  const ev=hostEvent(); if(ev){ own(ev); ev.pass=true; ev.passPaid={play:true, token, at:Date.now()}; }
+  if(!S.settings)S.settings={}; S.settings.premium=true;
+  if(S.meta) S.meta.playToken=token; // 3일 내 서버 acknowledge 필요 — PAYMENTS.md
+  passTrack('accepted'); save(); render();
+  toast('호스트 패스가 열렸어요 — 감사합니다 🎉');
+  const cont=_passCont; _passCont=null; cont&&cont();
+}catch(e){ if(e&&e.name==='AbortError'){ toast('결제를 취소했어요'); return; }
+  toast('Google Play 결제를 열지 못했어요 — 잠시 후 다시 시도해 주세요'); } }
 const PAY_METHODS=[['easy','⚡ 간편결제','토스페이 · 카카오페이 · 네이버페이'],
                    ['card','💳 신용/체크카드','모든 카드사'],
                    ['bank','🏦 계좌이체','실시간 이체'],
@@ -2136,14 +2156,17 @@ function passPrompt(cont){ _passCont=cont||null; _payPick=null; passTrack('shown
       <div style="font-size:14px">${PAY.mode==='free'?`<s style="color:var(--muted)">${PASS_PRICE}</s> <b style="color:var(--ok)">테스터 무료</b>`:`<b>${PASS_PRICE}</b> <span style="color:var(--muted);font-size:12px">· 한 번 결제 · 평생</span>`}</div>
     </div>
     <p class="sub" style="margin:6px 0 12px">딱 한 번 결제하면 <b>모든 행사</b>에서 <b>장부 엑셀</b>·<b>감사카드 전체 디자인</b>이 평생 열려요. 백업·기기 이전에도 유지됩니다.</p>
-    <label style="margin:0 0 7px">결제 수단 <span style="font-weight:400;color:var(--muted)">— 정식 출시 후 모두 지원 · 지금은 선호 조사(선택)</span></label>
+    ${PAY.mode!=='free'&&PLAYB?`
+    <div class="note" style="margin:0">▶ <b>Google Play 결제</b>로 안전하게 진행됩니다 — 결제·환불 모두 Play 계정에서 관리돼요.</div>`
+    :`<label style="margin:0 0 7px">결제 수단 <span style="font-weight:400;color:var(--muted)">— 정식 출시 후 모두 지원 · 지금은 선호 조사(선택)</span></label>
     <div class="paygrid">
       ${PAY_METHODS.map(([k,t,d])=>`<button class="payopt${PAY.mode!=='free'&&k==='card'?' on':''}" onclick="pickPay('${k}',this)"><b>${t}</b><small>${d}</small></button>`).join('')}
-    </div>
+    </div>`}
     ${PAY.mode==='free'
       ?`<button class="btn btn-primary" style="margin-top:14px" onclick="acceptPass()">지금은 무료로 열기 🎉</button>`
+      :(PLAYB?`<button class="btn btn-primary" style="margin-top:14px" onclick="acceptPass()">Google Play로 ${PASS_PRICE} 결제</button>`
       :`<button class="btn btn-primary" style="margin-top:14px" onclick="acceptPass()">${PASS_PRICE} 결제하기</button>
-       <p class="lblnote" style="text-align:center;margin-top:8px">토스페이먼츠 안전 결제창으로 이동합니다${PAY.mode==='test'?' · <b style="color:var(--warn)">테스트 모드(실제 청구 없음)</b>':''}</p>`}
+       <p class="lblnote" style="text-align:center;margin-top:8px">토스페이먼츠 안전 결제창으로 이동합니다${PAY.mode==='test'?' · <b style="color:var(--warn)">테스트 모드(실제 청구 없음)</b>':''}</p>`)}
     <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="declinePass()">다음에</button>
   </div>`;
   bg.onclick=declinePass;
@@ -2157,7 +2180,9 @@ function acceptPass(){
   if(_payPick){ if(!S.meta.passStats)S.meta.passStats={shown:0,accepted:0,declined:0,used:{},method:{}};
     if(!S.meta.passStats.method)S.meta.passStats.method={};
     S.meta.passStats.method[_payPick]=(S.meta.passStats.method[_payPick]||0)+1; }
-  if(PAY.mode!=='free'){ // 실결제/테스트: 토스 결제창으로 (성공 복귀 시 boot 핸들러가 패스 개방)
+  if(PAY.mode!=='free'){
+    if(PLAYB){ save(); _payPick=null; playPurchase(); return; } // Play 설치 앱: Play Billing (정책 준수)
+    // 웹/PWA: 토스 결제창으로 (성공 복귀 시 boot 핸들러가 패스 개방)
     const m=_payPick||'card'; save(); _passCont=null; _payPick=null; hidePassSheet();
     startPassPayment(m); return; }
   const ev=hostEvent(); ev.pass=true; if(!S.settings)S.settings={}; S.settings.premium=true; passTrack('accepted');
