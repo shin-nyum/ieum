@@ -1008,6 +1008,8 @@ function render(){
     : v==='group' ? groupView()
     : v==='people' ? peopleView()
     : v==='person' ? personView()
+    : v==='personadd' ? personAddView()
+    : v==='tx' ? txView()
     : v==='settings' ? settingsView()
     : v==='doc' ? docView()
     : v==='detail' ? guestDetail() : guestList();
@@ -1601,18 +1603,25 @@ function ledgerSummaryCard(){ const s=myStats(); const nc=s.net>=0?'var(--ok)':'
     </div>
   </div>`; }
 function ledgerView(){ const s=myStats();
-  const gaveEvents=S.events.filter(e=>e.role!=='host'&&e.myGift>0).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  const recvEvents=S.events.filter(e=>e.role==='host').map(e=>({e,c:ledgerStats(e).total})).filter(x=>x.c>0);
   const rel=Object.entries(s.byRel).sort((a,b)=>b[1]-a[1]); const mx=Math.max(1,...rel.map(x=>x[1]));
+  const all=txAll(); const gave=all.filter(t=>t.dir==='gave'); const recv=all.filter(t=>t.dir==='received');
   return `
-  <div class="listhead"><div class="t serif">경조사비 가계부</div></div>
+  <div class="listhead"><div class="t serif">품앗이 가계부</div></div>
   <div class="card">
     <div class="stats">
-      <div class="stat"><div class="v">${won(s.given)}</div><div class="k">보낸 경조사비 (${s.gaveCount})</div></div>
-      <div class="stat"><div class="v">${won(s.received)}</div><div class="k">받은 경조사비 (${s.recvCount})</div></div>
-      <div class="stat"><div class="v big" style="color:${s.net>=0?'var(--ok)':'var(--danger)'}">${(s.net>=0?'+':'−')+won(Math.abs(s.net))}</div><div class="k">합계</div></div>
+      <div class="stat" style="cursor:pointer" onclick="openTx('gave')"><div class="v">${won(s.given)}</div><div class="k">보낸 경조사비 (${s.gaveCount}) ›</div></div>
+      <div class="stat" style="cursor:pointer" onclick="openTx('received')"><div class="v">${won(s.received)}</div><div class="k">받은 경조사비 (${s.recvCount}) ›</div></div>
+      <div class="stat" style="cursor:pointer" onclick="openTx('all')"><div class="v big" style="color:${s.net>=0?'var(--ok)':'var(--danger)'}">${(s.net>=0?'+':'−')+won(Math.abs(s.net))}</div><div class="k">합계 ›</div></div>
     </div>
-    <div class="note">'품앗이'는 주고받는 마음입니다. 보낸 내역과 받은 내역을 한눈에 볼 수 있어요.</div>
+    <div class="note">'품앗이'는 주고받는 마음입니다. 항목을 누르면 전체 내역을 은행 앱처럼 볼 수 있어요.</div>
+  </div>
+  <div class="card"><div class="secthead"><div class="t">보낸 내역</div><div class="c">${gave.length}건</div></div>
+    <div class="glist">${gave.slice(0,3).map(txRow).join('')||'<div class="empty">아직 보낸 내역이 없어요.</div>'}</div>
+    ${gave.length>3?`<button class="backbtn" style="margin:8px 0 0" onclick="openTx('gave')">더보기 · ${gave.length}건 전체 ›</button>`:''}
+  </div>
+  <div class="card"><div class="secthead"><div class="t">받은 내역</div><div class="c">${recv.length}건</div></div>
+    <div class="glist">${recv.slice(0,3).map(txRow).join('')||'<div class="empty">아직 받은 내역이 없어요.</div>'}</div>
+    ${recv.length>3?`<button class="backbtn" style="margin:8px 0 0" onclick="openTx('received')">더보기 · ${recv.length}건 전체 ›</button>`:''}
   </div>
   <div class="card reco-cta" onclick="openPeople()" style="border-color:var(--sage)">
     <div class="rc-ic">🔎</div>
@@ -1620,15 +1629,77 @@ function ledgerView(){ const s=myStats();
     <div class="rc-go" style="color:var(--sage-d)">›</div>
   </div>
   ${monthlyChart()}
-  ${rel.length?`<div class="card"><div class="secthead"><div class="t">관계별 낸 경조사비</div></div>
+  ${rel.length?`<div class="card"><div class="secthead"><div class="t">관계별 보낸 경조사비</div></div>
     ${rel.map(([r,v])=>`<div class="relrow"><span class="rl">${esc(r)}</span><div class="bar"><div class="fill" style="width:${Math.round(v/mx*100)}%"></div></div><span class="rv">${won(v)}</span></div>`).join('')}
-  </div>`:''}
-  <div class="card"><div class="secthead"><div class="t">보낸 내역</div><div class="c">${gaveEvents.length}건</div></div>
-    <div class="glist">${gaveEvents.map(e=>{const c=cfg(e);return `<div class="calevrow" onclick="openEvent('${e.id}')"><span class="cic">${c.icon}</span><span class="cnm">${esc(evNamePlain(e))}<span style="color:var(--muted);font-weight:400;font-size:11px"> · ${esc(e.myRelation||'')}</span></span><span class="rv">${won(e.myGift)}</span><span class="cchev">›</span></div>`;}).join('')||'<div class="empty">아직 보낸 내역이 없어요. 경조사를 열어 금액을 기록해 보세요.</div>'}</div>
-  </div>
-  ${recvEvents.length?`<div class="card"><div class="secthead"><div class="t">받은 내역 (내 행사)</div></div>
-    <div class="glist">${recvEvents.map(({e,c})=>{const cf=cfg(e);return `<div class="calevrow"><span class="cic">${cf.icon}</span><span class="cnm">${esc(evNamePlain(e))}</span><span class="rv" style="color:var(--ok)">${won(c)}</span></div>`;}).join('')}</div>
   </div>`:''}`;
+}
+/* ---- 주고받은 내역 (은행 앱 컨셉: 기간·방향 필터) ---- */
+function txAll(){ const arr=[];
+  S.events.forEach(e=>{ if(e.demo||e.tut) return;
+    if(e.role==='host'){ (e.guests||[]).forEach(g=>{ const p=g.pay||{}; if(p.amount>0) arr.push({dir:'received',amount:p.amount,label:g.name,sub:evNamePlain(e)+' · '+cfg(e).label,date:e.date||''}); }); }
+    else if(e.myGift>0){ arr.push({dir:'gave',amount:e.myGift,label:evNamePlain(e),sub:cfg(e).label+(e.myRelation?' · '+e.myRelation:''),date:e.date||''}); } });
+  (S.people||[]).forEach(p=>{ if(p.demo||p.tut) return; (p.items||[]).forEach(it=>{ if(it.amount>0)
+    arr.push({dir:it.dir,amount:it.amount,label:p.name,sub:(it.label||'경조사')+' · 직접 기록',date:it.date||''}); }); });
+  return arr.sort((a,b)=>(b.date||'').localeCompare(a.date||'')); }
+function txRow(t){ return `<div class="calevrow" style="cursor:default">
+  <span style="flex:none;font-size:11px;color:var(--muted);width:64px;font-variant-numeric:tabular-nums">${t.date||'날짜 없음'}</span>
+  <span class="cnm">${esc(t.label)}<span style="color:var(--muted);font-weight:400;font-size:11px"> · ${esc(t.sub)}</span></span>
+  <span class="rv" style="color:${t.dir==='gave'?'var(--ink)':'var(--ok)'}">${t.dir==='gave'?'−':'+'}${won(t.amount).slice(1)}</span></div>`; }
+function openTx(f){ S.ui.txFilter=f||'all'; if(!S.ui.txPeriod)S.ui.txPeriod='3m'; S.ui.guestView='tx'; save(); render(); window.scrollTo(0,0); }
+function txSetF(f){ S.ui.txFilter=f; save(); render(); }
+function txSetP(p){ S.ui.txPeriod=p; save(); render(); }
+function txView(){ const f=S.ui.txFilter||'all', per=S.ui.txPeriod||'3m';
+  const mo={'1m':1,'3m':3,'6m':6,'12m':12}[per];
+  let cutStr=''; if(mo){ const c=new Date(); c.setMonth(c.getMonth()-mo);
+    cutStr=c.getFullYear()+'-'+String(c.getMonth()+1).padStart(2,'0')+'-'+String(c.getDate()).padStart(2,'0'); }
+  let list=txAll().filter(t=>!cutStr||(t.date&&t.date>=cutStr));
+  const sent=list.filter(t=>t.dir==='gave').reduce((s,t)=>s+t.amount,0);
+  const recv=list.filter(t=>t.dir==='received').reduce((s,t)=>s+t.amount,0);
+  if(f!=='all') list=list.filter(t=>t.dir===f);
+  return `<button class="backbtn" onclick="setGuestTab('ledger')">‹ 품앗이 가계부</button>
+  <div class="listhead"><div class="t serif">주고받은 내역</div><div class="c">${list.length}건</div></div>
+  <div class="seg2" style="margin-bottom:8px">${[['all','전체'],['gave','보낸'],['received','받은']].map(([k,l])=>`<button class="${f===k?'on':''}" onclick="txSetF('${k}')">${l}</button>`).join('')}</div>
+  <div class="chips" style="margin-bottom:12px">${[['1m','1개월'],['3m','3개월'],['6m','6개월'],['12m','1년'],['all','전체']].map(([k,l])=>`<button class="chip ${per===k?'on':''}" onclick="txSetP('${k}')">${l}</button>`).join('')}</div>
+  <div class="card"><div class="stats">
+    <div class="stat"><div class="v">${won(sent)}</div><div class="k">기간 내 보냄</div></div>
+    <div class="stat"><div class="v">${won(recv)}</div><div class="k">기간 내 받음</div></div>
+    <div class="stat"><div class="v big" style="color:${recv-sent>=0?'var(--ok)':'var(--danger)'}">${(recv-sent>=0?'+':'−')+won(Math.abs(recv-sent))}</div><div class="k">합계</div></div>
+  </div></div>
+  <div class="card"><div class="glist">${list.map(txRow).join('')||'<div class="empty">이 기간에는 내역이 없어요.</div>'}</div></div>`;
+}
+/* ---- 주고받은 사람: 직접 추가 화면 ---- */
+function openPersonAdd(){ S.ui.paDraft={rel:'친구'}; S.ui.guestView='personadd'; save(); render(); window.scrollTo(0,0); }
+function paCapture(){ const d=S.ui.paDraft||{}; d.name=gv('pa_name'); d.type=gv('pa_type'); d.date=gv('pa_date'); d.label=gv('pa_label'); d.amt=gv('pa_amt'); S.ui.paDraft=d; }
+function paRelSet(r){ paCapture(); S.ui.paDraft.rel=r; render(); }
+function savePersonAdd(dir){ paCapture(); const d=S.ui.paDraft;
+  const nm=(d.name||'').trim(); if(!nm){ toast('이름을 입력해 주세요'); return; }
+  let p=(S.people||[]).find(x=>x.name===nm);
+  if(!p){ p={id:uid('p'),name:nm,relation:d.rel||'',items:[]}; if(!S.people)S.people=[]; S.people.push(p); }
+  else if(d.rel&&!p.relation) p.relation=d.rel;
+  const amt=Number(d.amt);
+  if(dir&&amt>0){ p.items.push({id:uid('pi'),dir,amount:amt,label:(d.label||'').trim()||d.type||'경조사',date:d.date||todayStr()}); }
+  else if(dir&&!(amt>0)){ toast('금액을 입력해 주세요'); return; }
+  S.ui.personName=nm; S.ui.guestView='person'; save(); render(); window.scrollTo(0,0);
+  toast(dir?(dir==='gave'?'보낸 내역으로 추가했어요':'받은 내역으로 추가했어요'):'사람을 추가했어요 — 이력을 입력해 보세요'); }
+function personAddView(){ const d=S.ui.paDraft||{};
+  return `<button class="backbtn" onclick="openPeople()">‹ 주고받은 사람</button>
+  <div class="listhead"><div class="t serif">직접 추가하기</div></div>
+  <div class="card">
+    <label style="margin-top:0">이름</label><input id="pa_name" placeholder="이름" value="${esc(d.name||'')}">
+    <label>관계</label>
+    <div class="chips">${RELATIONS.map(r=>`<button class="chip ${(d.rel||'친구')===r?'on':''}" onclick="paRelSet('${r}')">${r}</button>`).join('')}</div>
+    <label style="margin-top:12px">주고받은 내역</label>
+    <div class="row">
+      <select id="pa_type" style="max-width:36%">${['결혼식','화혼','부고','돌잔치','집들이','생일','기타'].map(t=>`<option ${d.type===t?'selected':''}>${t}</option>`).join('')}</select>
+      <input id="pa_date" type="date" value="${d.date||todayStr()}">
+    </div>
+    <div class="row" style="margin-top:8px"><input id="pa_label" placeholder="설명 (선택 — 비우면 유형)" value="${esc(d.label||'')}"><input id="pa_amt" type="number" inputmode="numeric" placeholder="금액" value="${d.amt||''}"></div>
+    <div class="row" style="margin-top:11px">
+      <button class="btn btn-line" onclick="savePersonAdd('gave')">보냄으로 저장 ↗</button>
+      <button class="btn btn-sage" onclick="savePersonAdd('received')">받음으로 저장 ↙</button>
+    </div>
+    <button class="backbtn" style="margin-top:10px" onclick="savePersonAdd(null)">금액 없이 사람만 추가</button>
+  </div>`;
 }
 
 /* ======================= 설정 · 백업 · 약관 ======================= */
@@ -2368,7 +2439,7 @@ function sendCard(name,mark){ const ev=hostEvent(); const greeting=personGreetin
 function backFromHost2(){ S.ui.hostSub=null; save(); render(); window.scrollTo(0,0); }
 
 /* ======================= 하단 탭 내비 ======================= */
-function navGroup(v){ if(['ledger','people','person'].includes(v))return 'ledger'; if(v==='reco')return 'reco'; if(['more','group','envelope','settings','doc'].includes(v))return 'more'; return 'home'; }
+function navGroup(v){ if(['ledger','people','person','personadd','tx'].includes(v))return 'ledger'; if(v==='reco')return 'reco'; if(['more','group','envelope','settings','doc'].includes(v))return 'more'; return 'home'; }
 function setGuestTab(v){ S.ui.tab='guest'; S.ui.guestView=v; if(v==='reco'&&S.ui.reco)S.ui.reco.ctxEventId=null; save(); render(); window.scrollTo(0,0); }
 function updateBottomNav(){ const g=navGroup(S.ui.guestView); document.querySelectorAll('#bottomnav button').forEach(b=>b.classList.toggle('on', b.getAttribute('data-g')===g)); }
 function backFromHost(){ pruneDraft(); S.ui.tab='guest'; S.ui.guestView='list'; S.ui.hostSub=null; save(); render(); window.scrollTo(0,0); }
@@ -2435,12 +2506,7 @@ function peopleView(){
   <p class="sub" style="margin:0 2px 12px">이음 송금·현금·수기 기록을 사람별로 모았어요. 이름으로 검색해 <b>지난 주고받은 금액</b>을 확인하세요.</p>
   <input id="ppl-search" placeholder="🔍 이름·경조사 검색" value="${esc(S.ui.pplSearch||'')}" oninput="pplSearchSet(this.value)" style="margin-bottom:12px">
   <div id="ppl-list">${peopleListHTML()}</div>
-  <div class="card" style="margin-top:12px">
-    <label style="margin-top:0">사람 직접 추가</label>
-    <div class="row"><input id="np_name" placeholder="이름" style="flex:2">
-      <select id="np_rel" style="flex:1;max-width:36%">${RELATIONS.map(r=>`<option>${r}</option>`).join('')}</select></div>
-    <button class="badge-add" style="margin-top:8px" onclick="addPersonInline()">＋ 추가하고 이력 입력</button>
-  </div>`;
+  <button class="badge-add" style="margin-top:12px" onclick="openPersonAdd()">＋ 직접 추가하기 <span style="font-weight:400;font-size:12px;color:var(--muted)">· 이름·관계·주고받은 내역</span></button>`;
 }
 function addPersonInline(){ const n=gv('np_name').trim(); if(!n){toast('이름을 입력하세요');return;}
   const r=gv('np_rel').trim();
@@ -3139,7 +3205,8 @@ window.addEventListener('popstate', ()=>{
     else if(S.ui.tab==='host'){ if(S.ui.hostSub==='thanks'){ backFromHost2(); } else { backFromHost(); } }
     else { const v=S.ui.guestView;
       if(v==='invite') declineInvite();
-      else if(v==='person') openPeople();
+      else if(v==='person'||v==='personadd') openPeople();
+      else if(v==='tx') setGuestTab('ledger');
       else if(v==='people') setGuestTab('ledger');
       else if(v==='settings'||v==='doc'||v==='group'||v==='envelope') setGuestTab('more');
       else backToList(); }
