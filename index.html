@@ -2389,8 +2389,21 @@ function cardSVG(idx,greeting,hostNames,photo,opts){ const L=cardLayout(idx,gree
     `<rect width="800" height="1000" fill="url(#${gid})"/>`+
     `<rect x="34" y="34" width="732" height="932" rx="20" fill="#ffffff" opacity="${c.deco==='sealdots'||c.deco==='goldframe'||c.deco==='lineleaf'?0:0.35}"/>`+
     _decoSVG(c,!!photo)+
+    (idx>=FREE_CARDS?_premiumFrame(c):'')+
     `${ph}${texts}`+
     _divider(838,c.pal)+`</svg>`; }
+function _premiumFrame(c){ // 프리미엄 전용: 이중 헤어라인 액자·코너 다이아·상단 인장 — '살 만한' 밀도
+  const a=c.accent;
+  const dia=(x,y,s)=>`<path d="M${x} ${y-s} L${x+s} ${y} L${x} ${y+s} L${x-s} ${y} Z" fill="${a}" opacity=".75"/>`;
+  return `<rect x="24" y="24" width="752" height="952" rx="26" fill="none" stroke="${a}" stroke-width="2.2" opacity=".5"/>
+  <rect x="38" y="38" width="724" height="924" rx="20" fill="none" stroke="${a}" stroke-width=".9" opacity=".55"/>
+  ${dia(50,50,8)}${dia(750,50,8)}${dia(50,950,8)}${dia(750,950,8)}
+  ${dia(50,50,3.5)}${dia(750,50,3.5)}${dia(50,950,3.5)}${dia(750,950,3.5)}
+  <path d="M352 62 H448" stroke="${a}" stroke-width="1" opacity=".55"/>
+  <path d="M400 54 L406 62 L400 70 L394 62 Z" fill="${a}" opacity=".85"/>
+  <circle cx="366" cy="62" r="1.8" fill="${a}" opacity=".6"/><circle cx="434" cy="62" r="1.8" fill="${a}" opacity=".6"/>
+  <path d="M352 938 H448" stroke="${a}" stroke-width="1" opacity=".55"/>
+  <path d="M400 930 L406 938 L400 946 L394 938 Z" fill="${a}" opacity=".85"/>`; }
 function cardPaintText(ctx,L,hostNames){ // 내보내기: 웹폰트를 캔버스로 직접 그림(SVG-이미지는 웹폰트 미적용)
   ctx.textAlign='center'; ctx.textBaseline='alphabetic';
   const ls=(px)=>{ try{ ctx.letterSpacing=px+'px'; }catch(e){} };
@@ -2427,8 +2440,7 @@ function hostSig(ev){ return ev.partyB?`${ev.partyA}·${ev.partyB}`:ev.partyA; }
 function personGreeting(ev,name){ const c=cardState(ev); const m=(c.msg&&c.msg.trim())?c.msg:thankSamples(ev)[0]; return m.replace(/\{이름\}/g, name||'○○'); }
 function isFreeCard(i,ev){ // 기본 3종 무료 + 부고 행사에선 조의 카드 무료(예의 기능에 과금 안 함)
   return i<FREE_CARDS || (ev && ev.type==='memorial' && CARDS[i] && CARDS[i].mood==='mourn'); }
-function setCardDesign(i){ const ev=hostEvent();
-  if(!isFreeCard(i,ev) && !hasPass(ev)){ passTrack('cardDesign'); passPrompt(()=>{ cardState(ev).design=i; save(); render(); }); return; }
+function setCardDesign(i){ const ev=hostEvent(); // 미리보기는 전부 개방 — 결제 게이트는 보내기 시점(sendCard)
   cardState(ev).design=i; save(); render(); }
 function setCardMsg(v){ cardState(hostEvent()).msg=v; renderCardPreview(); }
 function useSample(i){ const ev=hostEvent(); cardState(ev).msg=thankSamples(ev)[i]; save(); render(); }
@@ -2461,7 +2473,7 @@ function thanksView(){ const ev=hostEvent(); const c=cardState(ev); const sample
         if(ev.type!=='memorial') return a.i-b.i;
         return (b.cc.mood==='mourn')-(a.cc.mood==='mourn') || a.i-b.i;
       }).map(({cc,i})=>`<button class="card-thumb ${c.design===i?'on':''}" onclick="setCardDesign(${i})" style="background:linear-gradient(135deg,${cc.bg[0]},${cc.bg[cc.bg.length-1]})"><span style="color:${cc.mood==='mourn'?cc.ink:cc.accent}">${cc.mood==='mourn'?'❀':'♥'}</span>${!isFreeCard(i,ev)&&!hasPass(ev)?'<span class="pbdg">P</span>':''}</button>`).join('')}</div>
-    ${!hasPass(ev)?`<p class="lblnote">‘P’ 디자인은 <b>호스트 패스</b>(정식 출시 후 ${PASS_PRICE} · 지금은 무료)로 열 수 있어요.${ev.type==='memorial'?' 조의 카드(❀)는 무료예요.':''}</p>`:''}
+    ${!hasPass(ev)?`<p class="lblnote">모든 디자인을 자유롭게 <b>미리보기</b> 하세요 — ‘P’ 디자인과 사진은 <b>보낼 때</b> 호스트 패스(정식 출시 후 ${PASS_PRICE} · 지금은 무료)가 필요해요.${ev.type==='memorial'?' 조의 카드(❀)는 무료예요.':''}</p>`:''}
     <label style="margin-top:13px">글씨체</label>
     <div class="chips">${Object.entries(CARD_FONTS).map(([k,f])=>`<button class="chip ${c.font===k?'on':''}" style="font-family:${f.css};font-size:14px" onclick="setCardFont('${k}')">${f.label}</button>`).join('')}</div>
     <div class="row" style="margin-top:11px;align-items:flex-end">
@@ -2478,7 +2490,7 @@ function thanksView(){ const ev=hostEvent(); const c=cardState(ev); const sample
     <div class="chips" style="margin-bottom:8px">${samples.map((s,i)=>`<button class="chip" onclick="useSample(${i})">샘플 ${i+1}</button>`).join('')}</div>
     <textarea rows="3" oninput="setCardMsg(this.value)" placeholder="직접 입력하거나 위 샘플을 골라보세요">${esc(c.msg)}</textarea>
     <div class="row" style="margin-top:10px">
-      <button class="btn btn-ghost btn-sm" onclick="setCardPhoto()">📷 사진 ${S.ui.cardPhoto?'변경':'추가'}</button>
+      <button class="btn btn-ghost btn-sm" onclick="setCardPhoto()">📷 사진 ${S.ui.cardPhoto?'변경':'추가'}${!hasPass(hostEvent())?' <span class="pchip">PASS</span>':''}</button>
       ${S.ui.cardPhoto?`<button class="btn btn-ghost btn-sm" onclick="clearCardPhoto()">사진 제거</button>`:''}
     </div>
   </div>
@@ -2500,6 +2512,9 @@ function markThanked(name){ const ev=hostEvent(); if(!ev)return;
   g.thanked=Date.now(); save(); if(S.ui.hostSub==='thanks') render(); }
 function sendCard(name,mark){ const ev=hostEvent(); const greeting=personGreeting(ev,name);
   const st=cardState(ev); const o=cardOpts(ev);
+  // 프리미엄 디자인/사진은 미리보기 자유, 실제 전송은 호스트 패스 — 결제(무료 개방 중엔 원탭) 후 자동 재개
+  if(!hasPass(ev) && (!isFreeCard(st.design,ev) || S.ui.cardPhoto)){
+    passTrack('cardSend'); passPrompt(()=>sendCard(name,mark)); return; }
   const svg=cardSVG(st.design, greeting, hostSig(ev), S.ui.cardPhoto, {...o, noText:true}); // 텍스트는 캔버스에서(웹폰트 유지)
   const L=cardLayout(st.design, greeting, S.ui.cardPhoto, o);
   loadCardFonts([st.font,'myeongjo'], ()=>
