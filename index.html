@@ -698,6 +698,26 @@ function backToList(){S.ui.guestView='list';save();render();window.scrollTo(0,0)
 
 /* ======================= 청첩장 공유 ======================= */
 /* 행사 정보를 링크에 인코딩 → 단톡방 공유 시 각자 열면 그 청첩장이 뜨고, 각자 자기 이음에 담김(백엔드 없이 사용자 분리) */
+/* LZW 압축(UTF-8 바이트 기반) — 기기 이전 링크(#b=)에 백업 JSON을 담기 위한 경량 압축 */
+function lzwEnc(str){ const s=unescape(encodeURIComponent(str)); const dict=new Map(); let size=256;
+  for(let i=0;i<256;i++) dict.set(String.fromCharCode(i),i);
+  let w='', out=[];
+  for(const c of s){ const wc=w+c;
+    if(dict.has(wc)) w=wc;
+    else { out.push(dict.get(w)); if(size<65536) dict.set(wc,size++); w=c; } }
+  if(w) out.push(dict.get(w));
+  let bytes=''; out.forEach(code=>{ bytes+=String.fromCharCode(code>>8, code&255); });
+  return btoa(bytes).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function lzwDec(b64){ let s=b64.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4)s+='=';
+  const bytes=atob(s); const codes=[];
+  for(let i=0;i+1<bytes.length;i+=2) codes.push((bytes.charCodeAt(i)<<8)|bytes.charCodeAt(i+1));
+  const dict=new Map(); let size=256;
+  for(let i=0;i<256;i++) dict.set(i,String.fromCharCode(i));
+  let w=dict.get(codes[0]), res=w;
+  for(let i=1;i<codes.length;i++){ const k=codes[i]; let entry;
+    if(dict.has(k)) entry=dict.get(k); else if(k===size) entry=w+w[0]; else throw new Error('lzw');
+    res+=entry; if(size<65536) dict.set(size++, w+entry[0]); w=entry; }
+  return decodeURIComponent(escape(res)); }
 function b64urlEnc(str){ return btoa(unescape(encodeURIComponent(str))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
 function b64urlDec(str){ str=str.replace(/-/g,'+').replace(/_/g,'/'); while(str.length%4)str+='='; return decodeURIComponent(escape(atob(str))); }
 function encodeInvite(ev){ const o={t:ev.type,a:ev.partyA,b:ev.partyB,s:ev.subtitle,d:ev.date,ti:ev.time,v:ev.venue,ad:ev.address,m:ev.message,u:ev.externalUrl||'',
@@ -1248,7 +1268,7 @@ function guestList(){
   return `
   <div class="listhead"><div class="t serif">내 경조사</div><div class="c">다가오는 ${up.length}건</div></div>
   ${pendingBanner()}
-  ${backupBanner()||iosInstallBanner()}
+  ${iosInstallBanner()}
   ${all.length>=6?`<input id="evq" placeholder="🔍 이름·장소로 찾기" value="${esc(EVQ)}" oninput="EVQ=this.value;renderEvBody()" style="margin-bottom:11px">`:''}
   <div id="ev-body">${evBodyHTML()}</div>`;
 }
@@ -1733,10 +1753,11 @@ function settingsView(){ const st=S.settings||{}; const ago=backupAgo();
   </div>
   <div class="card">
     <div class="secthead"><div class="t">💾 백업 · 기기 이전</div><div class="c">${ago?`마지막 백업 ${ago}`:'아직 백업 없음'}</div></div>
-    <p class="sub"><b>앱 업데이트로는 데이터가 지워지지 않아요.</b> 다만 데이터는 이 기기에만 저장되므로, 휴대폰을 바꾸거나 앱을 지우기 전에는 꼭 백업하세요 — 새 기기에서 파일 하나로 그대로 복원됩니다.</p>
+    <p class="sub"><b>앱 업데이트로는 데이터가 지워지지 않고, 앱을 닫을 때마다 이 기기 안에 자동 백업됩니다.</b> 다만 데이터는 이 기기에만 저장되므로, 휴대폰을 바꾸거나 앱을 지우기 전에는 꼭 백업하세요 — 새 기기에서 파일 하나로 그대로 복원됩니다.</p>
     <div class="stack">
       <button class="btn btn-primary" onclick="exportData()">⬇️ 백업 파일 만들기 (카톡 나에게·드라이브로)</button>
-      <button class="btn btn-ghost" onclick="importData()">⬆️ 백업 파일에서 복원</button>
+      <button class="btn btn-ghost" onclick="shareTransferLink()">🔗 링크로 기기 옮기기 <span style="font-weight:400;font-size:11.5px;opacity:.8">· 새 폰에서 탭하면 자동 적용</span></button>
+      <button class="btn btn-ghost" onclick="importData()">⬆️ 백업에서 복원 <span style="font-weight:400;font-size:11.5px;opacity:.8">· 따라하기 가이드</span></button>
     </div>
     <div class="note">💡 백업 파일을 <b>카카오톡 나에게 보내기</b>나 구글 드라이브에 두면, 새 폰에서 그 파일을 열어 바로 복원할 수 있어요. 경조사 ${S.events.filter(e=>!e.demo&&!e.tut).length}건 · 사람 ${S.people.filter(p=>!p.demo&&!p.tut).length}명 · 가계부 이력 ${S.people.filter(p=>!p.demo&&!p.tut).reduce((s,p)=>s+((p.items||[]).length),0)}건 포함.</div>
   </div>
@@ -1784,7 +1805,8 @@ function parseBackup(text){ // 신 포맷(payload) + 구 포맷(S 통짜) 모두
   return null;
 }
 let PENDING_RESTORE=null; // 메모리 전용 — LS에 싣지 않음(용량 2배·잔존 방지)
-function importData(){
+function importData(){ openRestoreGuide(); } // 복원 진입점: 가이드/바로선택 선택지
+function pickRestoreFile(){ closeRestoreGuide();
   const inp=document.createElement('input'); inp.type='file'; inp.accept='application/json,.json,text/plain,.txt';
   inp.style.cssText='position:fixed;left:-9999px;opacity:0'; document.body.appendChild(inp); // iOS: detached input GC 방지
   const cleanup=()=>{ try{ inp.remove(); }catch(e){} };
@@ -1796,6 +1818,53 @@ function importData(){
     r.onerror=()=>{ cleanup(); toast('파일을 읽지 못했어요'); };
     r.readAsText(f); };
   inp.click(); }
+/* ---- 복원 동적 가이드 (바텀시트) ---- */
+let RG_I=0, _rgHideT=null;
+const RG_STEPS=[
+ {t:'1. 이전 폰에서 옮기기 링크 만들기', x:"이전 폰의 이음에서 <b>설정 → [🔗 링크로 기기 옮기기]</b>를 누르고, <b>카카오톡 '나에게 보내기'</b>로 보내두세요.<br><span style='color:var(--muted)'>파일이 편하면 [⬇️ 백업 파일 만들기]도 똑같이 쓸 수 있어요.</span>"},
+ {t:'2. 새 폰에서 링크 열기', x:"새 폰의 카카오톡 <b>나와의 채팅</b>에서 방금 보낸 <b>링크를 탭</b>하세요. 이음이 열리면서 기록이 <b>자동으로 옮겨집니다</b>.<br><span style='color:var(--muted)'>파일로 보냈다면 파일을 저장한 뒤 3단계로.</span>"},
+ {t:'3. (파일일 때) 여기서 파일 선택', x:"아래 <b>[파일 선택하기]</b>를 누르고 <b>ieum-backup-날짜.json.txt</b> 파일을 고르면 끝. 기존 기록과 <b>병합</b>할지 <b>교체</b>할지 물어봅니다."},
+];
+function openRestoreGuide(){ RG_I=0; renderRestoreGuide(); const bg=document.getElementById('rgsheet');
+  setTimeout(()=>bg.classList.add('show'),10); try{ histGuard(); }catch(e){} }
+function renderRestoreGuide(){ let bg=document.getElementById('rgsheet');
+  if(!bg){ bg=document.createElement('div'); bg.id='rgsheet'; bg.className='sheet-bg';
+    bg.addEventListener('click',e=>{ if(e.target===bg) closeRestoreGuide(); }); document.body.appendChild(bg); }
+  const st=RG_STEPS[RG_I];
+  bg.innerHTML=`<div class="sheet" style="padding-bottom:calc(16px + env(safe-area-inset-bottom))">
+    <div class="secthead"><div class="t" style="font-size:15px">백업 복원</div>
+      <button class="minibtn" onclick="closeRestoreGuide()">닫기</button></div>
+    <div class="note" style="margin:4px 0 12px"><b>${st.t}</b><br>${st.x}</div>
+    <div class="tutdots" style="margin:0 0 12px">${RG_STEPS.map((_,i)=>`<i class="${i===RG_I?'on':''}"></i>`).join('')}</div>
+    <div class="row">
+      ${RG_I>0?`<button class="btn btn-ghost btn-sm" onclick="RG_I--;renderRestoreGuide();document.getElementById('rgsheet').classList.add('show')">‹ 이전</button>`:''}
+      ${RG_I<RG_STEPS.length-1?`<button class="btn btn-primary btn-sm" onclick="RG_I++;renderRestoreGuide();document.getElementById('rgsheet').classList.add('show')">다음 ›</button>`:''}
+    </div>
+    <button class="btn btn-sage" style="margin-top:9px" onclick="pickRestoreFile()">📂 파일 선택하기 — 백업 파일이 있어요</button>
+  </div>`; }
+function closeRestoreGuide(){ const bg=document.getElementById('rgsheet'); if(!bg) return;
+  bg.classList.remove('show'); clearTimeout(_rgHideT); _rgHideT=setTimeout(()=>{ try{ bg.remove(); }catch(e){} },220); }
+/* ---- 기기 이전 링크: 백업을 압축해 링크에 담아 카톡으로 — 새 기기에서 탭하면 자동 적용 ---- */
+async function shareTransferLink(){ try{
+  const json=JSON.stringify(backupPayload());
+  const z=lzwEnc(json), p0=b64urlEnc(json);
+  const enc=(z.length<p0.length?'z'+z:'p'+p0); // 작은 데이터는 평문이 더 짧음 — 짧은 쪽 채택
+  const base=location.href.split('#')[0].split('?')[0]; let link=null;
+  if(RELAY.url){ try{ const code=Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+      const r=await fetch(RELAY.url+'/backup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({k:code,j:enc})});
+      if(r.ok) link=base+'#r='+code; }catch(e){} }
+  if(!link){ if(enc.length>60000){ toast('기록이 많아 링크로 담기 어려워요 — [백업 파일 만들기]를 이용해 주세요'); return; }
+    link=base+'#b='+enc; }
+  const text='[이음] 기기 옮기기 링크 — 새 폰에서 이 링크를 열면 기록이 그대로 옮겨져요.\n'+link;
+  if(navigator.share){ navigator.share({text}).catch(()=>{}); }
+  else { copy(text); toast('링크를 복사했어요 — 카카오톡 나에게 보내기로 새 폰에 전달하세요'); }
+  if(S.meta){ S.meta.lastBackupAt=Date.now(); S.meta.dirty=0; save(); }
+}catch(e){ toast('링크 생성에 실패했어요 — 파일 백업을 이용해 주세요'); } }
+function handleIncomingBackup(p){ // 새 기기가 비어 있으면 자동 적용, 아니면 병합/교체 선택
+  const empty=!S.events.filter(evHasContent).length && !(S.people||[]).length;
+  PENDING_RESTORE=p; S.ui.entered=true;
+  if(empty){ applyRestore('merge'); setTimeout(()=>toast('이전 기기의 기록을 그대로 옮겨왔어요 ✓'),500); }
+  else { S.ui.tab='guest'; S.ui.guestView='restore'; save(); render(); } }
 function evKey(e){ return [e.partyA,e.partyB,e.date,e.venue].join('|'); }
 function evHasContent(e){ return !!(e.partyA||e.partyB||e.date||e.venue||(e.guests&&e.guests.length)||e.myGift); }
 function applyRestore(mode){ const p=PENDING_RESTORE; if(!p)return;
@@ -3077,6 +3146,24 @@ function clearBootHash(){ // 일부 웹뷰는 문서 파싱 중 replaceState를 
   setTimeout(()=>toast(`『${o.n}』님의 응답을 장부에 반영했어요 ✓`),400);
 }catch(e){} })();
 
+/* ======================= 기기 이전 링크(#b= 데이터 / #r= 릴레이) ======================= */
+(function(){ try{ const m=(location.hash||'').match(/[#&]b=([A-Za-z0-9_-]+)/); if(!m) return;
+  clearBootHash();
+  let p=null; try{ const c=m[1]; const body=c.slice(1);
+    p=parseBackup(c[0]==='z'?lzwDec(body):b64urlDec(body)); }catch(e){}
+  if(!p){ setTimeout(()=>toast('이전 링크가 손상됐어요 — 파일 백업을 이용해 주세요'),400); return; }
+  handleIncomingBackup(p);
+}catch(e){} })();
+(function(){ try{ const m=(location.hash||'').match(/[#&]r=([A-Za-z0-9_-]+)/); if(!m) return;
+  clearBootHash(); if(!RELAY.url){ setTimeout(()=>toast('이전 링크를 열 수 없어요 — 파일 백업을 이용해 주세요'),400); return; }
+  fetch(RELAY.url+'/backup?k='+encodeURIComponent(m[1])).then(r=>r.ok?r.json():null).then(o=>{
+    if(!o||!o.j){ toast('이전 링크가 만료됐어요 — 파일 백업을 이용해 주세요'); return; }
+    let p=null; try{ const c=String(o.j); const body=c.slice(1);
+      p=parseBackup(c[0]==='z'?lzwDec(body):b64urlDec(body)); }catch(e){}
+    if(p) handleIncomingBackup(p); else toast('이전 링크가 손상됐어요');
+  }).catch(()=>toast('이전 링크를 여는 데 실패했어요'));
+}catch(e){} })();
+
 /* ======================= 받은 청첩장 링크(#e=) 감지 → 각자 접속 (사용자 분리) ======================= */
 (function(){ try{ const m=(location.hash||'').match(/[#&]e=([^&]+)/);
   if(m){ const iv=decodeInvite(m[1]);
@@ -3198,14 +3285,15 @@ window.addEventListener('resize', ()=>{ try{ if(TUT.on){ const el=document.query
 let _histGuard=false;
 function atTopLevel(){ return !S.ui.entered ||
   (S.ui.tab==='guest' && ['list','ledger','reco','more'].includes(S.ui.guestView)
-   && !(typeof TUT!=='undefined'&&TUT.on) && !document.getElementById('paysheet') && !document.getElementById('calpop')); }
+   && !(typeof TUT!=='undefined'&&TUT.on) && !document.getElementById('paysheet') && !document.getElementById('calpop') && !document.getElementById('rgsheet')); }
 function histGuard(){ if(_histGuard || atTopLevel()) return;
   _histGuard=true; try{ history.pushState({ieum:1},''); }catch(e){} }
 window.addEventListener('popstate', ()=>{
   _histGuard=false;
   if(atTopLevel()) return; // 최상위면 그대로 — 한 번 더 누르면 종료
   try{
-    if(document.getElementById('calpop')) closeCalPopup();
+    if(document.getElementById('rgsheet')) closeRestoreGuide();
+    else if(document.getElementById('calpop')) closeCalPopup();
     else if(document.getElementById('paysheet')) declinePass();
     else if(typeof TUT!=='undefined'&&TUT.on) endTutorial(false);
     else if(S.ui.tab==='host'){ if(S.ui.hostSub==='thanks'){ backFromHost2(); } else { backFromHost(); } }
@@ -3231,6 +3319,11 @@ try{ payRecoverBoot(); }catch(e){}  // 미완 결제 자동 복구(승인 유실
 try{ if(S.ui.noti) fireDueNotis(); }catch(e){}
 try{ relayPull(); }catch(e){}  // 호스트: 릴레이 사서함의 하객 응답 자동 반영 (RELAY.url 설정 시에만)
 try{ bootRawSnapshot(); }catch(e){}  // 업데이트 직후에도 '가공 전 원본' 3세대 보존
+/* 종료·백그라운드 전환 시 자동 백업(기기 내 미러+스냅샷) — 리마인더 없이 항상 최신 유지 */
+addEventListener('visibilitychange',()=>{ if(document.visibilityState!=='hidden') return;
+  try{ localStorage.setItem(LS, JSON.stringify(S)); }catch(e){}
+  try{ mirror(); }catch(e){} try{ dailySnapshot(); }catch(e){} });
+addEventListener('pagehide',()=>{ try{ mirror(); }catch(e){} });
 
 /* PWA: 서비스 워커 등록 */
 if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('./service-worker.js?v=3').catch(()=>{});});}

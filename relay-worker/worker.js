@@ -40,6 +40,24 @@ export default {
         return json(JSON.parse(raw));
       }
 
+      // 기기 이전: 압축 백업 넣기 (TTL 7일, 읽기 1회)
+      if (req.method === 'POST' && url.pathname === '/backup') {
+        let body; try { body = await req.json(); } catch { return json({ error: 'BAD_JSON' }, 400); }
+        const k = String(body.k || ''), j = String(body.j || '');
+        if (!/^[a-z0-9]{8,24}$/.test(k)) return json({ error: 'BAD_KEY' }, 400);
+        if (!/^[A-Za-z0-9_-]{20,2000000}$/.test(j)) return json({ error: 'BAD_DATA' }, 400);
+        await env.REPLIES.put('bk:' + k, j, { expirationTtl: 60 * 60 * 24 * 7 });
+        return json({ ok: true });
+      }
+      if (req.method === 'GET' && url.pathname === '/backup') {
+        const k = String(url.searchParams.get('k') || '');
+        if (!/^[a-z0-9]{8,24}$/.test(k)) return json({ error: 'BAD_KEY' }, 400);
+        const j = await env.REPLIES.get('bk:' + k);
+        if (!j) return json({});
+        await env.REPLIES.delete('bk:' + k);
+        return json({ j });
+      }
+
       return json({ error: 'NOT_FOUND' }, 404);
     } catch (e) {
       return json({ error: 'INTERNAL', detail: String(e && e.message || e) }, 500);
