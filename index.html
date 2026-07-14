@@ -771,10 +771,14 @@ function shareReply(ev,code,nm,me,opt){ const o=opt||{incR:true,incP:true};
   const lines=[`[이음] ${nm}입니다`];
   if(st) lines.push(st==='yes'?(c.counts?`${c.join[0]} (${me.rsvp.count||1}명)`:c.join[0]):c.join[1]);
   if(o.incP&&p.amount!=null) lines.push(`${c.money} ${won(p.amount)} 보냈어요${p.method==='toss'?' (토스)':p.method==='kakao'?' (카카오페이)':p.method==='cash'?' (현금 전달)':''}`);
-  lines.push('','👇 이 링크를 누르면 장부에 자동으로 반영돼요');
-  const text=lines.join('\n')+'\n'+link;
-  if(navigator.share){ navigator.share({text}).catch(()=>{}); return; }
-  copy(text); toast('알림 메시지를 복사했어요 — 호스트에게 붙여넣어 보내세요'); }
+  const summary=lines.join('\n');
+  const ready=window.Kakao&&Kakao.isInitialized&&Kakao.isInitialized();
+  if(ready){ try{ Kakao.Share.sendDefault({objectType:'feed',
+      content:{title:`[이음] ${nm}입니다`, description:summary.split('\n').slice(1).join(' · ')||'마음을 전했어요',
+        imageUrl:'https://shin-nyum.github.io/ieum/og-image.png', link:{mobileWebUrl:link,webUrl:link}},
+      buttons:[{title:'장부에 반영하기', link:{mobileWebUrl:link,webUrl:link}}]}); return; }catch(e){} }
+  if(navigator.share){ navigator.share({title:'[이음] 마음 전해드려요', text:summary+'\n👇 버튼을 누르면 장부에 자동 반영돼요', url:link}).catch(()=>{}); return; }
+  copy(summary+'\n'+link); toast('알림 메시지를 복사했어요 — 호스트에게 붙여넣어 보내세요'); }
 /* 릴레이: 사서함 주소는 행사 키의 해시(서버에 이름·행사 원문 비노출), 응답은 호스트 수신 시 서버에서 삭제 */
 async function relayKey(ev){ const buf=await crypto.subtle.digest('SHA-256', new TextEncoder().encode('ieum1|'+evKey(ev)));
   return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32); }
@@ -852,17 +856,18 @@ function inviteCardPaint(ctx,L){ // 캔버스 텍스트(명조 웹폰트)
 function roundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
 function shareInviteCard(ev){ // 카드 PNG + 링크 → OS 공유시트(문자·라인·인스타·카톡 어디로든)
   const link=inviteLink(ev); const c=cfg(ev);
-  const text=`${evNamePlain(ev)} ${ev.subtitle}\n${dateText(ev)} · ${ev.venue||''}\n${link}`;
+  const text=`${evNamePlain(ev)} ${ev.subtitle}\n${dateText(ev)} · ${ev.venue||''}`; // 링크는 url 필드로(원문 숨김) — 복사 폴백엔 포함
   toast('초대카드를 만드는 중…');
   loadCardFonts(['myeongjo'], ()=>{
     const L=inviteCardLayout(ev);
     svgToPngBlob(inviteCardSVG(ev),1080,1350, blob=>{ // 4:5 (인스타 친화)
-      if(!blob){ copy(text); toast('카드 생성 실패 — 내용을 복사했어요'); return; }
+      if(!blob){ copy(text+'\n'+link); toast('카드 생성 실패 — 내용을 복사했어요'); return; }
       const file=new File([blob],`이음_${c.doc}_${evNamePlain(ev)}.png`,{type:'image/png'});
-      const fb=()=>{ if(noDownload()){ copy(text); toast(isInApp()?'링크를 복사했어요 — Safari에서 열면 카드 이미지도 공유돼요':'링크를 복사했어요 — 원하는 앱에 붙여넣으세요'); return; }
-        dlBlob(blob,`이음_${c.doc}.png`); copy(text); toast('카드 저장 + 링크 복사 — 원하는 앱에 첨부하세요'); };
+      const fb=()=>{ if(noDownload()){ copy(text+'\n'+link); toast(isInApp()?'링크를 복사했어요 — Safari에서 열면 카드 이미지도 공유돼요':'링크를 복사했어요 — 원하는 앱에 붙여넣으세요'); return; }
+        dlBlob(blob,`이음_${c.doc}.png`); copy(text+'\n'+link); toast('카드 저장 + 링크 복사 — 원하는 앱에 첨부하세요'); };
       try{ if(navigator.canShare && navigator.canShare({files:[file]})){
-        navigator.share({files:[file], text}).catch(err=>{ if(err&&err.name==='AbortError')return; fb(); }); return; } }catch(e){}
+        navigator.share({files:[file], text, url:link}).catch(err=>{ if(err&&err.name==='AbortError')return;
+          navigator.share({files:[file], text:text+'\n'+link}).catch(e2=>{ if(e2&&e2.name==='AbortError')return; fb(); }); }); return; } }catch(e){}
       fb();
     }, ctx=>{ ctx.save(); ctx.scale(1080/800,1350/1000); inviteCardPaint(ctx,L); ctx.restore(); });
   });
@@ -1195,7 +1200,7 @@ function hostView(){
     <div class="secthead"><div class="t">💳 호스트 패스</div><div class="c">${hasPass(ev)?'✓ 사용 중':'테스터 무료'}</div></div>
     ${hasPass(ev)
       ?`<div class="note" style="margin-top:4px">✓ 이 행사의 모든 부가 기능이 열려 있어요. 테스터 기간이라 <b>무료</b> — 나중에 소중한 피드백으로 갚아주세요 🙏</div>`
-      :`<p class="sub" style="margin-bottom:10px">장부 <b>엑셀 내보내기</b> · <b>감사카드 전체 디자인</b>을 행사당 한 번으로. 정식 출시 후 <b>${PASS_PRICE}</b>(커피 한 잔 값) — 지금은 무료로 열려요.</p>
+      :`<p class="sub" style="margin-bottom:10px">장부 <b>엑셀 내보내기</b> · <b>감사카드 전체 디자인</b>을 한 번 결제로 — 모든 행사에서 평생. 정식 출시 후 <b>${PASS_PRICE}</b>(커피 한 잔 값) — 지금은 무료로 열려요.</p>
     ${S.meta&&S.meta.passCredits>0?`<button class="btn btn-primary" style="margin-bottom:8px" onclick="useCreditPass()">보유 패스 크레딧 사용 (${S.meta.passCredits}개)</button>`:''}
     <button class="btn btn-line" onclick="activatePass()">무료로 패스 열기 · 테스터 혜택</button>`}
   </div>
@@ -2047,7 +2052,7 @@ function payFinish(pend, receipt){ // 승인 확정 → 패스 개방. 이벤트
   payPendingClear();
   const ev=S.events.find(e=>e.id===pend.eventId);
   if(ev){ if(ev.demo)delete ev.demo; if(ev.tut)delete ev.tut; if(ev.draft)delete ev.draft;
-    ev.pass=true; ev.passPaid={orderId:pend.orderId, paymentKey:pend.paymentKey||null, amount:PASS_AMOUNT, at:Date.now(), mode:pend.mode, receipt:receipt||null};
+    ev.pass=true; if(!S.settings)S.settings={}; S.settings.premium=true; ev.passPaid={orderId:pend.orderId, paymentKey:pend.paymentKey||null, amount:PASS_AMOUNT, at:Date.now(), mode:pend.mode, receipt:receipt||null};
     S.ui.entered=true; S.ui.tab='host'; S.ui.hostEventId=ev.id; S.ui.hostSub=null; }
   else if(S.meta){ S.meta.passCredits=(S.meta.passCredits||0)+1; } // 행사가 사라졌어도 결제분은 크레딧으로 보존
   passTrack('accepted'); save(); try{ render(); }catch(e){}
@@ -2084,7 +2089,7 @@ function payRecoverBoot(){ // 부팅 복구: 승인 응답 유실·iOS 설치앱
     }).catch(()=>{});
 }
 function useCreditPass(){ const ev=hostEvent(); if(!ev||!S.meta||!(S.meta.passCredits>0))return;
-  S.meta.passCredits--; own(ev); ev.pass=true; ev.passPaid={credit:true, amount:PASS_AMOUNT, at:Date.now()};
+  S.meta.passCredits--; own(ev); ev.pass=true; if(!S.settings)S.settings={}; S.settings.premium=true; ev.passPaid={credit:true, amount:PASS_AMOUNT, at:Date.now()};
   save(); render(); toast('보유 크레딧으로 패스를 열었어요'); }
 function loadToss(cb){ if(window.TossPayments){ cb(); return; }
   const s=document.createElement('script'); s.src='https://js.tosspayments.com/v1/payment';
@@ -2110,7 +2115,7 @@ function startPassPayment(method){
   }catch(e){ toast('결제 초기화 실패'); } });
 }
 const FREE_CARDS=3; // 감사카드 무료 디자인 수 (4번째부터 패스)
-function hasPass(ev){ return !!(ev&&ev.pass); }
+function hasPass(ev){ return !!(S.settings&&S.settings.premium) || !!(ev&&ev.pass); } // 1회 결제=계정 전체 영구 (행사별 중복 결제 없음)
 function passTrack(k){ if(!S.meta.passStats)S.meta.passStats={shown:0,accepted:0,declined:0,used:{},method:{}};
   if(k==='shown'||k==='accepted'||k==='declined')S.meta.passStats[k]++;
   else S.meta.passStats.used[k]=(S.meta.passStats.used[k]||0)+1; }
@@ -2128,9 +2133,9 @@ function passPrompt(cont){ _passCont=cont||null; _payPick=null; passTrack('shown
   bg.innerHTML=`<div class="sheet" onclick="event.stopPropagation()">
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
       <div style="font-weight:700;font-size:16px">💳 호스트 패스</div>
-      <div style="font-size:14px">${PAY.mode==='free'?`<s style="color:var(--muted)">${PASS_PRICE}</s> <b style="color:var(--ok)">테스터 무료</b>`:`<b>${PASS_PRICE}</b> <span style="color:var(--muted);font-size:12px">· 행사당 1회</span>`}</div>
+      <div style="font-size:14px">${PAY.mode==='free'?`<s style="color:var(--muted)">${PASS_PRICE}</s> <b style="color:var(--ok)">테스터 무료</b>`:`<b>${PASS_PRICE}</b> <span style="color:var(--muted);font-size:12px">· 한 번 결제 · 평생</span>`}</div>
     </div>
-    <p class="sub" style="margin:6px 0 12px">행사당 딱 한 번 — <b>장부 엑셀</b>과 <b>감사카드 전체 디자인</b>이 열려요.</p>
+    <p class="sub" style="margin:6px 0 12px">딱 한 번 결제하면 <b>모든 행사</b>에서 <b>장부 엑셀</b>·<b>감사카드 전체 디자인</b>이 평생 열려요. 백업·기기 이전에도 유지됩니다.</p>
     <label style="margin:0 0 7px">결제 수단 <span style="font-weight:400;color:var(--muted)">— 정식 출시 후 모두 지원 · 지금은 선호 조사(선택)</span></label>
     <div class="paygrid">
       ${PAY_METHODS.map(([k,t,d])=>`<button class="payopt${PAY.mode!=='free'&&k==='card'?' on':''}" onclick="pickPay('${k}',this)"><b>${t}</b><small>${d}</small></button>`).join('')}
@@ -2155,7 +2160,7 @@ function acceptPass(){
   if(PAY.mode!=='free'){ // 실결제/테스트: 토스 결제창으로 (성공 복귀 시 boot 핸들러가 패스 개방)
     const m=_payPick||'card'; save(); _passCont=null; _payPick=null; hidePassSheet();
     startPassPayment(m); return; }
-  const ev=hostEvent(); ev.pass=true; passTrack('accepted');
+  const ev=hostEvent(); ev.pass=true; if(!S.settings)S.settings={}; S.settings.premium=true; passTrack('accepted');
   save(); const cont=_passCont; _passCont=null; _payPick=null; hidePassSheet();
   toast('호스트 패스가 열렸어요 — 테스터 기간 무료 🎉'); render(); cont&&cont(); }
 function activatePass(){ passPrompt(); }
