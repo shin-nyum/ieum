@@ -605,6 +605,13 @@ function tryAutoRecover(){ // 부팅 시: LS는 비었는데 미러에 실데이
       save(); applyTheme(); render(); toast('저장소에서 데이터를 자동 복구했어요');
     } }catch(e){} dailySnapshot(); });
 }
+const APP_VER='1.2'; // 데이터 보호 정책 버전 — 부팅 스냅샷 라벨용
+function bootRawSnapshot(){ // 업데이트/마이그레이션 버그 대비: 가공 전 localStorage 원본을 3세대 롤링 보관 (IDB)
+  try{ const raw=localStorage.getItem(LS); if(!raw) return;
+    idbGet('boot-raw').then(s=>{ let arr=[]; try{ arr=JSON.parse(s||'[]'); }catch(e){}
+      if(arr.length && arr[arr.length-1].j===raw) return; // 변화 없으면 스킵
+      arr.push({d:todayStr(), v:APP_VER, j:raw}); while(arr.length>3) arr.shift();
+      idbSet('boot-raw', JSON.stringify(arr)); }); }catch(e){} }
 function dailySnapshot(){ // 하루 1회 롤링 스냅샷 5개 (실수 삭제·오염 대비)
   if(!(S.events.length||S.people.length)) return;
   const today=todayStr();
@@ -1726,12 +1733,12 @@ function settingsView(){ const st=S.settings||{}; const ago=backupAgo();
   </div>
   <div class="card">
     <div class="secthead"><div class="t">💾 백업 · 기기 이전</div><div class="c">${ago?`마지막 백업 ${ago}`:'아직 백업 없음'}</div></div>
-    <p class="sub">데이터는 <b>이 기기에만</b> 저장돼요. 휴대폰을 바꾸거나 앱을 지우기 전에 꼭 백업하세요 — 새 기기에서 파일 하나로 그대로 복원됩니다.</p>
+    <p class="sub"><b>앱 업데이트로는 데이터가 지워지지 않아요.</b> 다만 데이터는 이 기기에만 저장되므로, 휴대폰을 바꾸거나 앱을 지우기 전에는 꼭 백업하세요 — 새 기기에서 파일 하나로 그대로 복원됩니다.</p>
     <div class="stack">
       <button class="btn btn-primary" onclick="exportData()">⬇️ 백업 파일 만들기 (카톡 나에게·드라이브로)</button>
       <button class="btn btn-ghost" onclick="importData()">⬆️ 백업 파일에서 복원</button>
     </div>
-    <div class="note">💡 백업 파일을 <b>카카오톡 나에게 보내기</b>나 구글 드라이브에 두면, 새 폰에서 그 파일을 열어 바로 복원할 수 있어요. 경조사 ${S.events.filter(e=>!e.demo&&!e.tut).length}건 · 사람 ${S.people.filter(p=>!p.demo&&!p.tut).length}명 포함.</div>
+    <div class="note">💡 백업 파일을 <b>카카오톡 나에게 보내기</b>나 구글 드라이브에 두면, 새 폰에서 그 파일을 열어 바로 복원할 수 있어요. 경조사 ${S.events.filter(e=>!e.demo&&!e.tut).length}건 · 사람 ${S.people.filter(p=>!p.demo&&!p.tut).length}명 · 가계부 이력 ${S.people.filter(p=>!p.demo&&!p.tut).reduce((s,p)=>s+((p.items||[]).length),0)}건 포함.</div>
   </div>
   <div class="card" style="padding:5px 4px">
     ${moreItem('📖','튜토리얼 다시 보기','기본 기능을 데모로 안내해요','startTutorial()')}
@@ -1745,7 +1752,7 @@ function settingsView(){ const st=S.settings||{}; const ago=backupAgo();
 function backupPayload(){ // 데모/튜토리얼 주입분은 백업에 싣지 않음 (다른 기기 복원 오염 방지)
   const ev=S.events.filter(e=>!e.demo&&!e.tut), pp=S.people.filter(p=>!p.demo&&!p.tut);
   return { app:'ieum', v:SCHEMA_VERSION, exportedAt:new Date().toISOString(),
-  counts:{events:ev.length, people:pp.length},
+  counts:{events:ev.length, people:pp.length, items:pp.reduce((s,p)=>s+((p.items||[]).length),0)},
   data:{ events:ev, people:pp, settings:S.settings, theme:S.ui.theme||'auto' } }; }
 function backupDone(){ if(S.meta){ S.meta.lastBackupAt=Date.now(); S.meta.dirty=0; } save(); render(); }
 function exportData(){
@@ -1822,6 +1829,7 @@ function restoreView(){ const p=PENDING_RESTORE; if(!p){ S.ui.guestView='list'; 
     <div class="stats" style="margin-top:10px">
       <div class="stat"><div class="v">${p.events.length}</div><div class="k">경조사</div></div>
       <div class="stat"><div class="v">${p.people.length}</div><div class="k">주고받은 사람</div></div>
+      <div class="stat"><div class="v">${p.people.reduce((s,x)=>s+((x.items||[]).length),0)}</div><div class="k">가계부 이력</div></div>
       <div class="stat"><div class="v">${mine}</div><div class="k">현재 기기 데이터</div></div>
     </div>
     <div class="stack" style="margin-top:14px">
@@ -1895,7 +1903,7 @@ function backupBanner(){ const m=S.meta||{}; const real=S.events.filter(e=>!e.de
   if(m.backupSnooze && Date.now()<m.backupSnooze) return '';
   const iosWeb=isIOS()&&!isStandalone(); // 무설치 iOS: ITP 7일 삭제가 리마인더 주기보다 빠르므로 크게 앞당김
   const stale = iosWeb ? ((m.dirty||0)>0 && (!m.lastBackupAt || Date.now()-m.lastBackupAt>3*86400000))
-    : (m.lastBackupAt ? (Date.now()-m.lastBackupAt>14*86400000 && (m.dirty||0)>0) : (m.dirty||0)>=12);
+    : (m.lastBackupAt ? (Date.now()-m.lastBackupAt>7*86400000 && (m.dirty||0)>0) : (m.dirty||0)>=8);
   if(!stale) return '';
   return `<div class="card" style="border-color:var(--warn);background:var(--tint2)">
     <div class="rm-top" style="margin-bottom:6px"><span class="rm-h" style="color:var(--warn)">💾 백업할 때가 됐어요</span>
@@ -3222,6 +3230,7 @@ try{ tryAutoRecover(); }catch(e){}
 try{ payRecoverBoot(); }catch(e){}  // 미완 결제 자동 복구(승인 유실·설치앱 파티션)
 try{ if(S.ui.noti) fireDueNotis(); }catch(e){}
 try{ relayPull(); }catch(e){}  // 호스트: 릴레이 사서함의 하객 응답 자동 반영 (RELAY.url 설정 시에만)
+try{ bootRawSnapshot(); }catch(e){}  // 업데이트 직후에도 '가공 전 원본' 3세대 보존
 
 /* PWA: 서비스 워커 등록 */
 if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('./service-worker.js?v=3').catch(()=>{});});}
