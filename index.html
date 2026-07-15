@@ -786,16 +786,30 @@ function shareReply(ev,code,nm,me,opt){ const o=opt||{incR:true,incP:true};
   const base=location.href.split('#')[0].split('?')[0];
   const link=base+'#g='+code;
   const c=cfg(ev); const p=me&&me.pay||{}; const st=o.incR&&me&&me.rsvp&&me.rsvp.status;
-  const lines=[`[이음] ${nm}입니다`];
-  if(st) lines.push(st==='yes'?(c.counts?`${c.join[0]} (${me.rsvp.count||1}명)`:c.join[0]):c.join[1]);
-  if(o.incP&&p.amount!=null) lines.push(`${c.money} ${won(p.amount)} 보냈어요${p.method==='toss'?' (토스)':p.method==='kakao'?' (카카오페이)':p.method==='cash'?' (현금 전달)':''}`);
+  const mem=ev.type==='memorial';
+  const lines=[`[이음] ${nm}입니다.`];
+  if(mem){
+    lines.push('삼가 고인의 명복을 빕니다.');
+    if(st==='yes') lines.push('조문으로 마음을 함께하겠습니다.');
+    else if(st==='no') lines.push('부득이하게 조문이 어렵지만, 깊은 조의를 표합니다.');
+    if(o.incP&&p.amount!=null) lines.push(p.method==='cash'
+      ? `조의금 ${won(p.amount)} 조문 시 전달드리겠습니다.`
+      : `조의금 ${won(p.amount)} 송금해 드렸습니다${p.method==='toss'?' (토스)':p.method==='kakao'?' (카카오페이)':''}.`);
+  } else {
+    if(st==='yes') lines.push(`진심으로 축하드립니다. ${(me.rsvp.count||1)>1?`${me.rsvp.count}명이 함께 `:''}참석하겠습니다.`);
+    else if(st==='no') lines.push('부득이하게 참석이 어렵지만, 축하하는 마음을 담아 보냅니다.');
+    else if(o.incP&&p.amount!=null) lines.push('진심으로 축하드립니다.');
+    if(o.incP&&p.amount!=null) lines.push(p.method==='cash'
+      ? `${c.money} ${won(p.amount)} 현금으로 전달드렸습니다.`
+      : `${c.money} ${won(p.amount)} 송금했습니다${p.method==='toss'?' (토스)':p.method==='kakao'?' (카카오페이)':''}.`);
+  }
   const summary=lines.join('\n');
   const ready=window.Kakao&&Kakao.isInitialized&&Kakao.isInitialized();
   if(ready){ try{ Kakao.Share.sendDefault({objectType:'feed',
       content:{title:`[이음] ${nm}입니다`, description:summary.split('\n').slice(1).join(' · ')||'마음을 전했어요',
         imageUrl:'https://shin-nyum.github.io/ieum/og-image.png', link:{mobileWebUrl:link,webUrl:link}},
       buttons:[{title:'장부에 반영하기', link:{mobileWebUrl:link,webUrl:link}}]}); return; }catch(e){} }
-  if(navigator.share){ navigator.share({title:'[이음] 마음 전해드려요', text:summary+'\n👇 버튼을 누르면 장부에 자동 반영돼요', url:link}).catch(()=>{}); return; }
+  if(navigator.share){ navigator.share({title:'[이음] 마음 전해드려요', text:summary+'\n👇 아래 링크를 누르시면 장부에 자동 반영됩니다.', url:link}).catch(()=>{}); return; }
   copy(summary+'\n'+link); toast('알림 메시지를 복사했어요 — 호스트에게 붙여넣어 보내세요'); }
 /* 릴레이: 사서함 주소는 행사 키의 해시(서버에 이름·행사 원문 비노출), 응답은 호스트 수신 시 서버에서 삭제 */
 async function relayKey(ev){ const buf=await crypto.subtle.digest('SHA-256', new TextEncoder().encode('ieum1|'+evKey(ev)));
@@ -1767,7 +1781,7 @@ function settingsView(){ const st=S.settings||{}; const ago=backupAgo();
       <button class="${S.ui.theme==='light'?'on':''}" onclick="setTheme('light')">밝게</button>
       <button class="${S.ui.theme==='dark'?'on':''}" onclick="setTheme('dark')">어둡게</button>
     </div>
-    <label style="margin-top:12px">🔄 품앗이 알림</label>
+    <label style="margin-top:12px">🌱 품앗이 알림</label>
     <div class="seg2">
       <button class="${reciOn()?'on':''}" onclick="if(!reciOn())toggleRecipro()">켜기</button>
       <button class="${!reciOn()?'on':''}" onclick="if(reciOn())toggleRecipro()">끄기</button>
@@ -2632,14 +2646,14 @@ function reciFor(ev){ if(!reciOn()||!ev||ev.role==='host') return null;
 function reciCard(ev){ const r=reciFor(ev); if(!r) return '';
   const mem=ev.type==='memorial';
   return `<div class="card" style="border-color:var(--gold);background:var(--tint2)">
-    <div class="secthead"><div class="t">🔄 품앗이 — 주고받은 기록이 있는 분이에요</div>
+    <div class="secthead"><div class="t">🌱 품앗이 — 주고받은 기록이 있는 분이에요</div>
       <button class="minibtn" onclick="openPerson('${jsq(r.name)}')">내역</button></div>
     <p class="sub" style="margin:6px 0 0"><b>${esc(r.name)}</b>님과 ${r.count}건 — 받은 ${won(r.recv)} · 보낸 ${won(r.gave)} ${balHint(r.gave-r.recv)}</p>
     ${r.recvMax>0?`<button class="btn btn-sage btn-sm" style="margin-top:10px" onclick="setAmt(${r.recvMax});toast('받은 만큼 채워뒀어요 — 아래에서 보내세요')">${mem?'🕊️ 받은 마음 돌려드리기':'💞 받은 만큼 보답하기'} · ${won(r.recvMax)}</button>`:''}
     <p class="lblnote" style="margin-top:7px">${mem?'슬픔의 곁을 지켜준 마음, 잊지 않고 돌려드리세요.':'한 번 받은 마음, 잊지 않고 이어드릴게요.'}</p>
   </div>`; }
 function reciToastFor(ev){ try{ const r=reciFor(ev); if(!r) return; const mem=ev.type==='memorial';
-  setTimeout(()=>toast(`🔄 ${r.name}님과 주고받은 기록이 있어요${r.recvMax>0?(mem?` — 받은 ${won(r.recvMax)}, 마음을 돌려드릴 차례예요`:` — 받은 ${won(r.recvMax)}, 보답 잊지 마세요`):' — 상세에서 확인하세요'}`),700); }catch(e){} }
+  setTimeout(()=>toast(`🌱 ${r.name}님과 주고받은 기록이 있어요${r.recvMax>0?(mem?` — 받은 ${won(r.recvMax)}, 마음을 돌려드릴 차례예요`:` — 받은 ${won(r.recvMax)}, 보답 잊지 마세요`):' — 상세에서 확인하세요'}`),700); }catch(e){} }
 function openPeople(){ S.ui.guestView='people'; save(); render(); window.scrollTo(0,0); }
 function openPerson(name){ S.ui.personName=name; S.ui.guestView='person'; save(); render(); window.scrollTo(0,0); }
 function pplSearchSet(v){ S.ui.pplSearch=v; renderPeopleList(); }
@@ -2787,7 +2801,7 @@ function fireDueNotis(){ if(!S.ui.noti||!('Notification' in window)||Notificatio
   const t=new Date(); t.setHours(0,0,0,0);
   upcomingSoon().forEach(ev=>{ const d=new Date(ev.date+'T00:00'); const days=Math.round((d-t)/86400000);
     if(days<=1){ try{ const r=reciFor(ev); // 품앗이: 주고받은 분의 행사면 보답 리마인드를 함께
-      const reciTxt=r&&r.recvMax>0?(ev.type==='memorial'?` — 🔄 받은 ${won(r.recvMax)}, 마음을 돌려드릴 차례`:` — 🔄 받은 ${won(r.recvMax)}, 보답 잊지 마세요`):'';
+      const reciTxt=r&&r.recvMax>0?(ev.type==='memorial'?` — 🌱 받은 ${won(r.recvMax)}, 마음을 돌려드릴 차례`:` — 🌱 받은 ${won(r.recvMax)}, 보답 잊지 마세요`):'';
       new Notification(`${evNamePlain(ev)} ${cfg(ev).label} ${dday(ev)}`, {body:`${dateText(ev)} · ${ev.venue||''}`+reciTxt, icon:'icon-192.png', tag:'ieum-'+ev.id}); }catch(e){} } }); }
 
 /* ======================= 연간 경조사비 리포트 (공유) ======================= */
