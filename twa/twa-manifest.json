@@ -1,0 +1,47 @@
+{
+  "packageId": "io.github.shinnyum.ieum",
+  "host": "shin-nyum.github.io",
+  "name": "이음 — 마음을 잇다",
+  "launcherName": "이음",
+  "display": "standalone",
+  "themeColor": "#8F6852",
+  "themeColorDark": "#201D19",
+  "navigationColor": "#8F6852",
+  "navigationColorDark": "#201D19",
+  "navigationDividerColor": "#8F6852",
+  "navigationDividerColorDark": "#201D19",
+  "backgroundColor": "#F3EFE8",
+  "enableNotifications": true,
+  "startUrl": "/ieum/index.html",
+  "iconUrl": "https://shin-nyum.github.io/ieum/icon-512.png",
+  "maskableIconUrl": "https://shin-nyum.github.io/ieum/icon-maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "appVersionName": "1.2.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://shin-nyum.github.io/ieum/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {
+    "playBilling": { "enabled": true }
+  },
+  "alphaFeatures": {},
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://shin-nyum.github.io/ieum/",
+  "minSdkVersion": 21,
+  "orientation": "portrait",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "android"
+  },
+  "shareTarget": {
+    "action": "/ieum/index.html",
+    "method": "GET",
+    "params": { "title": "shared_title", "text": "shared_text", "url": "shared_url" }
+  }
+}

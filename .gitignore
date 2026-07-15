@@ -18,3 +18,10 @@ test_payment.py
 payments-worker/.wrangler/
 __pycache__/
 shots_tone/
+play-store/KEYSTORE-SECRET.txt
+twa/android.keystore
+twa/local.properties
+twa/build.log
+twa/.gradle/
+twa/app/build/
+twa/build/
