@@ -1,14 +1,15 @@
 {
   "name": "이음 — 마음을 잇다",
   "short_name": "이음",
-  "description": "경조사 한곳 관리 · 청첩장 발송·RSVP·캘린더·축의금 송금/정산 (프로토타입)",
+  "description": "한국인의 경조사, 이음 하나로 — 청첩장 정리·축의금 시세·3초 송금·품앗이 가계부",
+  "id": "/ieum/",
   "lang": "ko",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f3efe8",
-  "theme_color": "#a87f6a",
+  "theme_color": "#8f6852",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
