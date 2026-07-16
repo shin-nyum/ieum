@@ -58,6 +58,21 @@ export default {
         return json({ j });
       }
 
+      // 초대 오픈 카운터 (익명 — 해시 키+숫자만, 대규모 발송 게이트용)
+      if (req.method === 'POST' && url.pathname === '/open') {
+        let body; try { body = await req.json(); } catch { return json({ error: 'BAD_JSON' }, 400); }
+        const k = String(body.k || '');
+        if (!/^[0-9a-f]{32}$/.test(k)) return json({ error: 'BAD_KEY' }, 400);
+        const cur = parseInt((await env.REPLIES.get('op:' + k)) || '0', 10);
+        await env.REPLIES.put('op:' + k, String(cur + 1), { expirationTtl: 60 * 60 * 24 * 180 });
+        return json({ ok: true });
+      }
+      if (req.method === 'GET' && url.pathname === '/open') {
+        const k = String(url.searchParams.get('k') || '');
+        if (!/^[0-9a-f]{32}$/.test(k)) return json({ error: 'BAD_KEY' }, 400);
+        return json({ n: parseInt((await env.REPLIES.get('op:' + k)) || '0', 10) });
+      }
+
       return json({ error: 'NOT_FOUND' }, 404);
     } catch (e) {
       return json({ error: 'INTERNAL', detail: String(e && e.message || e) }, 500);

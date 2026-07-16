@@ -853,6 +853,8 @@ async function relayPull(){ if(!RELAY.url) return; // 호스트: 내 행사 사�
   if(Date.now()-_relayPullAt<60000) return; _relayPullAt=Date.now();
   for(const ev of S.events.filter(e=>e.role==='host'&&evHasContent(e))){
     try{ const k=await relayKey(ev);
+      try{ const ro=await fetch(RELAY.url+'/open?k='+k); if(ro.ok){ const o=await ro.json();
+        if(!S.meta.openCnt)S.meta.openCnt={}; if(o.n>(S.meta.openCnt[ev.id]||0)){ S.meta.openCnt[ev.id]=o.n; save(); } } }catch(e){}
       const r=await fetch(RELAY.url+'/replies?k='+k); if(!r.ok) continue;
       const arr=await r.json(); if(!Array.isArray(arr)||!arr.length) continue;
       let n=0;
@@ -1151,7 +1153,8 @@ function shareFromHost(kind){ const ev=hostEvent(); if(!ev)return;
   if(!ev.partyA || !ev.date){ // 빈 청첩장 발송 방지
     toast('행사 정보(이름·날짜)를 먼저 입력해 주세요');
     hostFoldSet('info',true); render(); window.scrollTo(0,0); return; }
-  if(!hasPass(ev) && (ev.guests||[]).length>=FREE_GUESTS){ // 대규모 행사(100명+) 발송 게이트
+  const reach=Math.max((ev.guests||[]).length, (S.meta&&S.meta.openCnt&&S.meta.openCnt[ev.id])||0); // 실오픈 수 병합(릴레이) — 장부 축소로 우회 불가
+  if(!hasPass(ev) && reach>=FREE_GUESTS){ // 대규모 행사(100명+) 발송 게이트
     passTrack('bigEvent'); passPrompt(()=>shareFromHost(kind)); return; }
   if(kind==='card') shareInviteCard(ev); else if(kind==='ext') shareExternal(ev); else shareEvent(ev); }
 function hostView(){
@@ -3317,7 +3320,10 @@ function clearBootHash(){ // 일부 웹뷰는 문서 파싱 중 replaceState를 
         S.ui.currentEventId=dup.id; S.ui.guestView='detail';
         if(ch) setTimeout(()=>toast('청첩장이 새 정보로 업데이트됐어요'),400); }
       else { S.ui.pendingInvite=iv; S.ui.guestView='invite'; }
-      save(); clearBootHash(); }
+      save(); clearBootHash();
+      if(RELAY.url){ try{ (async()=>{ const k=await relayKey(iv); const fl='ieum_open_'+k;
+        if(!localStorage.getItem(fl)){ localStorage.setItem(fl,'1');
+          fetch(RELAY.url+'/open',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({k})}).catch(()=>{}); } })(); }catch(e){} } }
     else { S.ui.entered=true; S.ui.tab='guest'; S.ui.guestView='import'; save();
       clearBootHash();
       setTimeout(()=>toast('링크가 손상됐어요 — 청첩장 내용을 붙여넣어 주세요'),400); } }
