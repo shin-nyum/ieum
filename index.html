@@ -1151,6 +1151,8 @@ function shareFromHost(kind){ const ev=hostEvent(); if(!ev)return;
   if(!ev.partyA || !ev.date){ // 빈 청첩장 발송 방지
     toast('행사 정보(이름·날짜)를 먼저 입력해 주세요');
     hostFoldSet('info',true); render(); window.scrollTo(0,0); return; }
+  if(!hasPass(ev) && (ev.guests||[]).length>=FREE_GUESTS){ // 대규모 행사(100명+) 발송 게이트
+    passTrack('bigEvent'); passPrompt(()=>shareFromHost(kind)); return; }
   if(kind==='card') shareInviteCard(ev); else if(kind==='ext') shareExternal(ev); else shareEvent(ev); }
 function hostView(){
   const ev=hostEvent(); const c=cfg(ev); const led=ledgerStats(ev);
@@ -1248,7 +1250,7 @@ function hostView(){
     <div class="secthead"><div class="t">호스트 패스</div><div class="c">${hasPass(ev)?'사용 중':'테스터 무료'}</div></div>
     ${hasPass(ev)
       ?`<div class="note" style="margin-top:4px">✓ 이 행사의 모든 부가 기능이 열려 있어요. 테스터 기간이라 <b>무료</b> — 나중에 소중한 피드백으로 갚아주세요 🙏</div>`
-      :`<p class="sub" style="margin-bottom:10px">장부 <b>엑셀 내보내기</b> · <b>감사카드 전체 디자인</b>을 한 번 결제로 — 모든 행사에서 평생. 정식 출시 후 <b>${PASS_PRICE}</b>(커피 한 잔 값) — 지금은 무료로 열려요.</p>
+      :`<p class="sub" style="margin-bottom:10px">장부 <b>엑셀 내보내기</b> · <b>감사카드 전체 디자인</b>·<b>100명 이상 대규모 발송</b>을 한 번 결제로 — 모든 행사에서 평생. 정식 출시 후 <b>${PASS_PRICE}</b>(커피 한 잔 값) — 지금은 무료로 열려요.</p>
     ${S.meta&&S.meta.passCredits>0?`<button class="btn btn-primary" style="margin-bottom:8px" onclick="useCreditPass()">보유 패스 크레딧 사용 (${S.meta.passCredits}개)</button>`:''}
     <button class="btn btn-line" onclick="activatePass()">무료로 패스 열기 · 테스터 혜택</button>`}
   </div>
@@ -2169,6 +2171,7 @@ function startPassPayment(method){
   }catch(e){ toast('결제 초기화 실패'); } });
 }
 const FREE_CARDS=3; // 감사카드 무료 디자인 수 (4번째부터 패스)
+const FREE_GUESTS=100; // 무료 행사 규모 — 하객 100명 이상 대규모 행사 발송은 패스
 /* 패스 무결성: premium은 기기 무관 서명 토큰(_psig) — localStorage 평문 조작으로는 활성화 불가.
    (클라이언트 앱 특성상 절대 방어는 아니며 '캐주얼 변조 차단' 목적. 부여는 결제 경로/개발자 grantPremium()만) */
 const PASS_SALT='ieum.p1.9f3ad2c1e7';
@@ -2217,7 +2220,7 @@ function passPrompt(cont){ _passCont=cont||null; _payPick=null; passTrack('shown
       <div style="font-weight:700;font-size:16px">호스트 패스</div>
       <div style="font-size:14px">${PAY.mode==='free'?`<s style="color:var(--muted)">${PASS_PRICE}</s> <b style="color:var(--ok)">테스터 무료</b>`:`<b>${PASS_PRICE}</b> <span style="color:var(--muted);font-size:12px">· 한 번 결제 · 평생</span>`}</div>
     </div>
-    <p class="sub" style="margin:6px 0 12px">딱 한 번 결제하면 <b>모든 행사</b>에서 <b>장부 엑셀</b>·<b>감사카드 전체 디자인</b>이 평생 열려요. 백업·기기 이전에도 유지됩니다.</p>
+    <p class="sub" style="margin:6px 0 12px">딱 한 번 결제하면 <b>모든 행사</b>에서 <b>장부 엑셀</b>·<b>감사카드 전체 디자인</b>·<b>하객 100명 이상 대규모 발송</b>이 평생 열려요. 백업·기기 이전에도 유지됩니다.</p>
     ${PAY.mode!=='free'&&PLAYB?`
     <div class="note" style="margin:0">▶ <b>Google Play 결제</b>로 안전하게 진행됩니다 — 결제·환불 모두 Play 계정에서 관리돼요.</div>`
     :`<label style="margin:0 0 7px">결제 수단 <span style="font-weight:400;color:var(--muted)">— 정식 출시 후 모두 지원 · 지금은 선호 조사(선택)</span></label>
