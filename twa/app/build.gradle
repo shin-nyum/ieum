@@ -21,7 +21,7 @@ plugins {
 }
 
 def twaManifest = [
-    applicationId: 'io.github.shinnyum.ieum',
+    applicationId: 'kr.ieum.app',
     hostName: 'shin-nyum.github.io', // The domain being opened in the TWA.
     launchUrl: '/ieum/index.html', // The start path for the TWA. Must be relative to the domain.
     name: '이음 — 마음을 잇다', // The application name.
@@ -52,9 +52,9 @@ def twaManifest = [
 
 android {
     compileSdkVersion 36
-    namespace "io.github.shinnyum.ieum"
+    namespace "kr.ieum.app"
     defaultConfig {
-        applicationId "io.github.shinnyum.ieum"
+        applicationId "kr.ieum.app"
         minSdkVersion 21
         targetSdkVersion 35
         versionCode 1

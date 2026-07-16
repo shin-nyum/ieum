@@ -1,5 +1,5 @@
 {
-  "packageId": "io.github.shinnyum.ieum",
+  "packageId": "kr.ieum.app",
   "host": "shin-nyum.github.io",
   "name": "이음 — 마음을 잇다",
   "launcherName": "이음",
@@ -23,7 +23,9 @@
   "webManifestUrl": "https://shin-nyum.github.io/ieum/manifest.webmanifest",
   "fallbackType": "customtabs",
   "features": {
-    "playBilling": { "enabled": true }
+    "playBilling": {
+      "enabled": true
+    }
   },
   "alphaFeatures": {},
   "enableSiteSettingsShortcut": true,
@@ -42,6 +44,10 @@
   "shareTarget": {
     "action": "/ieum/index.html",
     "method": "GET",
-    "params": { "title": "shared_title", "text": "shared_text", "url": "shared_url" }
+    "params": {
+      "title": "shared_title",
+      "text": "shared_text",
+      "url": "shared_url"
+    }
   }
 }

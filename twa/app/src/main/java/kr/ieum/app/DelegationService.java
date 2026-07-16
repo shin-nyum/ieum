@@ -1,4 +1,4 @@
-package io.github.shinnyum.ieum;
+package kr.ieum.app;
 
 
 import com.google.androidbrowserhelper.playbilling.digitalgoods.DigitalGoodsRequestHandler;
