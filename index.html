@@ -901,19 +901,18 @@ function inviteCardPaint(ctx,L){ // 캔버스 텍스트(명조 웹폰트)
 }
 function roundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
 function shareInviteCard(ev){ // 카드 PNG + 링크 → OS 공유시트(문자·라인·인스타·카톡 어디로든)
-  const link=inviteLink(ev); const c=cfg(ev);
-  const text=`${evNamePlain(ev)} ${ev.subtitle}\n${dateText(ev)} · ${ev.venue||''}`; // 링크는 url 필드로(원문 숨김) — 복사 폴백엔 포함
+  const link=inviteLink(ev); const c=cfg(ev); const mem=ev.type==='memorial';
+  const text=`${evNamePlain(ev)} ${ev.subtitle}\n${dateText(ev)} · ${ev.venue||''}\n\n👇 ${mem?'부고 확인 · 조의 전하기':'청첩장 열기 · 마음 전하기'}\n${link}`; // 문자(MMS)는 url 필드를 버리므로 링크를 본문에 포함
   toast('초대카드를 만드는 중…');
   loadCardFonts(['myeongjo'], ()=>{
     const L=inviteCardLayout(ev);
     svgToPngBlob(inviteCardSVG(ev),1080,1350, blob=>{ // 4:5 (인스타 친화)
-      if(!blob){ copy(text+'\n'+link); toast('카드 생성 실패 — 내용을 복사했어요'); return; }
+      if(!blob){ copy(text); toast('카드 생성 실패 — 내용을 복사했어요'); return; }
       const file=new File([blob],`이음_${c.doc}_${evNamePlain(ev)}.png`,{type:'image/png'});
-      const fb=()=>{ if(noDownload()){ copy(text+'\n'+link); toast(isInApp()?'링크를 복사했어요 — Safari에서 열면 카드 이미지도 공유돼요':'링크를 복사했어요 — 원하는 앱에 붙여넣으세요'); return; }
-        dlBlob(blob,`이음_${c.doc}.png`); copy(text+'\n'+link); toast('카드 저장 + 링크 복사 — 원하는 앱에 첨부하세요'); };
+      const fb=()=>{ if(noDownload()){ copy(text); toast(isInApp()?'링크를 복사했어요 — Safari에서 열면 카드 이미지도 공유돼요':'링크를 복사했어요 — 원하는 앱에 붙여넣으세요'); return; }
+        dlBlob(blob,`이음_${c.doc}.png`); copy(text); toast('카드 저장 + 링크 복사 — 원하는 앱에 첨부하세요'); };
       try{ if(navigator.canShare && navigator.canShare({files:[file]})){
-        navigator.share({files:[file], text, url:link}).catch(err=>{ if(err&&err.name==='AbortError')return;
-          navigator.share({files:[file], text:text+'\n'+link}).catch(e2=>{ if(e2&&e2.name==='AbortError')return; fb(); }); }); return; } }catch(e){}
+        navigator.share({files:[file], text}).catch(err=>{ if(err&&err.name==='AbortError')return; fb(); }); return; } }catch(e){}
       fb();
     }, ctx=>{ ctx.save(); ctx.scale(1080/800,1350/1000); inviteCardPaint(ctx,L); ctx.restore(); });
   });
