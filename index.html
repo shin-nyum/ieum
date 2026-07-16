@@ -744,7 +744,16 @@ function shareEvent(ev){
       content:{title:`${evNamePlain(ev)} ${ev.subtitle}`, description:`${dateText(ev)} · ${ev.venue}`,
         imageUrl:ogImg,
         link:{mobileWebUrl:link,webUrl:link}},
-      buttons:[{title:`${c.doc} 열기`,link:{mobileWebUrl:link,webUrl:link}}]}); return; }catch(e){}
+      buttons:[{title:`${c.doc} 열기`,link:{mobileWebUrl:link,webUrl:link}}]});
+      // 설치형 PWA/TWA에선 kakaolink 스킴이 조용히 무시될 수 있음(throw 없음) → 이탈 없으면 기본 공유로 폴백
+      let left=false; const onLeave=()=>{left=true;};
+      ['visibilitychange','pagehide','blur'].forEach(t=>addEventListener(t,onLeave,{once:true}));
+      setTimeout(()=>{ ['visibilitychange','pagehide','blur'].forEach(t=>removeEventListener(t,onLeave));
+        if(left||document.hidden||document.visibilityState==='hidden') return;
+        if(navigator.share){ toast('카카오톡이 열리지 않아 기본 공유로 엽니다');
+          navigator.share({title:`${evNamePlain(ev)} ${ev.subtitle}`,text,url:link}).catch(()=>{}); }
+        else { copy(text+'\n'+link); toast(`카카오톡을 열 수 없어 ${c.doc} 링크를 복사했어요`); } },1600);
+      return; }catch(e){}
   }
   if(navigator.share){ navigator.share({title:`${evNamePlain(ev)} ${ev.subtitle}`,text,url:link}).catch(()=>{}); return; }
   copy(text+'\n'+link);
