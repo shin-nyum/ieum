@@ -2358,9 +2358,12 @@ const CARDS=[
  {bg:['#eef1ec','#d9e0d6'], ink:'#48544a', accent:'#7c8b7c', deco:'halfwreath',pal:{f1:'#fbfcf8',f2:'#c3cfc0',leaf:'#8a9c8a',leaf2:'#aebcae',core:'#dfe6da'}, mood:'mourn'}
 ];
 /* --- SVG 장식 요소 라이브러리 --- */
-function _flower(cx,cy,r,fill,core,rot,op){ // 5잎 베지어 플라워
-  const p=`M0 ${-r} C ${r*.52} ${-r*.78} ${r*.58} ${-r*.12} 0 0 C ${-r*.58} ${-r*.12} ${-r*.52} ${-r*.78} 0 ${-r} Z`;
-  return `<g transform="translate(${cx} ${cy}) rotate(${rot||0})" opacity="${op==null?1:op}">${[0,72,144,216,288].map(a=>`<path d="${p}" fill="${fill}" transform="rotate(${a})"/>`).join('')}<circle r="${r*.2}" fill="${core}"/></g>`; }
+function _flower(cx,cy,r,fill,core,rot,op){ // 5잎 레이어드 플라워 — 수채 느낌(반투명 겹)
+  const P=(rr)=>`M0 ${-rr} C ${rr*.52} ${-rr*.78} ${rr*.58} ${-rr*.12} 0 0 C ${-rr*.58} ${-rr*.12} ${-rr*.52} ${-rr*.78} 0 ${-rr} Z`;
+  const ring=(rr,f,o,off)=>[0,72,144,216,288].map(a=>`<path d="${P(rr)}" fill="${f}" opacity="${o}" transform="rotate(${a+(off||0)})"/>`).join('');
+  return `<g transform="translate(${cx} ${cy}) rotate(${rot||0})" opacity="${op==null?1:op}">`+
+    ring(r*1.18,fill,.28,36)+ring(r,fill,.85)+ring(r*.55,'#ffffff',.30)+
+    `<circle r="${r*.2}" fill="${core}"/><circle r="${r*.08}" fill="#ffffff" opacity=".6"/></g>`; }
 function _mumFlower(cx,cy,r,fill,fill2,core){ // 국화(다층 12+12잎)
   const p=(rr)=>`M0 ${-rr} C ${rr*.3} ${-rr*.85} ${rr*.3} ${-rr*.1} 0 0 C ${-rr*.3} ${-rr*.1} ${-rr*.3} ${-rr*.85} 0 ${-rr} Z`;
   return `<g transform="translate(${cx} ${cy})">${Array.from({length:12},(_,i)=>`<path d="${p(r)}" fill="${fill2}" transform="rotate(${i*30+15})"/>`).join('')}${Array.from({length:12},(_,i)=>`<path d="${p(r*.72)}" fill="${fill}" transform="rotate(${i*30})"/>`).join('')}<circle r="${r*.16}" fill="${core}"/></g>`; }
@@ -2459,6 +2462,8 @@ function cardLayout(idx,greeting,photo,opts){ // 미리보기(SVG 텍스트)와 
   const baseY = photo?618:(inWreath?560:500-Math.min(lines.length,5)*Math.round(size*0.55));
   return { c, mourn, inWreath, css, size, bodyColor, lines, lineH, baseY,
     title: mourn?'감사드립니다':'감 사 합 니 다',
+    over: mourn?'위로해 주셔서':'축하해 주셔서',
+    overY: (c.deco==='ribbon'?109:(mourn&&c.deco==='mum'?120:(inWreath?325:172)))-34,
     titleY: c.deco==='ribbon'?109:(mourn&&c.deco==='mum'?120:(inWreath?325:172)),
     titleSize: c.deco==='ribbon'?24:(inWreath?30:27),
     titleLS: mourn?4:(inWreath?5:7),
@@ -2476,6 +2481,7 @@ function cardSVG(idx,greeting,hostNames,photo,opts){ const L=cardLayout(idx,gree
     <path d="M262 358 A138 138 0 0 1 538 358 L538 512 L262 512 Z" fill="none" stroke="${c.accent}" stroke-width="4"/>
     <path d="M252 358 A148 148 0 0 1 548 358 L548 522" fill="none" stroke="${c.accent}" stroke-width="1.5" opacity=".5"/>`:'';
   const texts = opts&&opts.noText ? '' :
+    `<text x="400" y="${L.overY}" text-anchor="middle" font-family="'Nanum Myeongjo',serif" font-size="17" letter-spacing="6" fill="${L.titleColor}" opacity=".55">${L.over}</text>`+
     `<text x="400" y="${L.titleY}" text-anchor="middle" font-family="'Nanum Myeongjo',serif" font-size="${L.titleSize}" letter-spacing="${L.titleLS}" fill="${L.titleColor}" font-weight="600">${L.title}</text>`+
     (L.sub?`<text x="400" y="${L.sub.y}" text-anchor="middle" font-family="'Nanum Myeongjo',serif" font-size="${L.sub.size}" letter-spacing="${L.sub.ls}" fill="${L.sub.color}" opacity=".55">${L.sub.text}</text>`:'')+
     textLines+
@@ -2503,6 +2509,9 @@ function cardPaintText(ctx,L,hostNames){ // 내보내기: 웹폰트를 캔버스
   ctx.textAlign='center'; ctx.textBaseline='alphabetic';
   const ls=(px)=>{ try{ ctx.letterSpacing=px+'px'; }catch(e){} };
   ctx.fillStyle=L.titleColor; ctx.font=`600 ${L.titleSize}px 'Nanum Myeongjo', serif`; ls(L.titleLS);
+  ctx.save(); ctx.globalAlpha=.55; ctx.font="17px 'Nanum Myeongjo',serif";
+  try{ ctx.letterSpacing='6px'; }catch(e){}
+  ctx.fillStyle=L.titleColor; ctx.fillText(L.over||'',403,L.overY); ctx.restore();
   ctx.fillText(L.title,400+L.titleLS/2,L.titleY);
   if(L.sub){ ctx.globalAlpha=.55; ctx.font=`${L.sub.size}px 'Nanum Myeongjo', serif`; ls(L.sub.ls);
     ctx.fillStyle=L.sub.color; ctx.fillText(L.sub.text,400+L.sub.ls/2,L.sub.y); ctx.globalAlpha=1; }
@@ -2514,10 +2523,10 @@ function cardPaintText(ctx,L,hostNames){ // 내보내기: 웹폰트를 캔버스
 }
 function svgToPngBlob(svg,w,h,cb,paint){ try{ const img=new Image(); img.onload=()=>{ try{ const cv=document.createElement('canvas'); cv.width=w; cv.height=h; const ctx=cv.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); ctx.drawImage(img,0,0,w,h); if(paint)paint(ctx); cv.toBlob(cb,'image/png'); }catch(e){cb(null);} }; img.onerror=()=>cb(null); img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg); }catch(e){cb(null);} }
 function thankSamples(ev){ return cfg(ev).label==='부고'
-  ? ['{이름}님, 큰 슬픔 중에 함께해 주시고 위로해 주셔서 진심으로 감사드립니다. 덕분에 큰 힘이 되었습니다.',
+  ? ['{이름}님, 바쁘신 중에도 귀한 걸음 하시어 위로해 주심에 진심으로 깊은 감사의 말씀을 드립니다. 베풀어주신 따뜻한 마음 잊지 않고 고이 간직하겠습니다. 항상 건강과 평안이 함께하시길 기원합니다.',
      '{이름}님, 바쁘신 중에도 걸음 해주셔서 감사합니다. 베풀어주신 마음 잊지 않겠습니다.',
      '{이름}님, 따뜻한 위로에 깊이 감사드립니다. 남은 시간 잘 추스르겠습니다.']
-  : ['{이름}님, 귀한 걸음 해주시고 따뜻한 마음 전해주셔서 진심으로 감사드립니다. 오래도록 기억하겠습니다.',
+  : ['{이름}님, 바쁘신 중에도 귀한 걸음 하시어 저희 결혼을 축복해 주심에 진심으로 깊은 감사의 말씀을 드립니다. 베풀어주신 고마운 마음 잊지 않고 고이 간직하여 보답할 수 있도록 하겠습니다. 항상 건강하시고 행복과 기쁨이 늘 함께하시길 기원합니다.',
      '{이름}님, 바쁘신 중에도 함께해 주셔서 감사합니다. 받은 사랑 나누며 행복하게 잘 살겠습니다.',
      '{이름}님, 먼 길 마다않고 축하해 주셔서 감사합니다. 좋은 일에 꼭 함께하겠습니다.',
      '{이름}님, 소중한 마음 감사히 받았습니다. 늘 건강하고 행복하시길 바랍니다.']; }
