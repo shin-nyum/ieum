@@ -727,8 +727,11 @@ function b64urlEnc(str){ return btoa(unescape(encodeURIComponent(str))).replace(
 function b64urlDec(str){ str=str.replace(/-/g,'+').replace(/_/g,'/'); while(str.length%4)str+='='; return decodeURIComponent(escape(atob(str))); }
 function encodeInvite(ev){ const o={t:ev.type,a:ev.partyA,b:ev.partyB,s:ev.subtitle,d:ev.date,ti:ev.time,v:ev.venue,ad:ev.address,m:ev.message,u:ev.externalUrl||'',
   ac:(ev.accounts||[]).map(a=>({l:a.label,bk:a.bank,n:a.number,h:a.holder,k:a.kakaopay||''}))};
-  return b64urlEnc(JSON.stringify(o)); }
-function decodeInvite(code){ try{ const o=JSON.parse(b64urlDec(code));
+  const j=JSON.stringify(o); const z=lzwEnc(j), p=b64urlEnc(j);
+  return z.length<p.length?'z'+z:'p'+p; } // 링크 단축 — 구형(ey...)과 플래그 충돌 없음
+function decodeInvite(code){ try{
+  const body=code[0]==='z'?lzwDec(code.slice(1)):code[0]==='p'?b64urlDec(code.slice(1)):b64urlDec(code);
+  const o=JSON.parse(body);
   return { id:uid('e'), role:'guest', type:o.t||'wedding', partyA:o.a||'', partyB:o.b||'', subtitle:o.s||'', date:o.d||'', time:o.ti||'12:00', venue:o.v||'', address:o.ad||'', message:o.m||'', externalUrl:o.u||'', invited:true,
     accounts:(o.ac||[]).map(a=>({label:a.l,bank:a.bk,number:a.n,holder:a.h,kakaopay:a.k||''})), guests:[] }; }catch(e){ return null; } }
 function inviteLink(ev){ const base=location.href.split('#')[0].split('?')[0]; const dir=base.replace(/[^/]*$/,'');
