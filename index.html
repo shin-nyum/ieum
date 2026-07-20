@@ -458,6 +458,11 @@
     <button data-g="reco" aria-label="축의금 추천" onclick="setGuestTab('reco')"><svg class="bn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2.5"/><path d="M8 6.5h8"/><path d="M8 11h.01M12 11h.01M16 11h.01M8 14.5h.01M12 14.5h.01M16 14.5h.01M8 18h.01M12 18h.01M16 18h.01"/></svg>추천</button>
     <button data-g="more" aria-label="더보기" onclick="setGuestTab('more')"><svg class="bn-ic" viewBox="0 0 24 24" fill="none"><circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/></svg>더보기</button>
   </nav>
+  <nav class="bnav" id="hostnav" style="display:none" aria-label="호스트 메뉴">
+    <button data-h="setup" aria-label="행사 정보와 보내기" onclick="setHostTab('setup')"><svg class="bn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>행사·보내기</button>
+    <button data-h="ledger" aria-label="장부 정리" onclick="setHostTab('ledger')"><svg class="bn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9.5 7h6"/></svg>장부</button>
+    <button data-h="more" aria-label="부가 기능" onclick="setHostTab('more')"><svg class="bn-ic" viewBox="0 0 24 24" fill="none"><circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/></svg>더보기</button>
+  </nav>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -697,7 +702,7 @@ const curEvent=()=>S.events.find(e=>e.id===S.ui.currentEventId);
 /* ======================= 탭/내비 ======================= */
 function setTab(t){ if(t==='host'){ ensureHostEvent(); try{ relayPull(); }catch(e){} } S.ui.tab=t; save(); render(); }
 function openEvent(id){const ev=S.events.find(e=>e.id===id);
-  if(ev&&ev.role==='host'){ S.ui.tab='host'; S.ui.hostEventId=id; S.ui.hostSub=null; save(); render(); window.scrollTo(0,0); return; } // 내 행사 → 장부·관리 화면
+  if(ev&&ev.role==='host'){ S.ui.tab='host'; S.ui.hostEventId=id; S.ui.hostSub=null; S.ui.hostTab=(ev.partyA&&ev.date)?'ledger':'setup'; save(); render(); window.scrollTo(0,0); return; } // 내 행사 → 장부·관리 화면
   S.ui.currentEventId=id;S.ui.guestView='detail';S.ui.guestSession.acctIdx=0;save();render();window.scrollTo(0,0);}
 function backToList(){S.ui.guestView='list';save();render();window.scrollTo(0,0);}
 
@@ -1070,11 +1075,14 @@ function soon(name){toast(`「${name}」 — 곧 추가될 기능이에요`);}
 
 /* ======================= 렌더 ======================= */
 function render(){
-  const bn=document.getElementById('bottomnav');
-  if(!S.ui.entered){ if(bn)bn.style.display='none'; $('#ddayTop').textContent=''; $('#app').innerHTML=landingView(); return; }
+  const bn=document.getElementById('bottomnav'), hn=document.getElementById('hostnav');
+  if(!S.ui.entered){ if(bn)bn.style.display='none'; if(hn)hn.style.display='none'; $('#ddayTop').textContent=''; $('#app').innerHTML=landingView(); return; }
   if(S.ui.tab==='host'){ if(bn)bn.style.display='none'; const he=hostEvent()||ensureHostEvent();
-    $('#ddayTop').textContent = he?dday(he):''; $('#app').innerHTML = S.ui.hostSub==='thanks'?thanksView():hostView();
+    const sub=S.ui.hostSub==='thanks';
+    if(hn){ hn.style.display=sub?'none':'flex'; hn.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.getAttribute('data-h')===(S.ui.hostTab||'setup'))); }
+    $('#ddayTop').textContent = he?dday(he):''; $('#app').innerHTML = sub?thanksView():hostView();
     try{ histGuard(); }catch(e){} return; }
+  if(hn)hn.style.display='none';
   if(bn){ bn.style.display='flex'; }
   $('#ddayTop').textContent='';
   const v=S.ui.guestView;
@@ -1165,26 +1173,68 @@ function hostView(){
   const infoOpen = hf.info!==undefined? hf.info : !infoDone;
   const acctOpen = hf.acct!==undefined? hf.acct : (infoDone&&!acctDone);
   const budOpen  = hf.bud===true;
-  return `
-  <button class="backbtn" onclick="backFromHost()">‹ 내 경조사</button>
+  const ht=S.ui.hostTab||'setup';
+  const back=`<button class="backbtn" onclick="backFromHost()">‹ 내 경조사</button>`;
+
+  if(ht==='ledger') return back+`
+  <div class="card">
+    <div class="secthead"><div class="t">📒 장부 정리</div><div class="c">하객 ${ev.guests.length}명</div></div>
+    <p class="sub">이음으로 받은 금액은 자동 표시되고, <b>현금·계좌 수령분</b>은 각 하객 칸에 직접 입력·정리하세요.</p>
+    <div class="stats">
+      <div class="stat"><div class="v" id="hl-attend">${led.attend}</div><div class="k">${c.counts?'참석 응답':'조문 응답'}</div></div>
+      <div class="stat"><div class="v" id="hl-paid">${led.paid}</div><div class="k">마음 전한 분</div></div>
+      <div class="stat"><div class="v big" id="hl-total">${won(led.total)}</div><div class="k">총 ${c.money}</div></div>
+    </div>
+    <div class="note" style="margin-top:10px" id="hl-split">🔵 이음 송금 ${won(led.appSum)} · ✏️ 현금·직접입력 ${won(led.manualSum)}</div>
+    <div class="secthead" style="margin:16px 0 4px"><div class="t">하객 명단 · 매칭</div></div>
+    ${ev.guests.length>7?`<input id="hgq" placeholder="🔍 하객 이름 검색" value="${esc(HGQ)}" oninput="HGQ=this.value;renderHostGuests()" style="margin-bottom:9px">`:''}
+    <div class="glist" id="hg-list">
+      ${hostGuestsHTML(ev)}
+    </div>
+    <div class="row" style="margin-top:10px;align-items:stretch">
+      <input id="hg_name" placeholder="하객 이름 (현금·수기 포함)" style="flex:2">
+      ${ev.accounts.length>1?`<select id="hg_side" style="flex:1;max-width:34%">${ev.accounts.map((a,i)=>`<option value="${i}">${esc(a.label)}</option>`).join('')}</select>`:''}
+    </div>
+    <button class="badge-add" style="margin-top:8px" onclick="addGuestInline()">＋ 하객 추가</button>
+    ${ev.guests.some(x=>x.unregistered)?`
+      <div class="secthead" style="margin:18px 0 6px"><div class="t" style="color:var(--warn)">미매칭 풀 · 신규 입금</div><div class="c">명단에 없던 입금</div></div>
+      <div class="glist">${ev.guests.filter(x=>x.unregistered).map(x=>rowHost(ev,x)).join('')}</div>`:''}
+  </div>`;
+
+  if(ht==='more') return back+`
+  <details class="fold" ${budOpen?'open':''} ontoggle="hostFoldSet('bud',this.open)">
+    <summary>📈 예상 하객·예산 계산기</summary>
+    <div class="fold-body">${budgetCard(ev)}</div>
+  </details>
 
   <div class="card">
-    <h3>📨 하객에게 보내기</h3>
-    <p class="sub">단톡방에 링크 하나 — 받은 분들이 각자 저장하고, 캘린더·${c.money}까지 한 번에.</p>
-    <div class="stack" style="margin-top:10px">
-      <button class="btn btn-kakao" onclick="shareFromHost('kakao')">카카오톡으로 보내기</button>
-      <button class="btn btn-ghost" onclick="shareFromHost('card')">초대카드로 보내기 <span style="font-weight:400;font-size:11.5px;opacity:.75">· 문자·라인·인스타 등</span></button>
-      ${ev.externalUrl?`<button class="btn btn-line btn-sm" onclick="shareFromHost('ext')">청첩장 원본 그대로 보내기</button>`:''}
+    <h3>부가 기능</h3>
+    <p class="sub">장부 정리가 끝나면 엑셀로 내보내고, 참석·축의한 분들께 감사 인사를 준비하세요.</p>
+    <div class="stack">
+      <button class="btn btn-ghost" onclick="withPass('xlsx',exportLedgerXLSX)">장부 엑셀 내보내기 · 서식 포함 ${passChip(ev)}</button>
+      <button class="btn btn-ghost" onclick="openThanks()">감사 인사 준비하기 ${hasPass(ev)?'':'<span class="pchip">일부 PASS</span>'}</button>
+      <button class="btn btn-disabled" onclick="soon('청첩모임 만들기')">청첩모임 만들기 <span class="lock">· 추후</span></button>
     </div>
-    ${(!hasPass(ev)&&ev.type!=='memorial'&&(ev.guests||[]).length>=80&&(ev.guests||[]).length<FREE_GUESTS)?`<div class="note" style="margin-top:10px">장부에 <b>${(ev.guests||[]).length}명</b>이 기록됐어요. 100명이 넘으면 새 발송에는 <b>호스트 패스</b>가 필요해요 — 이미 보낸 초대장과 장부는 계속 작동합니다.</div>`:''}
-    <label style="margin-top:12px">모바일 ${c.doc} 링크 연결 <span style="font-weight:400;color:var(--muted)">(선택 — 전문업체 제작본)</span></label>
-    <input placeholder="https://... (바른손/더카드 등)" value="${esc(ev.externalUrl)}" onchange="hostUrlChanged(this.value)">
-    <p class="lblnote">${_hostFetching?'⏳ 청첩장 정보를 가져오는 중…':(ev.externalUrl?'✓ 연결됨 — 하객이 원본 청첩장도 볼 수 있어요':'링크를 넣으면 이름·날짜·계좌 자동 입력을 제안해요')}</p>
   </div>
 
+  <div class="card" style="border-color:var(--gold);background:var(--tint2)">
+    <div class="secthead"><div class="t">호스트 패스</div><div class="c">${hasPass(ev)?'사용 중':'테스터 무료'}</div></div>
+    ${hasPass(ev)
+      ?`<div class="note" style="margin-top:4px">✓ 이 행사의 모든 부가 기능이 열려 있어요. 테스터 기간이라 <b>무료</b> — 나중에 소중한 피드백으로 갚아주세요 🙏</div>`
+      :`<p class="sub" style="margin-bottom:10px">장부 <b>엑셀 내보내기</b> · <b>감사카드 전체 디자인</b>을 한 번 결제로 — 모든 행사에서 평생 (100명 이상 대규모 발송 포함). 정식 출시 후 <b>${PASS_PRICE}</b>(커피 한 잔 값) — 지금은 무료로 열려요.</p>
+    ${S.meta&&S.meta.passCredits>0?`<button class="btn btn-primary" style="margin-bottom:8px" onclick="useCreditPass()">보유 패스 크레딧 사용 (${S.meta.passCredits}개)</button>`:''}
+    <button class="btn btn-line" onclick="activatePass()">무료로 패스 열기 · 테스터 혜택</button>`}
+  </div>
+  <button class="backbtn" style="color:var(--danger);margin:0 4px 10px" onclick="delEvent('${ev.id}')">이 행사 삭제</button>`;
+
+  // 기본(행사·보내기 탭): 정보 입력 → 계좌 → 보내기 순서 — 위에서 아래로 채우면 끝나는 흐름
+  return back+`
   <details class="fold" ${infoOpen?'open':''} ontoggle="hostFoldSet('info',this.open)">
     <summary>✏️ 행사 정보 ${infoDone?`<span style="font-weight:400;color:var(--muted);font-size:12px">· ${esc(evNamePlain(ev))} · ${ev.date}</span>`:`<span class="pchip" style="background:#f6e7e4;color:var(--danger)">입력 필요</span>`}</summary>
     <div class="fold-body">
+    <label style="margin-top:0">모바일 ${c.doc} 링크로 자동 입력 <span style="font-weight:400;color:var(--muted)">(선택 — 전문업체 제작본)</span></label>
+    <input placeholder="https://... (바른손/더카드 등)" value="${esc(ev.externalUrl)}" onchange="hostUrlChanged(this.value)">
+    <p class="lblnote">${_hostFetching?'⏳ 청첩장 정보를 가져오는 중…':(ev.externalUrl?'✓ 연결됨 — 하객이 원본 청첩장도 볼 수 있어요':'링크를 넣으면 이름·날짜·계좌 자동 입력을 제안해요')}</p>
     <label>경조사 유형</label>
     <div class="seg2">
       ${['wedding','hwahon','memorial'].map(t=>`<button class="${ev.type===t?'on':''}" onclick="setType('${t}')">${TYPES[t].icon} ${TYPES[t].label}</button>`).join('')}
@@ -1212,53 +1262,16 @@ function hostView(){
   </details>
 
   <div class="card">
-    <div class="secthead"><div class="t">📒 장부 정리</div><div class="c">하객 ${ev.guests.length}명</div></div>
-    <p class="sub">이음으로 받은 금액은 자동 표시되고, <b>현금·계좌 수령분</b>은 각 하객 칸에 직접 입력·정리하세요.</p>
-    <div class="stats">
-      <div class="stat"><div class="v" id="hl-attend">${led.attend}</div><div class="k">${c.counts?'참석 응답':'조문 응답'}</div></div>
-      <div class="stat"><div class="v" id="hl-paid">${led.paid}</div><div class="k">마음 전한 분</div></div>
-      <div class="stat"><div class="v big" id="hl-total">${won(led.total)}</div><div class="k">총 ${c.money}</div></div>
+    <h3>📨 하객에게 보내기</h3>
+    <p class="sub">단톡방에 링크 하나 — 받은 분들이 각자 저장하고, 캘린더·${c.money}까지 한 번에.</p>
+    ${infoDone?'':`<div class="note" style="margin-top:8px">위의 <b>행사 정보</b>(이름·날짜)를 먼저 입력하면 보낼 수 있어요.</div>`}
+    <div class="stack" style="margin-top:10px">
+      <button class="btn btn-kakao" onclick="shareFromHost('kakao')">카카오톡으로 보내기</button>
+      <button class="btn btn-ghost" onclick="shareFromHost('card')">초대카드로 보내기 <span style="font-weight:400;font-size:11.5px;opacity:.75">· 문자·라인·인스타 등</span></button>
+      ${ev.externalUrl?`<button class="btn btn-line btn-sm" onclick="shareFromHost('ext')">청첩장 원본 그대로 보내기</button>`:''}
     </div>
-    <div class="note" style="margin-top:10px" id="hl-split">🔵 이음 송금 ${won(led.appSum)} · ✏️ 현금·직접입력 ${won(led.manualSum)}</div>
-    <div class="secthead" style="margin:16px 0 4px"><div class="t">하객 명단 · 매칭</div></div>
-    ${ev.guests.length>7?`<input id="hgq" placeholder="🔍 하객 이름 검색" value="${esc(HGQ)}" oninput="HGQ=this.value;renderHostGuests()" style="margin-bottom:9px">`:''}
-    <div class="glist" id="hg-list">
-      ${hostGuestsHTML(ev)}
-    </div>
-    <div class="row" style="margin-top:10px;align-items:stretch">
-      <input id="hg_name" placeholder="하객 이름 (현금·수기 포함)" style="flex:2">
-      ${ev.accounts.length>1?`<select id="hg_side" style="flex:1;max-width:34%">${ev.accounts.map((a,i)=>`<option value="${i}">${esc(a.label)}</option>`).join('')}</select>`:''}
-    </div>
-    <button class="badge-add" style="margin-top:8px" onclick="addGuestInline()">＋ 하객 추가</button>
-    ${ev.guests.some(x=>x.unregistered)?`
-      <div class="secthead" style="margin:18px 0 6px"><div class="t" style="color:var(--warn)">미매칭 풀 · 신규 입금</div><div class="c">명단에 없던 입금</div></div>
-      <div class="glist">${ev.guests.filter(x=>x.unregistered).map(x=>rowHost(ev,x)).join('')}</div>`:''}
-  </div>
-
-  <details class="fold" ${budOpen?'open':''} ontoggle="hostFoldSet('bud',this.open)">
-    <summary>📈 예상 하객·예산 계산기</summary>
-    <div class="fold-body">${budgetCard(ev)}</div>
-  </details>
-
-  <div class="card">
-    <h3>부가 기능</h3>
-    <p class="sub">장부 정리가 끝나면 엑셀로 내보내고, 참석·축의한 분들께 감사 인사를 준비하세요.</p>
-    <div class="stack">
-      <button class="btn btn-ghost" onclick="withPass('xlsx',exportLedgerXLSX)">장부 엑셀 내보내기 · 서식 포함 ${passChip(ev)}</button>
-      <button class="btn btn-ghost" onclick="openThanks()">감사 인사 준비하기 ${hasPass(ev)?'':'<span class="pchip">일부 PASS</span>'}</button>
-      <button class="btn btn-disabled" onclick="soon('청첩모임 만들기')">청첩모임 만들기 <span class="lock">· 추후</span></button>
-    </div>
-  </div>
-
-  <div class="card" style="border-color:var(--gold);background:var(--tint2)">
-    <div class="secthead"><div class="t">호스트 패스</div><div class="c">${hasPass(ev)?'사용 중':'테스터 무료'}</div></div>
-    ${hasPass(ev)
-      ?`<div class="note" style="margin-top:4px">✓ 이 행사의 모든 부가 기능이 열려 있어요. 테스터 기간이라 <b>무료</b> — 나중에 소중한 피드백으로 갚아주세요 🙏</div>`
-      :`<p class="sub" style="margin-bottom:10px">장부 <b>엑셀 내보내기</b> · <b>감사카드 전체 디자인</b>을 한 번 결제로 — 모든 행사에서 평생 (100명 이상 대규모 발송 포함). 정식 출시 후 <b>${PASS_PRICE}</b>(커피 한 잔 값) — 지금은 무료로 열려요.</p>
-    ${S.meta&&S.meta.passCredits>0?`<button class="btn btn-primary" style="margin-bottom:8px" onclick="useCreditPass()">보유 패스 크레딧 사용 (${S.meta.passCredits}개)</button>`:''}
-    <button class="btn btn-line" onclick="activatePass()">무료로 패스 열기 · 테스터 혜택</button>`}
-  </div>
-  <button class="backbtn" style="color:var(--danger);margin:0 4px 10px" onclick="delEvent('${ev.id}')">이 행사 삭제</button>`;
+    ${(!hasPass(ev)&&ev.type!=='memorial'&&(ev.guests||[]).length>=80&&(ev.guests||[]).length<FREE_GUESTS)?`<div class="note" style="margin-top:10px">장부에 <b>${(ev.guests||[]).length}명</b>이 기록됐어요. 100명이 넘으면 새 발송에는 <b>호스트 패스</b>가 필요해요 — 이미 보낸 초대장과 장부는 계속 작동합니다.</div>`:''}
+  </div>`;
 }
 function acctEditor(i,a){
   return `<div style="margin-top:10px">
@@ -2113,7 +2126,7 @@ function payFinish(pend, receipt){ // 승인 확정 → 패스 개방. 이벤트
   const ev=S.events.find(e=>e.id===pend.eventId);
   if(ev){ if(ev.demo)delete ev.demo; if(ev.tut)delete ev.tut; if(ev.draft)delete ev.draft;
     ev.pass=true; grantPremium(); ev.passPaid={orderId:pend.orderId, paymentKey:pend.paymentKey||null, amount:PASS_AMOUNT, at:Date.now(), mode:pend.mode, receipt:receipt||null};
-    S.ui.entered=true; S.ui.tab='host'; S.ui.hostEventId=ev.id; S.ui.hostSub=null; }
+    S.ui.entered=true; S.ui.tab='host'; S.ui.hostEventId=ev.id; S.ui.hostSub=null; S.ui.hostTab='setup'; }
   else if(S.meta){ S.meta.passCredits=(S.meta.passCredits||0)+1; } // 행사가 사라졌어도 결제분은 크레딧으로 보존
   passTrack('accepted'); save(); try{ render(); }catch(e){}
   setTimeout(()=>toast(pend.mode==='test'
@@ -2663,6 +2676,7 @@ function navGroup(v){ if(['ledger','people','person','personadd','tx'].includes(
 function setGuestTab(v){ S.ui.tab='guest'; S.ui.guestView=v; if(v==='reco'&&S.ui.reco)S.ui.reco.ctxEventId=null; save(); render(); window.scrollTo(0,0); }
 function updateBottomNav(){ const g=navGroup(S.ui.guestView); document.querySelectorAll('#bottomnav button').forEach(b=>b.classList.toggle('on', b.getAttribute('data-g')===g)); }
 function backFromHost(){ pruneDraft(); S.ui.tab='guest'; S.ui.guestView='list'; S.ui.hostSub=null; save(); render(); window.scrollTo(0,0); }
+function setHostTab(t){ S.ui.hostTab=t; save(); render(); window.scrollTo(0,0); }
 
 /* ======================= 주고받은 사람 (통합·검색 이력) ======================= */
 const jsq=s=>(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;'); // onclick 속성은 엔티티 디코드 후 JS 파싱 → &quot; 안전
@@ -3287,7 +3301,7 @@ function clearBootHash(){ // 일부 웹뷰는 문서 파싱 중 replaceState를 
     const info=`${o.n}${o.a!=null?(' · '+won(o.a)):''}${o.s?(' · '+(o.s==='yes'?'참석':'불참')):''}`;
     copy(info); setTimeout(()=>toast(`내 행사가 아니에요 — 호스트 폰에서 열어주세요 (${info} 복사됨)`),400); return; }
   mergeGuestReply(ev,o);
-  S.ui.entered=true; S.ui.tab='host'; S.ui.hostEventId=ev.id; S.ui.hostSub=null; save();
+  S.ui.entered=true; S.ui.tab='host'; S.ui.hostEventId=ev.id; S.ui.hostSub=null; S.ui.hostTab='setup'; save();
   setTimeout(()=>toast(`『${o.n}』님의 응답을 장부에 반영했어요 ✓`),400);
 }catch(e){} })();
 
