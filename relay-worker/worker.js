@@ -58,6 +58,23 @@ export default {
         return json({ j });
       }
 
+      // 청첩장 썸네일 프록시 — 카카오 스크레이퍼를 차단하는 CDN 우회 (이미지 전용 · 실패 시 기본 이미지로 리다이렉트)
+      if (req.method === 'GET' && url.pathname === '/img') {
+        const FALLBACK = 'https://shin-nyum.github.io/ieum/og-image.png';
+        const u = String(url.searchParams.get('u') || '');
+        if (!/^https:\/\/[^\s]{8,600}$/.test(u)) return Response.redirect(FALLBACK, 302);
+        try {
+          const r = await fetch(u, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Linux; Android 14; SM-S926N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Mobile Safari/537.36', 'Accept': 'image/*,*/*;q=0.8' },
+            cf: { cacheTtl: 86400, cacheEverything: true },
+          });
+          const ct = r.headers.get('content-type') || '';
+          const len = parseInt(r.headers.get('content-length') || '0', 10);
+          if (!r.ok || !ct.startsWith('image/') || len > 4000000) return Response.redirect(FALLBACK, 302);
+          return new Response(r.body, { headers: { 'Content-Type': ct, 'Cache-Control': 'public, max-age=86400', ...CORS } });
+        } catch (e) { return Response.redirect(FALLBACK, 302); }
+      }
+
       // 초대 오픈 카운터 (익명 — 해시 키+숫자만, 대규모 발송 게이트용)
       if (req.method === 'POST' && url.pathname === '/open') {
         let body; try { body = await req.json(); } catch { return json({ error: 'BAD_JSON' }, 400); }
