@@ -702,9 +702,34 @@ const curEvent=()=>S.events.find(e=>e.id===S.ui.currentEventId);
 /* ======================= 탭/내비 ======================= */
 function setTab(t){ if(t==='host'){ ensureHostEvent(); S.ui.hostTab='setup'; try{ relayPull(); }catch(e){} } S.ui.tab=t; save(); render(); }
 function openEvent(id){const ev=S.events.find(e=>e.id===id);
-  if(ev&&ev.role==='host'){ S.ui.tab='host'; S.ui.hostEventId=id; S.ui.hostSub=null; S.ui.hostTab='setup'; save(); render(); window.scrollTo(0,0); return; } // 내 행사 → 항상 행사·보내기 탭부터
-  S.ui.currentEventId=id;S.ui.guestView='detail';S.ui.guestSession.acctIdx=0;save();render();window.scrollTo(0,0);}
-function backToList(){S.ui.guestView='list';save();render();window.scrollTo(0,0);}
+  if(ev&&ev.role==='host'){ S.ui.evFrom=(S.ui.guestView==='allev')?'allev':null; S.ui.tab='host'; S.ui.hostEventId=id; S.ui.hostSub=null; S.ui.hostTab='setup'; save(); render(); window.scrollTo(0,0); return; } // 내 행사 → 항상 행사·보내기 탭부터
+  S.ui.evFrom=(S.ui.guestView==='allev')?'allev':null; S.ui.currentEventId=id;S.ui.guestView='detail';S.ui.guestSession.acctIdx=0;save();render();window.scrollTo(0,0);}
+function backToList(){S.ui.guestView=(S.ui.evFrom==='allev')?'allev':'list';S.ui.evFrom=null;save();render();window.scrollTo(0,0);}
+
+/* ---------- 전체 경조사 (리스트 관리) ---------- */
+let AEQ=''; // 전체보기 검색어 (세션 한정)
+function openAllEvents(){ AEQ=''; S.ui.guestView='allev'; save(); render(); window.scrollTo(0,0); }
+function allEvBodyHTML(){
+  const all=S.events.filter(e=>!(e.draft&&!evHasContent(e)));
+  const q=AEQ.trim(); const hit=e=>((evNamePlain(e)||'')+(e.venue||'')+(e.myRelation||'')).includes(q);
+  const evs=all.slice().sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  const now=new Date(new Date().toDateString());
+  let up=evs.filter(e=>e.date&&new Date(e.date+'T'+(e.time||'00:00'))>=now);
+  let past=evs.filter(e=>!e.date||new Date(e.date+'T'+(e.time||'00:00'))<now).reverse();
+  if(q){ up=up.filter(hit); past=past.filter(hit); }
+  if(!up.length&&!past.length) return `<div class="empty">${q?`'${esc(q)}' 검색 결과가 없어요`:'등록된 경조사가 없어요'}</div>`;
+  return `${up.length?`<div class="secthead" style="margin:2px 2px 7px"><div class="t">다가오는</div><div class="c">${up.length}건</div></div>${up.map(e=>evcardHTML(e)).join('')}`:''}
+  ${past.length?`<div class="secthead" style="margin:14px 2px 7px"><div class="t">지난</div><div class="c">${past.length}건</div></div>${past.map(e=>evcardHTML(e)).join('')}`:''}`;
+}
+function renderAllEv(){ const el=document.getElementById('allev-body'); if(el) el.innerHTML=allEvBodyHTML(); }
+function allEventsView(){
+  const all=S.events.filter(e=>!(e.draft&&!evHasContent(e)));
+  return `
+  <button class="backbtn" onclick="setGuestTab('list')">‹ 내 경조사</button>
+  <div class="listhead"><div class="t serif">전체 경조사</div><div class="c">${all.length}건</div></div>
+  <input placeholder="🔍 이름·장소·관계로 찾기" value="${esc(AEQ)}" oninput="AEQ=this.value;renderAllEv()" style="margin-bottom:11px">
+  <div id="allev-body">${allEvBodyHTML()}</div>`;
+}
 
 /* ======================= 청첩장 공유 ======================= */
 /* 행사 정보를 링크에 인코딩 → 단톡방 공유 시 각자 열면 그 청첩장이 뜨고, 각자 자기 이음에 담김(백엔드 없이 사용자 분리) */
@@ -1091,6 +1116,7 @@ function render(){
       v==='invite' ? inviteView()
     : v==='restore' ? restoreView()
     : v==='import' ? importView()
+    : v==='allev' ? allEventsView()
     : v==='ledger' ? ledgerView()
     : v==='add' ? addView()
     : v==='reco' ? recoView()
@@ -1361,7 +1387,12 @@ function evBodyHTML(){
   return `${up.length?homeHero(up[0]):''}
   ${rest.length?`<div class="secthead" style="margin:2px 2px 7px"><div class="t">다음 일정</div><div class="c">${rest.length}건</div></div>
     ${rest.slice(0,2).map(e=>evcardHTML(e,true)).join('')}
-    ${rest.length>2?`<p class="lblnote" style="text-align:center;margin:0 0 10px">외 ${rest.length-2}건은 아래 달력에서 확인하세요</p>`:''}`:''}
+    ${rest.length>2?`<p class="lblnote" style="text-align:center;margin:0 0 10px">외 ${rest.length-2}건은 전체 경조사 보기에서 확인하세요</p>`:''}`:''}
+  <div class="card reco-cta" onclick="openAllEvents()" style="margin-bottom:10px">
+    <div class="rc-ic">📋</div>
+    <div class="rc-tx"><div class="rc-t">전체 경조사 보기</div><div class="rc-d">다가오는·지난 일정을 목록으로 한눈에</div></div>
+    <div class="rc-go">›</div>
+  </div>
   ${calendarHTML()}
   ${past.length?`<details class="fold" ${S.ui.pastOpen?'open':''} ontoggle="S.ui.pastOpen=this.open">
     <summary>🕰️ 지난 경조사 ${past.length}건</summary><div class="fold-body">${past.map(e=>evcardHTML(e)).join('')}</div></details>`:''}
@@ -2676,7 +2707,7 @@ function backFromHost2(){ S.ui.hostSub=null; save(); render(); window.scrollTo(0
 function navGroup(v){ if(['ledger','people','person','personadd','tx'].includes(v))return 'ledger'; if(v==='reco')return 'reco'; if(['more','group','envelope','settings','doc'].includes(v))return 'more'; return 'home'; }
 function setGuestTab(v){ S.ui.tab='guest'; S.ui.guestView=v; if(v==='reco'&&S.ui.reco)S.ui.reco.ctxEventId=null; save(); render(); window.scrollTo(0,0); }
 function updateBottomNav(){ const g=navGroup(S.ui.guestView); document.querySelectorAll('#bottomnav button').forEach(b=>b.classList.toggle('on', b.getAttribute('data-g')===g)); }
-function backFromHost(){ pruneDraft(); S.ui.tab='guest'; S.ui.guestView='list'; S.ui.hostSub=null; save(); render(); window.scrollTo(0,0); }
+function backFromHost(){ pruneDraft(); S.ui.tab='guest'; S.ui.guestView=(S.ui.evFrom==='allev')?'allev':'list'; S.ui.evFrom=null; S.ui.hostSub=null; save(); render(); window.scrollTo(0,0); }
 function setHostTab(t){ S.ui.hostTab=t; save(); render(); window.scrollTo(0,0); }
 
 /* ======================= 주고받은 사람 (통합·검색 이력) ======================= */
@@ -3470,6 +3501,7 @@ window.addEventListener('popstate', ()=>{
       if(v==='invite') declineInvite();
       else if(v==='person'||v==='personadd') openPeople();
       else if(v==='tx') setGuestTab('ledger');
+      else if(v==='allev') setGuestTab('list');
       else if(v==='people') setGuestTab('ledger');
       else if(v==='settings'||v==='doc'||v==='group'||v==='envelope') setGuestTab('more');
       else if(['list','ledger','reco','more'].includes(v)) goLanding(); // 메인 탭에서 백=랜딩 (바로 종료 방지)
