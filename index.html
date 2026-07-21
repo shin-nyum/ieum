@@ -820,7 +820,9 @@ function inviteLink(ev){ const base=location.href.split('#')[0].split('?')[0]; c
   return page + '#e=' + encodeInvite(ev); }
 function shareEvent(ev){
   const link = inviteLink(ev); const c=cfg(ev); const mem=ev.type==='memorial';
-  const ogImg = ev.shareImg || (mem ? 'https://shin-nyum.github.io/ieum/og-memorial.png' : 'https://shin-nyum.github.io/ieum/og-image.png');
+  // 카카오 템플릿 이미지는 자체 호스팅으로 고정 — 외부 청첩장 CDN 이미지(shareImg)는 핫링크 차단 등으로
+  // 카카오 서버 검증에서 'Failed request'가 나므로 카카오 경로에는 쓰지 않는다.
+  const ogImg = mem ? 'https://shin-nyum.github.io/ieum/og-memorial.png' : 'https://shin-nyum.github.io/ieum/og-image.png';
   const text=`${evNamePlain(ev)} ${ev.subtitle}\n${dateText(ev)} · ${ev.venue}\n${mem?'부고 확인·조의 전하기':'청첩장 확인·캘린더·축의금 보내기'} ▸`;
   const ready=window.Kakao&&Kakao.isInitialized&&Kakao.isInitialized();
   if(ready){
