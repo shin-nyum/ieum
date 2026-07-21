@@ -420,6 +420,12 @@
   .bnav button .bn-ic{width:21px;height:21px;opacity:.75;transition:opacity .15s} /* 단색 라인 아이콘 — 크롬은 조용하게 */
   .bnav button.on{color:var(--primary-d)}
   .bnav button.on .bn-ic{opacity:1}
+  .evcard.mg{touch-action:pan-y;user-select:none;-webkit-user-select:none}
+  .evcard.ae-drag{opacity:.78;position:relative;z-index:60;box-shadow:0 10px 26px rgba(0,0,0,.2);transition:none}
+  #trashzone{position:fixed;left:50%;transform:translateX(-50%) translateY(16px);bottom:calc(78px + env(safe-area-inset-bottom));width:min(86%,368px);padding:15px 12px;border:1.6px dashed var(--danger);border-radius:14px;background:var(--card);color:var(--danger);text-align:center;font-weight:700;font-size:14px;z-index:59;opacity:0;transition:opacity .18s,transform .18s;pointer-events:none}
+  #trashzone.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #trashzone.hot{background:#f6e7e4;transform:translateX(-50%) scale(1.05)}
+  html[data-theme="dark"] #trashzone.hot{background:#42302c}
   /* 더보기 */
   .more-item{display:flex;align-items:center;gap:13px;width:100%;border:0;background:transparent;
     padding:13px 12px;cursor:pointer;font-family:inherit;text-align:left;border-bottom:1px solid var(--line)}
@@ -718,16 +724,61 @@ function allEvBodyHTML(){
   let past=evs.filter(e=>!e.date||new Date(e.date+'T'+(e.time||'00:00'))<now).reverse();
   if(q){ up=up.filter(hit); past=past.filter(hit); }
   if(!up.length&&!past.length) return `<div class="empty">${q?`'${esc(q)}' 검색 결과가 없어요`:'등록된 경조사가 없어요'}</div>`;
-  return `${up.length?`<div class="secthead" style="margin:2px 2px 7px"><div class="t">다가오는</div><div class="c">${up.length}건</div></div>${up.map(e=>evcardHTML(e)).join('')}`:''}
-  ${past.length?`<div class="secthead" style="margin:14px 2px 7px"><div class="t">지난</div><div class="c">${past.length}건</div></div>${past.map(e=>evcardHTML(e)).join('')}`:''}`;
+  return `${up.length?`<div class="secthead" style="margin:2px 2px 7px"><div class="t">다가오는</div><div class="c">${up.length}건</div></div>${up.map(e=>evcardHTML(e,false,true)).join('')}`:''}
+  ${past.length?`<div class="secthead" style="margin:14px 2px 7px"><div class="t">지난</div><div class="c">${past.length}건</div></div>${past.map(e=>evcardHTML(e,false,true)).join('')}`:''}`;
 }
 function renderAllEv(){ const el=document.getElementById('allev-body'); if(el) el.innerHTML=allEvBodyHTML(); }
+
+/* ---- 전체보기: 길게 눌러 끌어서 삭제 (휴지통 드롭) ---- */
+let AED=null; // 진행 중인 드래그 {id, el, sx, sy, pid, t(롱프레스 타이머), active}
+function aeDown(e,id,el){ if(e.button&&e.button!==0) return;
+  AED={id, el, sx:e.clientX, sy:e.clientY, pid:e.pointerId, active:false,
+    t:setTimeout(aeActivate, 480)};
+  el.addEventListener('pointermove',aeMove); el.addEventListener('pointerup',aeUp); el.addEventListener('pointercancel',aeCancel); }
+function aeActivate(){ if(!AED) return; AED.active=true;
+  try{ AED.el.setPointerCapture(AED.pid); }catch(e){}
+  try{ navigator.vibrate&&navigator.vibrate(25); }catch(e){}
+  AED.el.classList.add('ae-drag');
+  document.addEventListener('touchmove',aePrevent,{passive:false}); // 드래그 중 화면 스크롤 정지
+  let tz=document.getElementById('trashzone');
+  if(!tz){ tz=document.createElement('div'); tz.id='trashzone'; tz.innerHTML='🗑️ 여기로 끌어오면 삭제돼요'; document.body.appendChild(tz); }
+  requestAnimationFrame(()=>tz.classList.add('show')); }
+function aePrevent(e){ e.preventDefault(); }
+function aeMove(e){ if(!AED) return;
+  const dx=e.clientX-AED.sx, dy=e.clientY-AED.sy;
+  if(!AED.active){ if(Math.hypot(dx,dy)>12) aeCancel(); return; } // 눌러둔 채 움직이면=스크롤 → 취소
+  AED.el.style.transform='translate('+dx+'px,'+dy+'px) scale(.97)';
+  const tz=document.getElementById('trashzone');
+  if(tz){ const r=tz.getBoundingClientRect();
+    tz.classList.toggle('hot', e.clientY>=r.top-8&&e.clientY<=r.bottom+8&&e.clientX>=r.left-8&&e.clientX<=r.right+8); } }
+function aeUp(){ if(!AED) return;
+  const wasActive=AED.active, id=AED.id;
+  const tz=document.getElementById('trashzone'); const hot=wasActive&&tz&&tz.classList.contains('hot');
+  aeCancel();
+  if(wasActive){ window._aeSquelch=Date.now(); } // 드래그 직후 카드 클릭(상세 열림) 방지
+  if(hot) delEventFromAll(id); }
+function aeCancel(){ if(!AED) return; clearTimeout(AED.t);
+  AED.el.classList.remove('ae-drag'); AED.el.style.transform='';
+  AED.el.removeEventListener('pointermove',aeMove); AED.el.removeEventListener('pointerup',aeUp); AED.el.removeEventListener('pointercancel',aeCancel);
+  document.removeEventListener('touchmove',aePrevent);
+  const tz=document.getElementById('trashzone'); if(tz){ tz.classList.remove('show','hot'); setTimeout(()=>{ try{tz.remove();}catch(e){} },200); }
+  AED=null; }
+function delEventFromAll(id){ const ev=S.events.find(e=>e.id===id); if(!ev)return;
+  if(!confirm(`'${evNamePlain(ev)||'이 경조사'}'를 삭제할까요?\n장부·기록도 함께 삭제됩니다.`))return;
+  S.events=S.events.filter(e=>e.id!==id);
+  if(S.ui.hostEventId===id)S.ui.hostEventId=null;
+  if(S.ui.currentEventId===id)S.ui.currentEventId=null;
+  save(); renderAllEv();
+  const c=document.querySelector('.listhead .c');
+  if(c)c.textContent=S.events.filter(e=>!(e.draft&&!evHasContent(e))).length+'건';
+  toast('경조사를 삭제했어요'); }
 function allEventsView(){
   const all=S.events.filter(e=>!(e.draft&&!evHasContent(e)));
   return `
   <button class="backbtn" onclick="setGuestTab('list')">‹ 내 경조사</button>
   <div class="listhead"><div class="t serif">전체 경조사</div><div class="c">${all.length}건</div></div>
   <input placeholder="🔍 이름·장소·관계로 찾기" value="${esc(AEQ)}" oninput="AEQ=this.value;renderAllEv()" style="margin-bottom:11px">
+  <p class="lblnote" style="margin:-4px 2px 9px">항목을 누르면 상세로 · <b>길게 눌러 끌면</b> 아래 휴지통으로 삭제할 수 있어요</p>
   <div id="allev-body">${allEvBodyHTML()}</div>`;
 }
 
@@ -1330,8 +1381,8 @@ function rowHost(ev,x){
 }
 
 /* ---------- 하객: 경조사 목록(앱 내 캘린더) ---------- */
-function evcardHTML(ev,slim){ const c=cfg(ev); return `
-    <div class="evcard${slim?' slim':''}" onclick="openEvent('${ev.id}')">
+function evcardHTML(ev,slim,mg){ const c=cfg(ev); return `
+    <div class="evcard${slim?' slim':''}${mg?' mg':''}"${mg?` onpointerdown="aeDown(event,'${ev.id}',this)" oncontextmenu="return false"`:''} onclick="${mg?`if(window._aeSquelch&&Date.now()-window._aeSquelch<400)return;`:''}openEvent('${ev.id}')">
       <div class="ic">${c.icon}</div>
       <div class="info">
         <div class="nm">${esc(evNamePlain(ev))||'(이름 미입력)'}<span class="typ">${c.label}${ev.role==='host'?' · 내 행사':''}</span></div>
@@ -1384,15 +1435,15 @@ function evBodyHTML(){
   const up=evs.filter(e=>e.date&&new Date(e.date+'T'+(e.time||'00:00'))>=now);
   const past=evs.filter(e=>!e.date||new Date(e.date+'T'+(e.time||'00:00'))<now).reverse();
   const rest=up.slice(1);
-  return `${up.length?homeHero(up[0]):''}
-  ${rest.length?`<div class="secthead" style="margin:2px 2px 7px"><div class="t">다음 일정</div><div class="c">${rest.length}건</div></div>
-    ${rest.slice(0,2).map(e=>evcardHTML(e,true)).join('')}
-    ${rest.length>2?`<p class="lblnote" style="text-align:center;margin:0 0 10px">외 ${rest.length-2}건은 전체 경조사 보기에서 확인하세요</p>`:''}`:''}
-  <div class="card reco-cta" onclick="openAllEvents()" style="margin-bottom:10px">
+  return `  <div class="card reco-cta" onclick="openAllEvents()" style="margin-bottom:10px">
     <div class="rc-ic">📋</div>
     <div class="rc-tx"><div class="rc-t">전체 경조사 보기</div><div class="rc-d">다가오는·지난 일정을 목록으로 한눈에</div></div>
     <div class="rc-go">›</div>
   </div>
+  ${up.length?homeHero(up[0]):''}
+  ${rest.length?`<div class="secthead" style="margin:2px 2px 7px"><div class="t">다음 일정</div><div class="c">${rest.length}건</div></div>
+    ${rest.slice(0,2).map(e=>evcardHTML(e,true)).join('')}
+    ${rest.length>2?`<p class="lblnote" style="text-align:center;margin:0 0 10px">외 ${rest.length-2}건은 전체 경조사 보기에서 확인하세요</p>`:''}`:''}
   ${calendarHTML()}
   ${past.length?`<details class="fold" ${S.ui.pastOpen?'open':''} ontoggle="S.ui.pastOpen=this.open">
     <summary>🕰️ 지난 경조사 ${past.length}건</summary><div class="fold-body">${past.map(e=>evcardHTML(e)).join('')}</div></details>`:''}
@@ -1664,7 +1715,7 @@ function delEvent(id){ const ev=S.events.find(e=>e.id===id); if(!ev)return;
   S.events=S.events.filter(e=>e.id!==id);
   if(S.ui.hostEventId===id)S.ui.hostEventId=null;
   if(S.ui.currentEventId===id)S.ui.currentEventId=null;
-  S.ui.tab='guest'; S.ui.guestView='list'; S.ui.hostSub=null;
+  S.ui.tab='guest'; S.ui.guestView=(S.ui.evFrom==='allev')?'allev':'list'; S.ui.evFrom=null; S.ui.hostSub=null;
   save(); render(); window.scrollTo(0,0); toast('경조사를 삭제했어요'); }
 let HGQ=''; // 하객 검색어 (세션 한정)
 function hostGuestsHTML(ev){ const q=HGQ.trim();
