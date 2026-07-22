@@ -7,11 +7,11 @@
 <meta property="og:type" content="website" />
 <meta property="og:title" content="이음 — 마음을 잇다" />
 <meta property="og:description" content="경조사, 이제 한 곳에서. 청첩장 확인·캘린더 저장·축의금 송금까지." />
-<meta property="og:image" content="https://shin-nyum.github.io/ieum/og-image.png" />
+<meta property="og:image" content="https://shin-nyum.github.io/ieum/og-image2.jpg" />
 <meta property="og:url" content="https://shin-nyum.github.io/ieum/" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="이음 — 마음을 잇다" />
-<meta name="twitter:image" content="https://shin-nyum.github.io/ieum/og-image.png" />
+<meta name="twitter:image" content="https://shin-nyum.github.io/ieum/og-image2.jpg" />
 <link rel="manifest" href="manifest.webmanifest" />
 <meta name="theme-color" content="#a87f6a" />
 <meta name="mobile-web-app-capable" content="yes" />
@@ -822,7 +822,7 @@ async function shareEvent(ev){
   const link = inviteLink(ev); const c=cfg(ev); const mem=ev.type==='memorial';
   // 썸네일 우선순위: ①연결된 청첩장 썸네일(브라우저에서 로드 확인된 경우만 — 차단 CDN이면 Failed request 방지 위해 제외)
   // ②주최자가 고른 초대카드 디자인(자체 호스팅) ③기본 og 이미지
-  let ogImg=mem?'https://shin-nyum.github.io/ieum/og-memorial.png':'https://shin-nyum.github.io/ieum/og-image.png';
+  let ogImg=mem?'https://shin-nyum.github.io/ieum/og-memorial2.jpg':'https://shin-nyum.github.io/ieum/og-image2.jpg';
   if(ev.externalUrl && ev.shareImg){
     if(RELAY.url) ogImg=RELAY.url+'/img?u='+encodeURIComponent(ev.shareImg); // 프록시 경유 — 차단 CDN도 썸네일 유지
     else if(await _probeImg(ev.shareImg)) ogImg=ev.shareImg; }
@@ -910,7 +910,7 @@ function shareReply(ev,code,nm,me,opt){ const o=opt||{incR:true,incP:true};
   const ready=window.Kakao&&Kakao.isInitialized&&Kakao.isInitialized();
   if(ready){ try{ Kakao.Share.sendDefault({objectType:'feed',
       content:{title:`[이음] ${nm}입니다`, description:summary.split('\n').slice(1).join(' · ')||'마음을 전했어요',
-        imageUrl:'https://shin-nyum.github.io/ieum/og-image.png', link:{mobileWebUrl:link,webUrl:link}},
+        imageUrl:'https://shin-nyum.github.io/ieum/og-image2.jpg', link:{mobileWebUrl:link,webUrl:link}},
       buttons:[{title:'장부에 반영하기', link:{mobileWebUrl:link,webUrl:link}}]}); return; }catch(e){} }
   if(navigator.share){ navigator.share({title:'[이음] 마음 전해드려요', text:summary+'\n👇 아래 링크를 누르시면 장부에 자동 반영됩니다.', url:link}).catch(()=>{}); return; }
   copy(summary+'\n'+link); toast('알림 메시지를 복사했어요 — 주최자에게 붙여넣어 보내세요'); }
@@ -2036,7 +2036,7 @@ async function shareTransferLink(){ try{
   const ready=window.Kakao&&Kakao.isInitialized&&Kakao.isInitialized();
   if(ready){ try{ Kakao.Share.sendDefault({objectType:'feed',
       content:{title:'이음 — 기기 옮기기', description:'새 폰에서 아래 버튼을 누르면 품앗이 가계부가 그대로 복원돼요.',
-        imageUrl:'https://shin-nyum.github.io/ieum/og-image.png', link:{mobileWebUrl:link,webUrl:link}},
+        imageUrl:'https://shin-nyum.github.io/ieum/og-image2.jpg', link:{mobileWebUrl:link,webUrl:link}},
       buttons:[{title:'품앗이 가계부 복원하기', link:{mobileWebUrl:link,webUrl:link}}]});
       if(S.meta){ S.meta.lastBackupAt=Date.now(); S.meta.dirty=0; save(); } return; }catch(e){} }
   if(navigator.share){ navigator.share({title:'이음 — 기기 옮기기', text:'새 폰에서 열면 품앗이 가계부가 그대로 복원돼요.', url:link}).catch(()=>{}); }

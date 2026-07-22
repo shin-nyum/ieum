@@ -60,7 +60,7 @@ export default {
 
       // 청첩장 썸네일 프록시 — 카카오 스크레이퍼를 차단하는 CDN 우회 (이미지 전용 · 실패 시 기본 이미지로 리다이렉트)
       if (req.method === 'GET' && url.pathname === '/img') {
-        const FALLBACK = 'https://shin-nyum.github.io/ieum/og-image.png';
+        const FALLBACK = 'https://shin-nyum.github.io/ieum/og-image2.jpg';
         const u = String(url.searchParams.get('u') || '');
         if (!/^https:\/\/[^\s]{8,600}$/.test(u)) return Response.redirect(FALLBACK, 302);
         try {
