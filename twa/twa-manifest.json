@@ -17,7 +17,7 @@
   "maskableIconUrl": "https://shin-nyum.github.io/ieum/icon-maskable-512.png",
   "splashScreenFadeOutDuration": 300,
   "appVersionName": "1.2.0",
-  "appVersionCode": 1,
+  "appVersionCode": 2,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://shin-nyum.github.io/ieum/manifest.webmanifest",
