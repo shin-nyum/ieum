@@ -574,6 +574,7 @@ function migrate(o){ // 어떤 과거 상태가 와도 안전하게 현재 스�
     if(typeof e.type!=='string'||!TYPES[e.type]) e.type='wedding';
     ['partyA','partyB','subtitle','date','time','venue','address','message','externalUrl'].forEach(k=>{ if(typeof e[k]!=='string') e[k]=e[k]==null?'':String(e[k]); });
     if(typeof e.invitePhoto!=='string' || !/^data:image\//.test(e.invitePhoto)) delete e.invitePhoto; // 복원 페이로드의 위조 값(스크립트 주입) 차단 — data:image/ 만 허용
+    if(typeof e.thanksPhoto!=='string' || !/^data:image\//.test(e.thanksPhoto)) delete e.thanksPhoto;
     if(!Array.isArray(e.accounts)) e.accounts=[];
     e.accounts=e.accounts.filter(a=>a&&typeof a==='object');
     e.accounts.forEach(a=>{ ['label','bank','number','holder'].forEach(k=>{ if(typeof a[k]!=='string') a[k]=a[k]==null?'':String(a[k]); }); });
@@ -1063,7 +1064,7 @@ function inviteView(){ const iv=S.ui.pendingInvite; if(!iv){ S.ui.guestView='lis
     <div class="dday-pill">${dday(iv)}</div>
   </div>
   <div class="card">
-    <p class="quote serif">${(esc(iv.message||'').replace(/\n/g,'<br/>'))||'귀한 걸음으로 함께해 주세요.'}</p>
+    <p class="quote serif">${(esc(iv.message||'').replace(/\n/g,'<br/>'))||(mem?'삼가 부고를 전해 드립니다.':'귀한 걸음으로 함께해 주세요.')}</p>
     <div class="stack" style="margin-top:8px">
       <button class="btn btn-primary" onclick="acceptInvite()">${mem?'확인하고 내 경조사에 담기':'수락하고 내 경조사에 담기'}</button>
       ${iv.externalUrl?`<button class="btn btn-line" onclick="openInviteExternal()">${c.doc} 전체보기</button>`:''}
@@ -1146,9 +1147,14 @@ function payViaApp(method){ const ev=curEvent(); if(!ev)return;
   if(!acc && method!=='cash'){toast('받을 계좌를 먼저 입력해 주세요');openGuestAcct();return;}
   own(ev); // 검증 통과 후에만 승격 (실패 탭이 데모를 승격시키지 않도록)
   S.ui.guestSession.name=nm;
+  // 토스·카카오페이 딥링크는 취소·미완료가 흔함 → 기록은 복귀 후 '보냈어요' 확인을 받고 확정 (가짜 송금 기록 방지)
+  const deferRecord=(method==='toss')||(method==='kakao'&&acc.kakaopay);
+  if(deferRecord){ S.ui.guestSession.pendingPay={evId:ev.id, name:nm, amt, method, at:Date.now()}; S.ui.guestSession.draftAmt=null; save(); }
+  else {
   let x=ev.guests.find(g=>g.name===nm); if(!x){x=mkGuest(nm,ev.myRelation||'지인',S.ui.guestSession.acctIdx||0);x.unregistered=true;ev.guests.push(x);}
   x.pay={amount:amt, source:method==='cash'?'manual':'app', method};
   ev.myGift=amt; S.ui.guestSession.draftAmt=null; save();
+  }
   if(method==='toss'){
     if(isInApp()&&!isKakaoInApp()){ // 인스타·페북 등 웹뷰는 커스텀 스킴을 조용히 무시 — 시도 없이 정직하게
       copyAcct(acc); setTimeout(()=>toast('이 브라우저에선 토스 연결이 막혀 계좌를 복사했어요 — 뱅킹앱에 붙여넣어 이체하세요'),300); }
@@ -1168,7 +1174,15 @@ function payViaApp(method){ const ev=curEvent(); if(!ev)return;
     else { copyAcct(acc); toast('카카오페이 링크가 없어 계좌를 복사했어요'); } }
   else if(method==='cash'){ toast('현금 전달로 기록했어요 — 가계부에 반영됩니다'); }
   else { copyAcct(acc); toast('계좌 복사됨 — 뱅킹앱에서 송금하세요'); }
-  render(); tiePop(ev); }
+  render(); if(!deferRecord) tiePop(ev); } // 딥링크 경로는 복귀 확인 후 tiePop
+function confirmPendingPay(yes){ const pp=S.ui.guestSession.pendingPay; if(!pp) return;
+  S.ui.guestSession.pendingPay=null;
+  const ev=S.events.find(e=>e.id===pp.evId);
+  if(!yes||!ev){ save(); render(); if(!yes) toast('기록하지 않았어요 — 나중에 보내면 다시 눌러주세요'); return; }
+  own(ev);
+  let x=ev.guests.find(g=>g.name===pp.name); if(!x){x=mkGuest(pp.name,ev.myRelation||'지인',S.ui.guestSession.acctIdx||0);x.unregistered=true;ev.guests.push(x);}
+  x.pay={amount:pp.amt, source:'app', method:pp.method};
+  ev.myGift=pp.amt; save(); render(); toast(`${won(pp.amt)} 보냄으로 기록했어요`); tiePop(ev); }
 
 function soon(name){toast(`「${name}」 — 곧 추가될 기능이에요`);}
 
@@ -1310,22 +1324,22 @@ function hostView(){
 
   <div class="card">
     <h3>부가 기능</h3>
-    <p class="sub">장부 정리가 끝나면 엑셀로 내보내고, 참석·축의한 분들께 감사 인사를 준비하세요.</p>
+    <p class="sub">${ev.type==='memorial'?'장부 정리가 끝나면 엑셀로 내보내고, 조문해 주신 분들께 답례 인사를 준비하세요.':'장부 정리가 끝나면 엑셀로 내보내고, 참석·축의한 분들께 감사 인사를 준비하세요.'}</p>
     <div class="stack">
-      <button class="btn btn-ghost" onclick="withPass('xlsx',exportLedgerXLSX)">장부 엑셀 내보내기 · 서식 포함 ${passChip(ev)}</button>
-      <button class="btn btn-ghost" onclick="openThanks()">감사 인사 준비하기</button>
+      <button class="btn btn-ghost" onclick="exportXlsxGate()">장부 엑셀 내보내기 · 서식 포함 ${ev.type==='memorial'?'':passChip(ev)}</button>
+      <button class="btn btn-ghost" onclick="openThanks()">${ev.type==='memorial'?'답례 인사 준비하기':'감사 인사 준비하기'}</button>
       <button class="btn btn-disabled" onclick="soon('청첩모임 만들기')">청첩모임 만들기 <span class="lock">· 추후</span></button>
     </div>
   </div>
 
-  <div class="card" style="border-color:var(--gold);background:var(--tint2)">
+  ${ev.type==='memorial'?'':`<div class="card" style="border-color:var(--gold);background:var(--tint2)">
     <div class="secthead"><div class="t">이음 패스</div><div class="c">${hasPass(ev)?'사용 중':'테스터 무료'}</div></div>
     ${hasPass(ev)
       ?`<div class="note" style="margin-top:4px">✓ 이 행사의 모든 부가 기능이 열려 있어요. 테스터 기간이라 <b>무료</b> — 나중에 소중한 피드백으로 갚아주세요 🙏</div>`
       :`<p class="sub" style="margin-bottom:10px">${ev.type==='memorial'?`장부 <b>엑셀 내보내기</b>를 한 번 결제로 — 모든 행사에서 평생 (결혼식 등 하객 ${FREE_GUESTS}명 이상 발송 포함).`:`장부 <b>엑셀 내보내기</b> · <b>하객 ${FREE_GUESTS}명 이상 발송</b>을 한 번 결제로 — 모든 행사에서 평생.`} 정식 출시 후 <b>${PASS_PRICE}</b>(커피 한 잔 값) — 지금은 무료로 열려요.</p>
     ${S.meta&&S.meta.passCredits>0?`<button class="btn btn-primary" style="margin-bottom:8px" onclick="useCreditPass()">보유 패스 크레딧 사용 (${S.meta.passCredits}개)</button>`:''}
     <button class="btn btn-line" onclick="activatePass()">무료로 패스 열기 · 테스터 혜택</button>`}
-  </div>
+  </div>`}
   <button class="backbtn" style="color:var(--danger);margin:0 4px 10px" onclick="delEvent('${ev.id}')">이 행사 삭제</button>`;
 
   // 기본(행사·보내기 탭): 정보 입력 → 계좌 → 보내기 순서 — 위에서 아래로 채우면 끝나는 흐름
@@ -1359,6 +1373,7 @@ function hostView(){
     <div class="fold-body">
     <p class="sub">하객은 이 계좌로 직접 보냅니다. 이음은 자금을 만지지 않아요.</p>
     ${ev.accounts.map((a,i)=>acctEditor(i,a)).join('')}
+    ${(ev.accounts||[]).length<6?`<button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="addHostAcct()">＋ 계좌 추가 <span style="font-weight:400;font-size:11px;color:var(--muted)">· 혼주(부모님) 계좌 등 최대 6개</span></button>`:''}
     </div>
   </details>
 
@@ -1384,9 +1399,18 @@ function hostView(){
     ${(!hasPass(ev)&&ev.type!=='memorial'&&(ev.guests||[]).length>=Math.ceil(FREE_GUESTS*0.8)&&(ev.guests||[]).length<FREE_GUESTS)?`<div class="note" style="margin-top:10px">장부에 <b>${(ev.guests||[]).length}명</b>이 기록됐어요. ${FREE_GUESTS}명 이상이면 새 발송에는 <b>이음 패스</b>가 필요해요 — 이미 보낸 초대장과 장부는 계속 작동합니다.</div>`:''}
   </div>`;
 }
+function exportXlsxGate(){ const ev=hostEvent(); if(ev&&ev.type==='memorial'){ exportLedgerXLSX(); return; } withPass('xlsx',exportLedgerXLSX); } // 부고는 결제 UI 금지 — 게이트 없이 바로
+function addHostAcct(){ const ev=hostEvent(); if(!ev) return; if((ev.accounts||[]).length>=6){ toast('계좌는 최대 6개까지예요'); return; }
+  own(ev); ev.accounts.push({label:'혼주측', bank:'국민', number:'', holder:''}); save(); render(); }
+function delHostAcct(i){ const ev=hostEvent(); if(!ev||!ev.accounts[i]) return;
+  if(ev.accounts[i].number && !confirm(`'${ev.accounts[i].label}' 계좌를 삭제할까요?`)) return;
+  own(ev); ev.accounts.splice(i,1); save(); render(); }
 function acctEditor(i,a){
   return `<div style="margin-top:10px">
-    <label style="margin:0">${esc(a.label)}</label>
+    <div class="row" style="align-items:center">
+      <input style="max-width:46%;font-weight:600" value="${esc(a.label)}" placeholder="라벨 (예: 혼주측)" onchange="updAcct(${i},'label',this.value)">
+      ${i>=2?`<button class="btn btn-ghost btn-sm" style="max-width:70px" onclick="delHostAcct(${i})">삭제</button>`:''}
+    </div>
     <div class="row" style="margin-top:5px">
       <div style="max-width:40%"><select onchange="updAcct(${i},'bank',this.value)">
         ${BANKS.map(b=>`<option ${b===a.bank?'selected':''}>${b}</option>`).join('')}</select></div>
@@ -1505,6 +1529,22 @@ function addEventOnDate(ds,type){ // 달력에서 날짜 탭 → 참석할 경�
 /* ---- 직접 추가: 달력 팝업에서 날짜 선택 → 전체 입력 폼 (본문 상시 달력 진입과 병행) ---- */
 let CALPOP_YM=null, _calpopHideT=null;
 let _calshHideT=null;
+/* 길찾기: 예식장·빈소를 지도앱으로 — 당일 최다 니즈 (100% 클라이언트 URL 스킴) */
+function openMapSheet(){ const ev=curEvent()||hostEvent(); if(!ev||!ev.venue){ toast('장소 정보가 없어요'); return; }
+  const q=encodeURIComponent((ev.venue+' '+(ev.address||'')).trim());
+  let bg=document.getElementById('mapsheet'); if(!bg){ bg=document.createElement('div'); bg.id='mapsheet'; bg.className='sheet-bg'; document.body.appendChild(bg); }
+  bg.innerHTML=`<div class="sheet" onclick="event.stopPropagation()">
+    <div style="font-weight:700;font-size:16px;margin-bottom:4px">길찾기</div>
+    <p class="sub" style="margin:0 0 10px">${esc(ev.venue)}${ev.address?` · ${esc(ev.address)}`:''}</p>
+    <div class="stack">
+      <button class="btn btn-ghost" onclick="openUrl('https://map.kakao.com/link/search/${q}')">카카오맵으로 찾기</button>
+      <button class="btn btn-ghost" onclick="openUrl('https://map.naver.com/p/search/${q}')">네이버지도로 찾기</button>
+      <button class="btn btn-ghost" onclick="try{location.href='tmap://search?name=${q}'}catch(e){}">티맵으로 찾기 <span style="font-weight:400;font-size:11px;color:var(--muted)">· 앱 설치 시</span></button>
+    </div>
+    <button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="closeMapSheet()">닫기</button>
+  </div>`;
+  bg.onclick=closeMapSheet; setTimeout(()=>bg.classList.add('show'),10); }
+function closeMapSheet(){ const bg=document.getElementById('mapsheet'); if(!bg)return; bg.classList.remove('show'); setTimeout(()=>{ try{bg.remove();}catch(e){} },220); }
 function openCalSheet(){ let bg=document.getElementById('calsheet');
   if(!bg){ bg=document.createElement('div'); bg.id='calsheet'; bg.className='sheet-bg';
     bg.addEventListener('click',e=>{ if(e.target===bg) closeCalSheet(); }); document.body.appendChild(bg); }
@@ -1606,7 +1646,10 @@ function guestDetail(){
     <div class="when">${dateText(ev)}<br/>${esc(ev.venue)}</div>
     <div class="dday-pill">${dday(ev)}</div>
   </div>
-  ${ev.externalUrl?`<button class="btn btn-line btn-sm" style="margin:-4px 0 12px" onclick="openExternal(curEvent())">${c.doc} 전체보기</button>`:''}
+  <div class="row" style="margin:-4px 0 12px">
+    ${ev.venue?`<button class="btn btn-line btn-sm" onclick="openMapSheet()">${ev.type==='memorial'?'빈소 길찾기':'📍 길찾기'}</button>`:''}
+    ${ev.externalUrl?`<button class="btn btn-line btn-sm" onclick="openExternal(curEvent())">${c.doc} 전체보기</button>`:''}
+  </div>
   ${ev.message?`<p class="quote serif" style="margin:2px 6px 14px">${esc(ev.message).replace(/\n/g,'<br/>')}</p>`:''}
   ${inappBanner()}${reciCard(ev)}
   <div class="card">
@@ -1669,6 +1712,11 @@ function guestDetail(){
         <button class="btn btn-line btn-sm" style="margin-top:8px" onclick="openEnvelope(curEvent().id)">봉투 쓰는 법 보기</button>
       </div>
     </details>
+    ${(S.ui.guestSession.pendingPay&&S.ui.guestSession.pendingPay.evId===ev.id)?`<div class="note" style="margin-top:10px"><b>${S.ui.guestSession.pendingPay.method==='toss'?'토스':'카카오페이'}에서 ${won(S.ui.guestSession.pendingPay.amt)} 송금을 완료하셨나요?</b><br><span style="color:var(--muted);font-size:12px">완료하셨으면 가계부에 기록해 드려요.</span>
+      <div class="row" style="margin-top:9px">
+        <button class="btn btn-sage btn-sm" onclick="confirmPendingPay(1)">네, 보냈어요</button>
+        <button class="btn btn-ghost btn-sm" onclick="confirmPendingPay(0)">아니요</button>
+      </div></div>`:''}
     ${me&&me.pay&&me.pay.amount!=null?`<div class="note" style="margin-top:10px">✓ <b>${won(me.pay.amount)}</b> 보냄 — 내 가계부에 저장했어요. 아래 <b>[${ev.type==='memorial'?'상주에게 알리기':'주최자에게 알리기'}]</b>로 전할 수 있어요.
       <div class="row" style="margin-top:9px">
         <button class="btn btn-ghost btn-sm" onclick="clearMyPay()">기록 지우기</button>
@@ -1938,6 +1986,12 @@ function settingsView(){ const st=S.settings||{}; const ago=backupAgo();
       <button class="${S.ui.theme==='light'?'on':''}" onclick="setTheme('light')">밝게</button>
       <button class="${S.ui.theme==='dark'?'on':''}" onclick="setTheme('dark')">어둡게</button>
     </div>
+    <label style="margin-top:12px">🔔 경조사 알림</label>
+    <div class="seg2">
+      <button class="${S.ui.noti?'on':''}" onclick="if(!S.ui.noti)toggleNoti()">켜기</button>
+      <button class="${!S.ui.noti?'on':''}" onclick="if(S.ui.noti)toggleNoti()">끄기</button>
+    </div>
+    <p class="lblnote" style="margin-top:6px">${BG_NOTI?'일주일 전·전날·당일에 알려드려요 — 앱을 열지 않아도 도착합니다.':(isIOS()?'앱을 열 때 다가온 경조사를 알려드려요. (아이폰은 백그라운드 알림을 지원하지 않아요)':'앱을 열 때 다가온 경조사를 알려드려요.')}</p>
     <label style="margin-top:12px">🌱 품앗이 알림</label>
     <div class="seg2">
       <button class="${reciOn()?'on':''}" onclick="if(!reciOn())toggleRecipro()">켜기</button>
@@ -2042,7 +2096,7 @@ function closeRestoreGuide(){ const bg=document.getElementById('rgsheet'); if(!b
 async function shareTransferLink(){ try{
   const pl=backupPayload(); // 초대카드 사진(dataURL 수십만 자)은 링크에 못 실림 — 링크 이전에서만 제외(파일 백업은 포함)
   let _photoDropped=false;
-  pl.data.events=pl.data.events.map(e=>{ if(!e.invitePhoto) return e; _photoDropped=true; const cp={...e}; delete cp.invitePhoto; return cp; });
+  pl.data.events=pl.data.events.map(e=>{ if(!e.invitePhoto&&!e.thanksPhoto) return e; _photoDropped=true; const cp={...e}; delete cp.invitePhoto; delete cp.thanksPhoto; return cp; });
   const json=JSON.stringify(pl);
   const z=lzwEnc(json), p0=b64urlEnc(json);
   const enc=(z.length<p0.length?'z'+z:'p'+p0); // 작은 데이터는 평문이 더 짧음 — 짧은 쪽 채택
@@ -2070,7 +2124,7 @@ function handleIncomingBackup(p){ // 새 기기가 비어 있으면 자동 적�
   if(empty){ applyRestore('merge'); setTimeout(()=>toast('이전 기기의 기록을 그대로 옮겨왔어요 ✓'),500); }
   else { S.ui.tab='guest'; S.ui.guestView='restore'; save(); render(); } }
 function evKey(e){ return [e.partyA,e.partyB,e.date,e.venue].join('|'); }
-function evHasContent(e){ return !!(e.partyA||e.partyB||e.date||e.venue||(e.guests&&e.guests.length)||e.myGift||e.invitePhoto); }
+function evHasContent(e){ return !!(e.partyA||e.partyB||e.date||e.venue||(e.guests&&e.guests.length)||e.myGift||e.invitePhoto||e.thanksPhoto); }
 function applyRestore(mode){ const p=PENDING_RESTORE; if(!p)return;
   if(mode==='replace'&&(S.events.length||S.people.length)){
     if(!confirm(`현재 기기의 경조사 ${S.events.length}건·사람 ${S.people.length}명이 백업 내용으로 교체(삭제)됩니다.\n두 기기 데이터를 합치려면 '병합'을 이용하세요.\n\n계속할까요?`)) return; }
@@ -2307,7 +2361,6 @@ function startPassPayment(method){
     });
   }catch(e){ toast('결제 초기화 실패'); } });
 }
-const FRAME_FROM=3; // 장식 액자(_premiumFrame)가 붙는 첫 디자인 인덱스 — 전 디자인 무료
 const FREE_GUESTS=30; // 무료 행사 규모 — 장부 30명 이상 행사의 새 발송은 패스 (장부 인원 기준 · 부고 제외)
 /* 패스 무결성: premium은 기기 무관 서명 토큰(_psig) — localStorage 평문 조작으로는 활성화 불가.
    (클라이언트 앱 특성상 절대 방어는 아니며 '캐주얼 변조 차단' 목적. 부여는 결제 경로/개발자 grantPremium()만) */
@@ -2483,20 +2536,13 @@ function exportLedgerCSV(){ const ev=hostEvent(); const c=cfg(ev);
   const led=ledgerStats(ev); rows.push(['','','','','','','']); rows.push(['합계','','','','', led.total, `이음 ${led.appSum}/직접 ${led.manualSum}`]);
   const csv='﻿'+rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\r\n');
   exportFile(new Blob([csv],{type:'text/csv;charset=utf-8'}), `${evNamePlain(ev)}_장부.csv`, '이음 장부', '엑셀(CSV)로 내보냈어요'); }
-function openThanks(){ S.ui.hostSub='thanks'; S.ui.tab='host'; save();
-  try{ loadCardFonts(Object.keys(CARD_FONTS)); }catch(e){} // 글씨체 칩 미리보기용 프리로드
-  render(); window.scrollTo(0,0); }
-/* ===== 감사카드 v2 — 시중 카드 수준의 일러스트 장식 시스템 ===== */
-// pal: f1/f2 꽃, leaf/leaf2 잎, core 꽃심 · deco: 장식 배치 타입 · mood:'mourn'=조의(부고 전용 우선)
+function openThanks(){ S.ui.hostSub='thanks'; S.ui.tab='host'; save(); render(); window.scrollTo(0,0); }
+/* ===== 초대카드 장식 팔레트 — 감사카드 제작 기능 철거 후 초대카드([1] 결혼 코너·[2] 부고 국화)만 사용 ===== */
+// pal: f1/f2 꽃, leaf/leaf2 잎, core 꽃심 · deco: 장식 배치 타입 · mood:'mourn'=조의
 const CARDS=[
  {bg:['#ffffff','#faf6f0'], ink:'#4a443c', accent:'#b39763', deco:'clean',    pal:{f1:'#e8d9b8',f2:'#f3ead6',leaf:'#a8bda5',leaf2:'#c6d5c3',core:'#fffdf8'}},
  {bg:['#fdf3f0','#f9dfe2'], ink:'#7d4a56', accent:'#c98a97', deco:'corners',  pal:{f1:'#f2aebe',f2:'#f7cdd6',leaf:'#a8c5a5',leaf2:'#c4d8c0',core:'#fff6f0'}},
- {bg:['#f5f4f1','#e4e2dc'], ink:'#565049', accent:'#8f8a80', deco:'mum',      pal:{f1:'#ffffff',f2:'#f0eee8',leaf:'#9aa694',leaf2:'#b8c1b2',core:'#e8e4da'}, mood:'mourn'},
- {bg:['#fdf6ee','#f7e6d2'], ink:'#7d5a48', accent:'#c99a72', deco:'couple',   pal:{f1:'#f4c39a',f2:'#f9dcc0',leaf:'#b7c9a8',leaf2:'#d2dec2',core:'#fffaf2'}},
- {bg:['#f4f0fb','#e3d9f4'], ink:'#5d4d88', accent:'#9a86c8', deco:'wreath',   pal:{f1:'#c3b1e8',f2:'#e0d3f5',leaf:'#a5b8a0',leaf2:'#c8d6c2',core:'#fbf8ff'}},
- {bg:['#f0f6f1','#dcebe0'], ink:'#42604f', accent:'#7d9c85', deco:'branches', pal:{f1:'#e9f2ea',f2:'#cfe3d2',leaf:'#8fb096',leaf2:'#b3ccb6',core:'#f6fbf5'}},
- {bg:['#fbf6ea','#f1e3c3'], ink:'#7a6238', accent:'#bd9d5e', deco:'goldframe',pal:{f1:'#e3c887',f2:'#f0deb3',leaf:'#b3a878',leaf2:'#cec49a',core:'#fffcf3'}},
- {bg:['#eef1ec','#d9e0d6'], ink:'#48544a', accent:'#7c8b7c', deco:'halfwreath',pal:{f1:'#fbfcf8',f2:'#c3cfc0',leaf:'#8a9c8a',leaf2:'#aebcae',core:'#dfe6da'}, mood:'mourn'}
+ {bg:['#f5f4f1','#e4e2dc'], ink:'#565049', accent:'#8f8a80', deco:'mum',      pal:{f1:'#ffffff',f2:'#f0eee8',leaf:'#9aa694',leaf2:'#b8c1b2',core:'#e8e4da'}, mood:'mourn'}
 ];
 /* --- SVG 장식 요소 라이브러리 --- */
 function _flower(cx,cy,r,fill,core,rot,op){ // 5잎 레이어드 플라워 — 수채 느낌(반투명 겹)
@@ -2587,16 +2633,10 @@ function _decoSVG(c,photo){ const P=c.pal;
      return s+_mumFlower(400-r*.74,cy-r*.62,30,P.f1,P.f2,P.core)+_mumFlower(400+r*.74,cy-r*.62,30,P.f1,P.f2,P.core)
        +_leafE(400-r*.45,cy-r*.85,14,5,P.leaf,-30,.7)+_leafE(400+r*.45,cy-r*.85,14,5,P.leaf2,30,.7); }
   } return ''; }
-/* ---- 카드 타이포 커스텀: 글씨체(한글 웹폰트)·크기·색상 ---- */
+/* ---- 카드 웹폰트 로더 (초대카드 캔버스 텍스트용 — 명조만 사용) ---- */
 const CARD_FONTS={
  myeongjo:{label:'명조',   css:"'Nanum Myeongjo','Apple SD Gothic Neo',serif", g:'Nanum+Myeongjo:wght@400;700', scale:1},
- gowun:   {label:'돋움',   css:"'Gowun Dodum',sans-serif",                     g:'Gowun+Dodum',                 scale:.97},
- pen:     {label:'손글씨', css:"'Nanum Pen Script',cursive",                   g:'Nanum+Pen+Script',            scale:1.32},
- gaegu:   {label:'귀염체', css:"'Gaegu',cursive",                              g:'Gaegu:wght@400;700',          scale:1.12},
- brush:   {label:'붓글씨', css:"'Nanum Brush Script',cursive",                 g:'Nanum+Brush+Script',          scale:1.38},
 };
-const CARD_SIZES={s:{label:'작게',v:25,per:18,pp:17}, m:{label:'보통',v:29,per:16,pp:15}, l:{label:'크게',v:34,per:13,pp:12}};
-const CARD_INKS=['', '#5b4636','#3a3f45','#7a3b47','#2f4560','#3d5a48','#9a7b3f']; // ''=디자인 기본색
 const _fontsLoaded={};
 function loadCardFonts(keys,cb){ // 구글폰트 CSS 지연 주입(+캔버스용 로드 대기)
   const need=(keys||Object.keys(CARD_FONTS)).filter(k=>CARD_FONTS[k]&&!_fontsLoaded[k]);
@@ -2609,78 +2649,6 @@ function loadCardFonts(keys,cb){ // 구글폰트 CSS 지연 주입(+캔버스용
     .then(()=>document.fonts.ready).then(()=>cb()).catch(()=>cb()); }
   catch(e){ setTimeout(cb,600); }
 }
-function cardOpts(ev){ const st=cardState(ev); const f=CARD_FONTS[st.font]||CARD_FONTS.myeongjo; const sz=CARD_SIZES[st.size]||CARD_SIZES.m;
-  return { fontKey:st.font||'myeongjo', css:f.css, size:Math.round(sz.v*f.scale), per:sz.per, pp:sz.pp, color:st.color||'' }; }
-function wrapText(s,per){ const out=[]; (s||'').split('\n').forEach(para=>{ let line=''; para.split(' ').forEach(w=>{ if(line && [...(line+' '+w)].length>per){out.push(line);line=w;} else {line=line?line+' '+w:w;} }); if(line)out.push(line); }); return out.slice(0,7); }
-function cardLayout(idx,greeting,photo,opts){ // 미리보기(SVG 텍스트)와 내보내기(캔버스 텍스트)가 공유하는 레이아웃
-  const c=CARDS[idx]||CARDS[0]; const mourn=c.mood==='mourn';
-  const o=opts||{}; const css=o.css||CARD_FONTS.myeongjo.css; const size=o.size||29;
-  const bodyColor=o.color||c.ink;
-  const inWreath=(c.deco==='wreath'||c.deco==='halfwreath')&&!photo;
-  const lines=wrapText(greeting, photo?(o.pp||15):(o.per||16));
-  const lineH=Math.round(size*1.62);
-  const baseY = photo?618:(inWreath?560:500-Math.min(lines.length,5)*Math.round(size*0.55));
-  return { c, mourn, inWreath, css, size, bodyColor, lines, lineH, baseY,
-    title: mourn?'감사드립니다':'감 사 합 니 다',
-    over: mourn?'위로해 주셔서':'축하해 주셔서',
-    overY: (c.deco==='ribbon'?109:(mourn&&c.deco==='mum'?120:(inWreath?325:172)))-34,
-    titleY: c.deco==='ribbon'?109:(mourn&&c.deco==='mum'?120:(inWreath?325:172)),
-    titleSize: c.deco==='ribbon'?24:(inWreath?30:27),
-    titleLS: mourn?4:(inWreath?5:7),
-    titleColor: c.deco==='ribbon'?'#fff':c.accent,
-    sub: inWreath?{text:'WITH GRATITUDE',y:368,size:15,ls:3,color:c.ink}:null,
-    sigY:893, sigSize:24, sigSuffix: mourn?'배상':'올림' };
-}
-function cardSVG(idx,greeting,hostNames,photo,opts){ const L=cardLayout(idx,greeting,photo,opts); const c=L.c;
-  const gid='cg'+idx, pcid='pc'+idx; // 여러 카드가 한 화면에 렌더돼도 id 충돌 없도록
-  const grad=`<linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">${c.bg.map((col,i)=>`<stop offset="${i/(c.bg.length-1)}" stop-color="${col}"/>`).join('')}</linearGradient>`;
-  const textLines=L.lines.map((ln,i)=>`<text x="400" y="${L.baseY+i*L.lineH}" text-anchor="middle" font-family="${L.css.replace(/"/g,'&quot;')}" font-size="${L.size}" fill="${L.bodyColor}">${esc(ln)}</text>`).join('');
-  // 사진: 아치형 프레임 (요즘 청첩장 감성)
-  const ph=photo?`<clipPath id="${pcid}"><path d="M262 358 A138 138 0 0 1 538 358 L538 512 L262 512 Z"/></clipPath>
-    <image href="${photo}" x="262" y="212" width="276" height="300" preserveAspectRatio="xMidYMid slice" clip-path="url(#${pcid})"/>
-    <path d="M262 358 A138 138 0 0 1 538 358 L538 512 L262 512 Z" fill="none" stroke="${c.accent}" stroke-width="4"/>
-    <path d="M252 358 A148 148 0 0 1 548 358 L548 522" fill="none" stroke="${c.accent}" stroke-width="1.5" opacity=".5"/>`:'';
-  const texts = opts&&opts.noText ? '' :
-    `<text x="400" y="${L.overY}" text-anchor="middle" font-family="'Nanum Myeongjo',serif" font-size="17" letter-spacing="6" fill="${L.titleColor}" opacity=".55">${L.over}</text>`+
-    `<text x="400" y="${L.titleY}" text-anchor="middle" font-family="'Nanum Myeongjo',serif" font-size="${L.titleSize}" letter-spacing="${L.titleLS}" fill="${L.titleColor}" font-weight="600">${L.title}</text>`+
-    (L.sub?`<text x="400" y="${L.sub.y}" text-anchor="middle" font-family="'Nanum Myeongjo',serif" font-size="${L.sub.size}" letter-spacing="${L.sub.ls}" fill="${L.sub.color}" opacity=".55">${L.sub.text}</text>`:'')+
-    textLines+
-    `<text x="400" y="${L.sigY}" text-anchor="middle" font-family="${L.css.replace(/"/g,'&quot;')}" font-size="${L.sigSize}" fill="${L.bodyColor}">— ${esc(hostNames)} ${L.sigSuffix}</text>`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000"><defs>${grad}</defs>`+
-    `<rect width="800" height="1000" fill="url(#${gid})"/>`+
-    `<rect x="34" y="34" width="732" height="932" rx="20" fill="#ffffff" opacity="${c.deco==='sealdots'||c.deco==='goldframe'||c.deco==='lineleaf'?0:0.35}"/>`+
-    _decoSVG(c,!!photo)+
-    (idx>=FRAME_FROM?_premiumFrame(c):'')+
-    `${ph}${texts}`+
-    _divider(838,c.pal)+`</svg>`; }
-function _premiumFrame(c){ // 장식 액자: 이중 헤어라인·코너 다이아·상단 인장 (4번째 디자인부터)
-  const a=c.accent;
-  const dia=(x,y,s)=>`<path d="M${x} ${y-s} L${x+s} ${y} L${x} ${y+s} L${x-s} ${y} Z" fill="${a}" opacity=".75"/>`;
-  return `<rect x="24" y="24" width="752" height="952" rx="26" fill="none" stroke="${a}" stroke-width="2.2" opacity=".5"/>
-  <rect x="38" y="38" width="724" height="924" rx="20" fill="none" stroke="${a}" stroke-width=".9" opacity=".55"/>
-  ${dia(50,50,8)}${dia(750,50,8)}${dia(50,950,8)}${dia(750,950,8)}
-  ${dia(50,50,3.5)}${dia(750,50,3.5)}${dia(50,950,3.5)}${dia(750,950,3.5)}
-  <path d="M352 62 H448" stroke="${a}" stroke-width="1" opacity=".55"/>
-  <path d="M400 54 L406 62 L400 70 L394 62 Z" fill="${a}" opacity=".85"/>
-  <circle cx="366" cy="62" r="1.8" fill="${a}" opacity=".6"/><circle cx="434" cy="62" r="1.8" fill="${a}" opacity=".6"/>
-  <path d="M352 938 H448" stroke="${a}" stroke-width="1" opacity=".55"/>
-  <path d="M400 930 L406 938 L400 946 L394 938 Z" fill="${a}" opacity=".85"/>`; }
-function cardPaintText(ctx,L,hostNames){ // 내보내기: 웹폰트를 캔버스로 직접 그림(SVG-이미지는 웹폰트 미적용)
-  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
-  const ls=(px)=>{ try{ ctx.letterSpacing=px+'px'; }catch(e){} };
-  ctx.fillStyle=L.titleColor; ctx.font=`600 ${L.titleSize}px 'Nanum Myeongjo', serif`; ls(L.titleLS);
-  ctx.save(); ctx.globalAlpha=.55; ctx.font="17px 'Nanum Myeongjo',serif";
-  try{ ctx.letterSpacing='6px'; }catch(e){}
-  ctx.fillStyle=L.titleColor; ctx.fillText(L.over||'',403,L.overY); ctx.restore();
-  ctx.fillText(L.title,400+L.titleLS/2,L.titleY);
-  if(L.sub){ ctx.globalAlpha=.55; ctx.font=`${L.sub.size}px 'Nanum Myeongjo', serif`; ls(L.sub.ls);
-    ctx.fillStyle=L.sub.color; ctx.fillText(L.sub.text,400+L.sub.ls/2,L.sub.y); ctx.globalAlpha=1; }
-  ls(0);
-  ctx.fillStyle=L.bodyColor; ctx.font=`${L.size}px ${L.css}`;
-  L.lines.forEach((ln,i)=>ctx.fillText(ln,400,L.baseY+i*L.lineH));
-  ctx.font=`${L.sigSize}px ${L.css}`;
-  ctx.fillText(`— ${hostNames} ${L.sigSuffix}`,400,L.sigY);
-}
 function svgToPngBlob(svg,w,h,cb,paint){ try{ const img=new Image(); img.onload=()=>{ try{ const cv=document.createElement('canvas'); cv.width=w; cv.height=h; const ctx=cv.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); ctx.drawImage(img,0,0,w,h); if(paint)paint(ctx); cv.toBlob(cb,'image/png'); }catch(e){cb(null);} }; img.onerror=()=>cb(null); img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg); }catch(e){cb(null);} }
 function thankSamples(ev){ return cfg(ev).label==='부고'
   ? ['{이름}님, 바쁘신 중에도 귀한 걸음 하시어 위로해 주심에 진심으로 깊은 감사의 말씀을 드립니다. 베풀어주신 따뜻한 마음 잊지 않고 고이 간직하겠습니다. 항상 건강과 평안이 함께하시길 기원합니다.',
@@ -2690,36 +2658,26 @@ function thankSamples(ev){ return cfg(ev).label==='부고'
      '{이름}님, 바쁘신 중에도 함께해 주셔서 감사합니다. 받은 사랑 나누며 행복하게 잘 살겠습니다.',
      '{이름}님, 먼 길 마다않고 축하해 주셔서 감사합니다. 좋은 일에 꼭 함께하겠습니다.',
      '{이름}님, 소중한 마음 감사히 받았습니다. 늘 건강하고 행복하시길 바랍니다.']; }
-function cardState(ev){ if(!ev.thankCard)ev.thankCard={design:0,msg:''};
-  const t=ev.thankCard; if(!t.font)t.font='myeongjo'; if(!t.size)t.size='m'; if(t.color==null)t.color=''; return t; }
-function setCardFont(k){ const ev=hostEvent(); cardState(ev).font=k; save(); loadCardFonts([k],()=>render()); render(); }
-function setCardSize(k){ cardState(hostEvent()).size=k; save(); render(); }
-function setCardInk(c){ cardState(hostEvent()).color=c; save(); render(); }
-function pickCardInk(){ const inp=document.createElement('input'); inp.type='color'; inp.value=cardState(hostEvent()).color||'#5b4636';
-  inp.style.cssText='position:fixed;left:-9999px'; document.body.appendChild(inp);
-  inp.oninput=()=>{ cardState(hostEvent()).color=inp.value; save(); renderCardPreview(); };
-  inp.onchange=()=>{ try{inp.remove();}catch(e){} render(); };
-  inp.click(); }
+function cardState(ev){ if(!ev.thankCard)ev.thankCard={msg:''}; return ev.thankCard; } // 구버전 design/font 필드는 무해하게 잔존
 function hostSig(ev){ return ev.partyB?`${ev.partyA}·${ev.partyB}`:ev.partyA; }
 function personGreeting(ev,name){ const c=cardState(ev); const m=(c.msg&&c.msg.trim())?c.msg:thankSamples(ev)[0]; return m.replace(/\{이름\}/g, name||'○○'); }
-function setCardDesign(i){ const ev=hostEvent(); // 전 디자인 무료
-  cardState(ev).design=i; save(); render(); }
-function setCardMsg(v){ cardState(hostEvent()).msg=v; renderCardPreview(); }
-function useSample(i){ const ev=hostEvent(); cardState(ev).msg=thankSamples(ev)[i]; save(); render(); }
-function setCardPhoto(){ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+function setCardMsg(v){ const ev=hostEvent(); if(!ev)return; own(ev); cardState(ev).msg=v; save(); }
+function useSample(i){ const ev=hostEvent(); own(ev); cardState(ev).msg=thankSamples(ev)[i]; save(); render(); }
+/* 감사 인사 사진 — 자체 카드 제작 대신 사용자가 가진 카드·사진을 그대로 첨부 (행사별 저장 ev.thanksPhoto) */
+function setThanksPhoto(){ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
   inp.style.cssText='position:fixed;left:-9999px;opacity:0'; document.body.appendChild(inp); // iOS: detached input GC 방지
   inp.onchange=e=>{ const f=e.target.files&&e.target.files[0]; try{ inp.remove(); }catch(_){} if(!f)return;
-    const r=new FileReader(); r.onload=()=>{ // 원본 수 MB 사진을 그대로 저장하면 localStorage 한도 초과 → 다운스케일
-      const img=new Image();
-      img.onload=()=>{ try{ const MAX=1200; const s=Math.min(1, MAX/Math.max(img.width,img.height));
+    const r=new FileReader(); r.onload=()=>{ const img=new Image();
+      img.onload=()=>{ const ev=hostEvent(); if(!ev)return;
+        try{ const MAX=1400; const s=Math.min(1, MAX/Math.max(img.width,img.height)); // 카드 이미지는 글자 가독 위해 초대사진보다 큼
           const w=Math.max(1,Math.round(img.width*s)), h=Math.max(1,Math.round(img.height*s));
           const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
           cv.getContext('2d').drawImage(img,0,0,w,h);
-          S.ui.cardPhoto=cv.toDataURL('image/jpeg',0.85);
-        }catch(err){ if(r.result&&r.result.length<400000){ S.ui.cardPhoto=r.result; } else { toast('사진을 처리할 수 없어요 — 다른 사진으로 시도해 주세요'); } } render(); };
+          own(ev); ev.thanksPhoto=cv.toDataURL('image/jpeg',0.82);
+        }catch(err){ if(r.result&&r.result.length<400000){ own(ev); ev.thanksPhoto=r.result; } else { toast('사진을 처리할 수 없어요 — 다른 사진으로 시도해 주세요'); } } save(); render(); };
       img.onerror=()=>{ toast('사진을 읽을 수 없어요 — JPG·PNG로 시도해 주세요'); };
       img.src=r.result; }; r.readAsDataURL(f); }; inp.click(); }
-function clearCardPhoto(){ S.ui.cardPhoto=null; render(); }
+function clearThanksPhoto(){ const ev=hostEvent(); if(!ev)return; own(ev); delete ev.thanksPhoto; save(); render(); }
 /* 초대카드 커스텀 사진 — 행사별 저장(ev.invitePhoto). #e= 초대링크는 필드 화이트리스트라 미포함, 이전 링크는 별도 제외 */
 function setInvitePhoto(){ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
   inp.style.cssText='position:fixed;left:-9999px;opacity:0'; document.body.appendChild(inp); // iOS: detached input GC 방지
@@ -2735,70 +2693,57 @@ function setInvitePhoto(){ const inp=document.createElement('input'); inp.type='
       img.onerror=()=>{ toast('사진을 읽을 수 없어요 — JPG·PNG로 시도해 주세요'); }; // 디코드 실패분(HEIC 등)은 어차피 렌더 불가 → 원본 저장 금지(용량 초과 방지)
       img.src=r.result; }; r.readAsDataURL(f); }; inp.click(); }
 function clearInvitePhoto(){ const ev=hostEvent(); if(!ev)return; own(ev); delete ev.invitePhoto; save(); render(); }
-function renderCardPreview(){ const el=document.getElementById('card-preview'); if(!el)return; const ev=hostEvent();
-  const rn=(ev.guests.find(g=>g.rsvp.status==='yes'||(g.pay&&g.pay.amount!=null))||{}).name||'○○';
-  el.innerHTML=cardSVG(cardState(ev).design, personGreeting(ev,rn), hostSig(ev), S.ui.cardPhoto, cardOpts(ev)); }
 function thanksView(){ const ev=hostEvent(); const c=cardState(ev); const samples=thankSamples(ev);
   const recip=ev.guests.filter(g=>g.rsvp.status==='yes'||(g.pay&&g.pay.amount!=null));
-  const previewName=(recip[0]||{}).name||'○○';
+  const previewName=(recip[0]||{}).name||'○○'; const mem=ev.type==='memorial';
   return `<button class="backbtn" onclick="backFromHost2()">‹ 내 행사</button>
-  <div class="listhead"><div class="t serif">감사 카드 보내기</div></div>
-  <p class="sub" style="margin:0 2px 12px">파스텔 카드에 사진·메시지를 담아 예쁜 감사 인사를 보내세요. <b>내 문자·카톡</b>으로 직접 전송해요.</p>
+  <div class="listhead"><div class="t serif">감사 인사 보내기</div></div>
+  <p class="sub" style="margin:0 2px 12px">인사말에 내 카드 사진을 곁들여 <b>내 문자·카톡</b>으로 직접 전송해요.</p>
   <div class="card">
-    <label>카드 디자인</label>
-    <div class="card-thumbs">${CARDS.map((cc,i)=>({cc,i})).sort((a,b)=>{ // 부고 행사: 조의 카드 우선 노출
-        if(ev.type!=='memorial') return a.i-b.i;
-        return (b.cc.mood==='mourn')-(a.cc.mood==='mourn') || a.i-b.i;
-      }).map(({cc,i})=>`<button class="card-thumb ${c.design===i?'on':''}" onclick="setCardDesign(${i})" style="background:linear-gradient(135deg,${cc.bg[0]},${cc.bg[cc.bg.length-1]})"><span style="color:${cc.mood==='mourn'?cc.ink:cc.accent}">${cc.mood==='mourn'?'❀':'♥'}</span></button>`).join('')}</div>
-    <label style="margin-top:13px">글씨체</label>
-    <div class="chips">${Object.entries(CARD_FONTS).map(([k,f])=>`<button class="chip ${c.font===k?'on':''}" style="font-family:${f.css};font-size:14px" onclick="setCardFont('${k}')">${f.label}</button>`).join('')}</div>
-    <div class="row" style="margin-top:11px;align-items:flex-end">
-      <div><label style="margin:0 0 5px">글자 크기</label>
-        <div class="seg2" style="margin:0">${Object.entries(CARD_SIZES).map(([k,s])=>`<button class="${c.size===k?'on':''}" onclick="setCardSize('${k}')">${s.label}</button>`).join('')}</div></div>
+    <label>${mem?'답례 카드 사진':'감사카드 사진'} <span style="font-weight:400;color:var(--muted)">(선택 — 스튜디오 카드·${mem?'추모':'본식'} 사진 등)</span></label>
+    <div class="row" style="margin-top:6px">
+      <button class="btn btn-ghost btn-sm" onclick="setThanksPhoto()">${mem?'':'📷 '}사진 ${ev.thanksPhoto?'변경':'추가'}</button>
+      ${ev.thanksPhoto?`<button class="btn btn-ghost btn-sm" onclick="clearThanksPhoto()">사진 제거</button>`:''}
     </div>
-    <label style="margin-top:11px">글자 색</label>
-    <div class="inkrow">
-      <button class="inksw ${!c.color?'on':''}" style="background:${CARDS[c.design]?CARDS[c.design].ink:'#7d4a56'}" onclick="setCardInk('')" title="디자인 기본색">기본</button>
-      ${CARD_INKS.filter(x=>x).map(cl=>`<button class="inksw ${c.color===cl?'on':''}" style="background:${cl}" onclick="setCardInk('${cl}')"></button>`).join('')}
-      <button class="inksw custom ${c.color&&!CARD_INKS.includes(c.color)?'on':''}" onclick="pickCardInk()" title="직접 선택">🎨</button>
-    </div>
-    <label style="margin-top:13px">메시지 <span style="font-weight:600;color:var(--muted);font-size:11px">· {이름}은 하객 이름으로 바뀜</span></label>
+    ${ev.thanksPhoto
+      ?`<img src="${esc(ev.thanksPhoto)}" alt="" style="max-width:220px;width:100%;border-radius:12px;border:1px solid var(--line);display:block;margin:8px 0 0" onerror="this.style.display='none'">`
+      :`<p class="lblnote" style="margin-top:6px">사진이 없으면 인사말 문구만 보내드려요.</p>`}
+    <label style="margin-top:13px">인사말 <span style="font-weight:600;color:var(--muted);font-size:11px">· {이름}은 받는 분 이름으로 바뀜</span></label>
     <div class="chips" style="margin-bottom:8px">${samples.map((s,i)=>`<button class="chip" onclick="useSample(${i})">샘플 ${i+1}</button>`).join('')}</div>
-    <textarea rows="3" oninput="setCardMsg(this.value)" placeholder="직접 입력하거나 위 샘플을 골라보세요">${esc(c.msg)}</textarea>
-    <div class="row" style="margin-top:10px">
-      <button class="btn btn-ghost btn-sm" onclick="setCardPhoto()">📷 사진 ${S.ui.cardPhoto?'변경':'추가'}</button>
-      ${S.ui.cardPhoto?`<button class="btn btn-ghost btn-sm" onclick="clearCardPhoto()">사진 제거</button>`:''}
-    </div>
-  </div>
-  <div class="card">
-    <label>미리보기 (${esc(previewName)}님 예시)</label>
-    <div id="card-preview" class="card-preview">${cardSVG(c.design, personGreeting(ev,previewName), hostSig(ev), S.ui.cardPhoto, cardOpts(ev))}</div>
-    <button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="sendCard('${jsq(previewName)}')">이 카드 먼저 공유해 보기 <span style="font-weight:400;font-size:11px;opacity:.75">· 나에게 테스트</span></button>
+    <textarea rows="4" oninput="setCardMsg(this.value)" placeholder="직접 입력하거나 위 샘플을 골라보세요">${esc(c.msg)}</textarea>
+    <button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="sendCard('${jsq(previewName)}')">먼저 나에게 테스트 전송</button>
   </div>
   <div class="card"><div class="secthead"><div class="t">받는 사람</div><div class="c">${recip.length}명</div></div>
     <div class="glist">${recip.map(g=>`<div class="calevrow">
       <span class="cnm">${esc(g.name)}<span style="color:var(--muted);font-weight:400;font-size:11px"> · ${esc(g.relation)}</span>${g.thanked?' <span class="pill pill-ok" style="font-size:10px">✓ 보냄</span>':''}</span>
-      <button class="btn ${g.thanked?'btn-ghost':'btn-sage'} btn-sm" style="max-width:120px" onclick="sendCard('${jsq(g.name)}',1)">${g.thanked?'다시 보내기':'카드 보내기'}</button>
-    </div>`).join('')||'<div class="empty">참석·축의한 분이 아직 없어요</div>'}</div>
-    <div class="note">이미지·문구만 만들고 발송은 주최자 본인이 하므로 대량문자 규제를 받지 않아요.</div>
+      <button class="btn ${g.thanked?'btn-ghost':'btn-sage'} btn-sm" style="max-width:120px" onclick="sendCard('${jsq(g.name)}',1)">${g.thanked?'다시 보내기':'보내기'}</button>
+    </div>`).join('')||`<div class="empty">${mem?'조문해 주신 분이 아직 없어요':'참석·축의한 분이 아직 없어요'}</div>`}</div>
+    <div class="note">문구·사진만 준비하고 발송은 주최자 본인이 하므로 대량문자 규제를 받지 않아요.</div>
   </div>`;
 }
 function markThanked(name){ const ev=hostEvent(); if(!ev)return;
   const g=ev.guests.find(x=>x.name===name); if(!g||g.thanked)return;
   g.thanked=Date.now(); save(); if(S.ui.hostSub==='thanks') render(); }
-function sendCard(name,mark){ const ev=hostEvent(); const greeting=personGreeting(ev,name);
-  const st=cardState(ev); const o=cardOpts(ev); // 감사카드는 디자인·사진 모두 무료 (게이트 없음)
-  const svg=cardSVG(st.design, greeting, hostSig(ev), S.ui.cardPhoto, {...o, noText:true}); // 텍스트는 캔버스에서(웹폰트 유지)
-  const L=cardLayout(st.design, greeting, S.ui.cardPhoto, o);
-  loadCardFonts([st.font,'myeongjo'], ()=>
-  svgToPngBlob(svg,800,1000, blob=>{ if(!blob){ copy(greeting); toast('이미지 생성 실패 — 문구를 복사했어요'); return; }
-    const file=new File([blob],`감사카드_${name}.png`,{type:'image/png'});
-    const fb=()=>{ if(noDownload()){ copy(greeting); toast('문구를 복사했어요 — 카톡에 붙여넣어 보내세요'); return; }
-      dlBlob(blob,`감사카드_${name}.png`); copy(greeting); toast('카드 이미지 저장 + 문구 복사 — 문자/카톡에 첨부하세요'); };
-    try{ if(navigator.canShare && navigator.canShare({files:[file]})){
-      navigator.share({files:[file],text:greeting}).then(()=>{ if(mark) markThanked(name); })
-        .catch(err=>{ if(err&&err.name==='AbortError')return; fb(); }); return; } }catch(e){}
-    fb(); }, ctx=>cardPaintText(ctx,L,hostSig(ev)) )); }
+function sendCard(name,mark){ const ev=hostEvent(); const mem=ev.type==='memorial';
+  const text=personGreeting(ev,name)+`\n\n— ${hostSig(ev)} ${mem?'배상':'올림'}`;
+  const done=()=>{ if(mark) markThanked(name); };
+  if(ev.thanksPhoto){
+    try{
+      const parts=ev.thanksPhoto.split(','); const bin=atob(parts[1]);
+      const u8=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+      const mime=((parts[0].match(/data:([^;]+)/)||[])[1])||'image/jpeg';
+      const blob=new Blob([u8],{type:mime});
+      const file=new File([blob],'감사인사.jpg',{type:mime});
+      const fb=()=>{ if(noDownload()){ copy(text); toast('문구를 복사했어요 — 카톡에 사진과 함께 붙여넣어 보내세요'); return; }
+        dlBlob(blob,'감사인사.jpg'); copy(text); toast('사진 저장 + 문구 복사 — 문자/카톡에 첨부하세요'); };
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        navigator.share({files:[file],text}).then(done).catch(err=>{ if(err&&err.name==='AbortError')return; fb(); }); return; }
+      fb(); return;
+    }catch(e){} // 손상된 사진이면 문구만으로 진행
+  }
+  if(navigator.share){ navigator.share({text}).then(done).catch(err=>{ if(err&&err.name==='AbortError')return;
+      copy(text); toast('문구를 복사했어요 — 카톡에 붙여넣어 보내세요'); }); return; }
+  copy(text); toast('감사 인사 문구를 복사했어요 — 카톡에 붙여넣어 보내세요'); }
 function backFromHost2(){ S.ui.hostSub=null; save(); render(); window.scrollTo(0,0); }
 
 /* ======================= 하단 탭 내비 ======================= */
@@ -2960,7 +2905,7 @@ function moreView(){ return `
   <div class="card" style="padding:0 4px 5px">
     <div class="mi-sec">행사 · 기록</div>
     ${moreItem('✍️','내 행사 만들기 · 주최자','청첩장 보내기 · 장부 정리 · 하객 관리',"setTab('host')")}
-    ${moreItem('✉️','감사카드 보내기','파스텔 카드에 사진·문구 담아 카톡으로','openThanksSafe()')}
+    ${moreItem('✉️','감사 인사 보내기','내 카드 사진과 인사말을 카톡으로','openThanksSafe()')}
     ${moreItem('💰','경조사비 가계부','보낸 돈·받은 돈·연간 리포트','openLedger()')}
     ${moreItem('📆','전체 일정 캘린더로 내보내기','모든 경조사를 .ics 파일로','saveAllICSSafe()')}
   </div>
@@ -2989,18 +2934,47 @@ function reminderBanner(){ const soon=upcomingSoon(); if(!soon.length) return ''
       <span class="rm-dd">${dday(ev)}</span></div>
     ${soon.length>1?`<div class="rm-more">외 ${soon.length-1}건이 일주일 내에 있어요</div>`:''}
   </div>`; }
+function notiShow(title,opts){ // Android(설치형/TWA)는 페이지 컨텍스트 new Notification이 막혀 있어 SW 경유가 정석 — 데스크톱은 폴백
+  try{
+    if('serviceWorker' in navigator && navigator.serviceWorker.ready){
+      navigator.serviceWorker.ready.then(r=>{
+        if(r&&r.showNotification) return r.showNotification(title,opts);
+        new Notification(title,opts);
+      }).catch(()=>{ try{ new Notification(title,opts); }catch(e){} });
+      return;
+    }
+    new Notification(title,opts);
+  }catch(e){} }
+let BG_NOTI=false; // periodic sync 가용 여부 — 설정 카피·토글 안내를 정직하게 분기
+try{ if('serviceWorker' in navigator) Promise.race([navigator.serviceWorker.ready.catch(()=>null), new Promise(r=>setTimeout(()=>r(null),4000))])
+  .then(reg=>{ BG_NOTI=!!(reg&&('periodicSync' in reg)); }); }catch(e){}
+function syncNotiPref(){ try{ idbSet('noti', S.ui.noti?'1':'0'); }catch(e){} } // SW(백그라운드 체크)가 읽는 설정 미러
+async function registerDailySync(){ try{ // 설치형 PWA/TWA에서만 지원 — 미지원·미설치는 조용히 무시(앱 열 때 알림으로 폴백)
+  if(!('serviceWorker' in navigator)) return;
+  const reg=await navigator.serviceWorker.ready;
+  if(!reg||!('periodicSync' in reg)) return;
+  try{ const st=await navigator.permissions.query({name:'periodic-background-sync'});
+    if(st&&st.state==='denied') return; }catch(e){}
+  await reg.periodicSync.register('ieum-daily',{minInterval:12*60*60*1000});
+}catch(e){} }
 function toggleNoti(){ if(!('Notification' in window)){ toast('이 브라우저는 알림을 지원하지 않아요'); return; }
-  if(S.ui.noti){ S.ui.noti=false; save(); render(); toast('알림을 껐어요'); return; }
-  Promise.resolve(Notification.requestPermission()).then(p=>{ if(p==='granted'){ S.ui.noti=true; save(); render();
-      try{ new Notification('이음 알림이 켜졌어요', {body:'다가오는 경조사를 미리 알려드릴게요.', icon:'icon-192.png'}); }catch(e){}
+  if(S.ui.noti){ S.ui.noti=false; save(); syncNotiPref(); render(); toast('알림을 껐어요'); return; }
+  Promise.resolve(Notification.requestPermission()).then(p=>{ if(p==='granted'){ S.ui.noti=true; save(); syncNotiPref(); registerDailySync(); render();
+      notiShow('이음 알림이 켜졌어요', {body:BG_NOTI?'경조사 일주일 전·전날·당일에 미리 알려드릴게요.':'앱을 열 때 다가온 경조사를 알려드릴게요.', icon:'icon-192.png'});
       fireDueNotis();
-    } else { toast('알림 권한이 거부되었어요'); } }).catch(()=>toast('알림을 켤 수 없어요')); }
-function fireDueNotis(){ if(!S.ui.noti||!('Notification' in window)||Notification.permission!=='granted')return;
-  const t=new Date(); t.setHours(0,0,0,0);
-  upcomingSoon().forEach(ev=>{ const d=new Date(ev.date+'T00:00'); const days=Math.round((d-t)/86400000);
-    if(days<=1){ try{ const r=reciFor(ev); // 품앗이: 주고받은 분의 행사면 보답 리마인드를 함께
+    } else { toast('알림 권한이 거부되었어요 — 브라우저 설정에서 허용해 주세요'); } }).catch(()=>toast('알림을 켤 수 없어요')); }
+async function fireDueNotis(){ if(!S.ui.noti||!('Notification' in window)||Notification.permission!=='granted')return;
+  let done={}; try{ const raw=await idbGet('notified'); if(raw) done=JSON.parse(raw); }catch(e){} // SW와 발화 기록 공유 — 중복 알림 방지
+  const t=new Date(); t.setHours(0,0,0,0); let dirty=false;
+  upcomingSoon().forEach(ev=>{ if(ev.demo||ev.tut||ev.draft||!(ev.partyA||'').trim()) return; // 샘플·초안·무명 행사 제외
+    const d=new Date(ev.date+'T00:00'); const days=Math.round((d-t)/86400000);
+    if(days!==0&&days!==1) return;
+    const key=ev.id+':'+ev.date+':'+days; if(done[key]) return;
+    try{ const r=reciFor(ev); // 품앗이: 주고받은 분의 행사면 보답 리마인드를 함께
       const reciTxt=r&&r.recvMax>0?(ev.type==='memorial'?` — 🌱 받은 ${won(r.recvMax)}, 마음을 돌려드릴 차례`:` — 🌱 받은 ${won(r.recvMax)}, 보답 잊지 마세요`):'';
-      new Notification(`${evNamePlain(ev)} ${cfg(ev).label} ${dday(ev)}`, {body:`${dateText(ev)} · ${ev.venue||''}`+reciTxt, icon:'icon-192.png', tag:'ieum-'+ev.id}); }catch(e){} } }); }
+      notiShow(`${evNamePlain(ev)} ${cfg(ev).label} ${dday(ev)}`, {body:`${dateText(ev)} · ${ev.venue||''}`+reciTxt, icon:'icon-192.png', tag:'ieum-due-'+ev.id+'-'+days});
+      done[key]=Date.now(); dirty=true; }catch(e){} });
+  if(dirty){ try{ idbSet('notified', JSON.stringify(done)); }catch(e){} } }
 
 /* ======================= 연간 경조사비 리포트 (공유) ======================= */
 function monthlyChart(){ // 최근 6개월 보냄/받음 막대 — 자랑용 공유 없이 나를 위한 요약
@@ -3191,17 +3165,93 @@ const INVITE_PROXIES=[
   u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
   u=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u)
 ];
-async function fetchInviteHtml(url){
+async function fetchInviteBest(url){ // 프록시별 응답 품질이 달라, 파싱 결과가 가장 좋은 것을 채택 (SPA 셸만 받은 경우 다음 프록시 구제)
+  let best=null,bestS=-1;
   for(const mk of INVITE_PROXIES){
     try{ const ctl=new AbortController(); const tm=setTimeout(()=>ctl.abort(),9000);
       const r=await fetch(mk(url),{signal:ctl.signal}); clearTimeout(tm);
       if(!r.ok) continue; const t=await r.text();
-      if(t && t.length>300) return t;
+      if(!t||t.length<300) continue;
+      const p=parseInviteHtml(t,url);
+      const s=(p.accounts?p.accounts.length*3:0)+(p.date?1:0)+(p.venue?1:0)+(p.names?1:0)+(p.img?1:0);
+      if(s>bestS){ bestS=s; best=p; }
+      if(p.accounts&&p.accounts.length&&p.date&&p.venue) break; // 충분히 좋음 — 추가 왕복 생략
     }catch(e){}
   }
-  return null;
+  return best;
+}
+/* SPA 청첩장: 데이터가 script 내 JSON(__NEXT_DATA__ 등)에만 있는 경우가 많음 → 삭제 전에 문자열 값 채굴 */
+function _jsonSlice(s){ let d=0,inS=false,esc=false; // 대입문 뒤 균형 중괄호까지 안전 절단
+  for(let i=0;i<s.length;i++){ const c=s[i];
+    if(esc){esc=false;continue;}
+    if(c==='\\'){esc=true;continue;}
+    if(inS){ if(c==='"')inS=false; continue; }
+    if(c==='"')inS=true; else if(c==='{')d++; else if(c==='}'){d--; if(!d) return s.slice(0,i+1);} }
+  return s; }
+function _jsonLeaves(o,depth,acc){ acc=acc||{n:0}; if((depth||0)>8||acc.n>15000) return ''; let out=''; // acc=전체 예산 공유(레벨별 복리 폭주 방지)
+  if(typeof o==='string'){ const v=o.trim();
+    if(v&&v.length<=120&&!/^(https?:|data:|\/|#|<)/.test(v)){ out=v+'\n'; acc.n+=out.length; } }
+  else if(Array.isArray(o)){ for(const x of o){ out+=_jsonLeaves(x,(depth||0)+1,acc); if(acc.n>15000)break; } }
+  else if(o&&typeof o==='object'){ for(const k in o){ out+=_jsonLeaves(o[k],(depth||0)+1,acc); if(acc.n>15000)break; } }
+  return out; }
+/* 계좌 검출 v2 — 정순(은행→번호)·역순(번호→은행→예금주) 모두, 은행 별칭·전화번호 오탐 제거 */
+const _BANKG='(KB\\s*국민|NH\\s*농협|IBK\\s*기업|SC\\s*제일|iM\\s*뱅크|카카오\\s*뱅크|토스\\s*뱅크|케이\\s*뱅크|새마을\\s*금고|우체국|국민|신한|우리|하나|농협|기업|수협|신협|씨티|부산|대구|광주|경남|전북|제주|산업)';
+function _bankNorm(b){ b=(b||'').replace(/\s+/g,''); return ({'KB국민':'국민','NH농협':'농협','IBK기업':'기업'})[b]||b; }
+const _HOLDER_BAD=/신랑|신부|어머니|아버지|혼주|계좌|은행|전하실|마음|축의|부의|예금주|입금주|복사|송금|입금|번호|하기$|보기$|^(입니다|으로|에게|한테|까지|부터|오시는|약도|안내|문의)/;
+function _parseAccounts(all){
+  all=String(all).replace(/[ \t]+\n/g,'\n').replace(/\n{2,}/g,'\n'); // 빈 줄 정리 — 실제 DOM 텍스트는 태그 사이 개행이 겹겹이라 '개행 1개' 규칙이 어긋남
+  const accounts=[]; const seen=new Set();
+  const push=(bank,num,holder,idx)=>{
+    num=num.replace(/[–—―]/g,'-'); const digits=num.replace(/-/g,'');
+    if(digits.length<10||digits.length>16||seen.has(digits)||accounts.length>=4) return;
+    if(/^01[016789]/.test(digits)&&digits.length<=11) return; // 휴대폰
+    if(/^0[2-6]\d/.test(digits)&&digits.length<=11) return;   // 유선전화 (0XX-XXXX-XXXX 11자리 포함)
+    if(/^070/.test(digits)&&digits.length<=11) return;        // 인터넷전화
+    if(/^050\d/.test(digits)&&digits.length<=12) return;      // 안심번호
+    seen.add(digits);
+    if(holder&&(_HOLDER_BAD.test(holder)||holder.length<2)) holder='';
+    const back=all.slice(Math.max(0,idx-70),idx); // 측 라벨은 보통 앞줄에
+    const label=/신부|장모|장인/.test(back)?'신부측':/신랑/.test(back)?'신랑측':(accounts.length===0?'신랑측':'신부측');
+    accounts.push({label, bank:_bankNorm(bank), number:num, holder:holder||''});
+  };
+  const NUM='\\d[\\d\\-–—―]{7,20}\\d'; // 공백 불허 — 이웃 숫자(연도 등)와의 병합 방지
+  let m;
+  // 역순(번호→은행→예금주) 먼저 — 정순 패턴이 다음 줄 번호와 교차 페어링하는 것을 선점 차단.
+  // 번호↔은행은 개행 1개까지, 예금주는 같은 줄에서 공백으로 구분된 경우만('은행입니다' 조사 미포착)
+  const reB=new RegExp('('+NUM+')[ \\t]*\\n?[ \\t]*'+_BANKG+'(?:은행)?(?:[ \\t]*[:：])?(?:[ \\t]+\\(?([가-힣]{2,4})\\)?)?','g');
+  while((m=reB.exec(all))){ let holder=m[3]||'';
+    if(!holder){ // 예금주가 다음 줄에 오는 DOM 배치 — '단독 이름 줄'일 때만 채택 (인사말 줄 오염 방지)
+      const nl=all.slice(m.index+m[0].length, m.index+m[0].length+40).split('\n');
+      const cand=(/^[ \t]*$/.test(nl[0]||'')?(nl[1]||''):(nl[0]||''));
+      holder=(cand.match(/^[ \t]*\(?([가-힣]{2,4})\)?[ \t]*$/)||[])[1]||''; }
+    push(m[2],m[1],holder,m.index); }
+  // 정순(은행→번호) — 은행↔번호도 개행 1개까지만 (멀리 떨어진 줄 간 오결합 방지)
+  const reA=new RegExp(_BANKG+'(?:은행)?[ \\t]*(?:\\(([가-힣]{2,4})\\))?[ \\t]*[:：]?[ \\t]*\\n?[ \\t]*('+NUM+')','g');
+  while((m=reA.exec(all))){
+    let holder=m[2]||'';
+    const fwd=all.slice(m.index+m[0].length, m.index+m[0].length+70);
+    if(!holder) holder=(fwd.match(/(?:예금주|입금주)[ \t]*[:：]?[ \t]*([가-힣]{2,4})/)||[])[1]||'';
+    if(!holder){ const nl=fwd.split('\n'); // 번호와 같은 줄 잔여 또는 바로 다음 줄의 단독 이름만 (멀리 있는 버튼 텍스트 제외)
+      holder=((nl[0]||'').match(/^[ \t]*\(?([가-힣]{2,4})\)?[ \t]*$/)||((nl[1]||'').match(/^[ \t]*\(?([가-힣]{2,4})\)?[ \t]*$/))||[])[1]||''; }
+    if(!holder){ const back=all.slice(Math.max(0,m.index-30),m.index); holder=(back.match(/([가-힣]{2,4})[ \t]*$/)||[])[1]||''; }
+    push(m[1],m[3],holder,m.index);
+  }
+  return accounts;
 }
 function parseInviteHtml(html, url){
+  // SPA 데이터(JSON) 채굴은 '원본' 문자열에서 — 개행 주입이 JSON 문자열 내부를 깨기 전에
+  let jsonText=''; const _jb={n:0};
+  try{ const sre=/<script\b([^>]*)>([\s\S]*?)<\/script/gi; let sm;
+    while((sm=sre.exec(html)) && _jb.n<=15000){
+      const attrs=sm[1]||'', t=sm[2]||''; if(!t||t.length<20) continue;
+      let obj=null;
+      if(/__NEXT_DATA__|json/i.test(attrs)){ try{ obj=JSON.parse(t); }catch(e){} }
+      else{ const mm=t.match(/(?:__NUXT__|__INITIAL_STATE__|__APOLLO_STATE__|__PRELOADED_STATE__)\s*=\s*(\{[\s\S]*)/);
+        if(mm){ try{ obj=JSON.parse(_jsonSlice(mm[1])); }catch(e){} } }
+      if(obj) jsonText+=_jsonLeaves(obj,0,_jb);
+    } }catch(e){}
+  // 블록 경계에 개행 주입 → textContent가 줄 구조를 보존 (인사말 통짜·이웃 줄 오염 방지)
+  html=html.replace(/<(?:br\s*\/?|\/(?:div|p|li|h[1-6]|tr|td|th|ul|ol|dl|dd|dt|table|section|article|header|footer))\s*>/gi, m=>m+'\n');
   const doc=new DOMParser().parseFromString(html,'text/html');
   const meta=n=>{const m=doc.querySelector(`meta[property="${n}"],meta[name="${n}"]`);return (m&&m.getAttribute('content'))||'';};
   const ogT=meta('og:title'), ogD=meta('og:description'), twT=meta('twitter:title'), twD=meta('twitter:description');
@@ -3209,23 +3259,9 @@ function parseInviteHtml(html, url){
   const title=(doc.querySelector('title')||{}).textContent||'';
   doc.querySelectorAll('script,style,noscript,svg').forEach(e=>e.remove());
   const body=((doc.body&&doc.body.textContent)||'').replace(/[ \t ]+/g,' ').slice(0,30000);
-  const all=[ogT,ogD,twT,twD,title,body].filter(Boolean).join('\n');
+  const all=[ogT,ogD,twT,twD,title,body,jsonText].filter(Boolean).join('\n');
   const p=parseInvite(all); p.url=url; if(ogImg&&/^https:/.test(ogImg)) p.img=ogImg;
-  // 계좌 검출: 은행명 + 계좌번호 패턴 (주변 문맥으로 예금주·신랑/신부측 추정)
-  const acctRe=/(카카오뱅크|토스뱅크|케이뱅크|국민|신한|우리|하나|농협|기업|SC제일|새마을금고|우체국|수협|신협|씨티|부산|대구|광주|경남|전북|제주)\s*(?:은행)?\s*[:：]?\s*(\d[\d\- ]{7,20}\d)/g;
-  p.accounts=[]; const seen=new Set(); let m;
-  while((m=acctRe.exec(all)) && p.accounts.length<4){
-    const num=m[2].replace(/\s+/g,''); const digits=num.replace(/-/g,'');
-    if(digits.length<10||digits.length>14||seen.has(digits)) continue; seen.add(digits);
-    // 문맥: back=앞(측 라벨은 보통 앞에), fwd=뒤(예금주는 보통 번호 뒤에) — 이웃 계좌 줄 오염 방지
-    const back=all.slice(Math.max(0,m.index-40), m.index);
-    const fwd=all.slice(m.index, m.index+m[0].length+60);
-    let holder=(fwd.match(/예금주\s*[:：]?\s*([가-힣]{2,4})/)||[])[1]||'';
-    if(!holder){ holder=(back.match(/([가-힣]{2,4})\s*$/)||[])[1]||''; }
-    if(/신랑|신부|어머니|아버지|혼주|계좌|은행|전하실/.test(holder)) holder='';
-    const label=/신부|장모|장인/.test(back)?'신부측':/신랑/.test(back)?'신랑측':(p.accounts.length===0?'신랑측':'신부측');
-    p.accounts.push({label, bank:m[1], number:num, holder});
-  }
+  p.accounts=_parseAccounts(all);
   return p;
 }
 let _impFetching=false;
@@ -3233,13 +3269,13 @@ async function fetchImportUrl(){
   const base=S.ui.importParsed; if(!base||!base.url||_impFetching) return;
   _impFetching=true; S.ui.importFetching=true; render();
   try{
-    const html=await fetchInviteHtml(base.url);
+    const add=await fetchInviteBest(base.url);
     const cur=S.ui.importParsed; // 사용자가 화면을 떠났으면 중단
     if(!cur || cur.url!==base.url){ return; }
-    if(!html){ toast('청첩장 페이지를 읽지 못했어요 — 아래에서 직접 입력해 주세요'); return; }
-    const add=parseInviteHtml(html, base.url);
+    if(!add){ toast('청첩장 페이지를 읽지 못했어요 — 아래에서 직접 입력해 주세요'); return; }
     // 붙여넣은 텍스트에서 찾은 값이 우선, 빈 곳만 URL 분석값으로 채움
     ['names','date','time','venue'].forEach(k=>{ if(!cur[k]&&add[k]) cur[k]=add[k]; });
+    if(add.type==='memorial'&&cur.type!=='memorial') cur.type='memorial'; // 페이지 본문에서 부고 확인되면 승격
     if(add.img) cur.img=add.img;
     if(add.accounts&&add.accounts.length) cur.accounts=add.accounts;
     save();
@@ -3260,10 +3296,10 @@ function hostUrlChanged(v){ const ev=own(hostEvent()); if(!ev) return;
 async function hostFetchFromUrl(url){ if(_hostFetching) return; _hostFetching=true;
   const evId=S.ui.hostEventId; toast('청첩장 정보를 가져오는 중…'); render();
   try{
-    const html=await fetchInviteHtml(url);
+    const p=await fetchInviteBest(url);
     const ev=S.events.find(e=>e.id===evId); if(!ev) return; // 화면을 떠났으면 중단
-    if(!html){ toast('청첩장 페이지를 읽지 못했어요 — 직접 입력해 주세요 (링크는 저장됨)'); return; }
-    const p=parseInviteHtml(html,url); own(ev);
+    if(!p){ toast('청첩장 페이지를 읽지 못했어요 — 직접 입력해 주세요 (링크는 저장됨)'); return; }
+    own(ev);
     const filled=[];
     const names=(p.names||'').split(/[♥❤♡·]|그리고/).map(s=>s.trim()).filter(Boolean);
     if(!ev.partyA&&names[0]){ ev.partyA=names[0]; filled.push('이름'); }
@@ -3277,8 +3313,9 @@ async function hostFetchFromUrl(url){ if(_hostFetching) return; _hostFetching=tr
       if(v){ ev.venue=v; filled.push('장소'); } }
     if(p.img&&!ev.shareImg){ ev.shareImg=p.img; filled.push('공유 썸네일'); }
     if(p.accounts&&p.accounts.length){ let acctN=0;
-      p.accounts.forEach(pa=>{ // 같은 라벨의 빈 슬롯 우선, 없으면 아무 빈 슬롯 — 채워진 계좌는 건드리지 않음
-        const slot=ev.accounts.find(a=>a.label===pa.label&&!a.number) || ev.accounts.find(a=>!a.number);
+      p.accounts.forEach(pa=>{ // 같은 라벨의 빈 슬롯 우선 → 아무 빈 슬롯 → 슬롯 부족 시 새 행 추가(최대 6) — 채워진 계좌는 불변
+        let slot=ev.accounts.find(a=>a.label===pa.label&&!a.number) || ev.accounts.find(a=>!a.number);
+        if(!slot&&ev.accounts.length<6){ slot={label:pa.label||'혼주측',bank:'',number:'',holder:''}; ev.accounts.push(slot); }
         if(slot){ slot.bank=pa.bank; slot.number=pa.number; if(pa.holder) slot.holder=pa.holder; acctN++; } });
       if(acctN) filled.push(`계좌 ${acctN}개`); }
     save();
@@ -3288,16 +3325,18 @@ async function hostFetchFromUrl(url){ if(_hostFetching) return; _hostFetching=tr
   } finally { _hostFetching=false; render(); } }
 
 function addImported(){
-  const names=($('#ip_names').value||'').split(/[♥❤♡·]|그리고/).map(s=>s.trim()).filter(Boolean);
+  const p=S.ui.importParsed||{}; const mem=p.type==='memorial';
+  const names=mem?[($('#ip_names').value||'').trim()]:($('#ip_names').value||'').split(/[♥❤♡·]|그리고/).map(s=>s.trim()).filter(Boolean);
   // 계좌 입력칸(자동 검출값 포함)에서 읽기 — 번호가 있는 행만 채택
   const accounts=[];
-  for(let i=0;i<2;i++){
+  for(let i=0;i<(mem?1:4);i++){
+    if(!document.getElementById('ip_num'+i)) break; // 화면에 렌더된 행까지만
     const num=gv('ip_num'+i).trim(); if(!num) continue;
-    accounts.push({ label:i===0?'신랑측':'신부측', bank:gv('ip_bank'+i)||'카카오뱅크', number:num, holder:gv('ip_hold'+i).trim() });
+    accounts.push({ label:mem?'상주측':(i===0?'신랑측':i===1?'신부측':'혼주측'), bank:gv('ip_bank'+i)||'카카오뱅크', number:num, holder:gv('ip_hold'+i).trim() });
   }
-  if(!accounts.length){ accounts.push({label:'신랑측',bank:'카카오뱅크',number:'',holder:''},{label:'신부측',bank:'토스뱅크',number:'',holder:''}); }
-  const p=S.ui.importParsed||{};
-  const ev={ id:uid('e'), role:'guest', type:'wedding', partyA:names[0]||'', partyB:names[1]||'', subtitle:'결혼합니다',
+  if(!accounts.length){ accounts.push(...(mem?[{label:'상주측',bank:'카카오뱅크',number:'',holder:''}]
+    :[{label:'신랑측',bank:'카카오뱅크',number:'',holder:''},{label:'신부측',bank:'토스뱅크',number:'',holder:''}])); }
+  const ev={ id:uid('e'), role:'guest', type:p.type||'wedding', partyA:names[0]||'', partyB:names[1]||'', subtitle:mem?'부고':(p.type==='hwahon'?'화혼을 올립니다':'결혼합니다'),
     date:$('#ip_date').value||'', time:$('#ip_time').value||'12:00', venue:$('#ip_venue').value||'', address:'', message:'',
     externalUrl:$('#ip_url').value||'', shareImg:p.img||'',
     accounts, guests:[] };
@@ -3306,6 +3345,8 @@ function addImported(){
   reciToastFor(ev); }
 function parseInvite(text){
   const res={names:'',date:'',time:'',venue:'',url:''};
+  // 부고 감지 — 부고 텍스트를 결혼식으로 오분류해 ♥·신랑측 계좌가 붙는 톤 사고 방지
+  res.type=/부고|삼가\s*고인|발인|빈소|장례식장|명복을|영면|별세|작고|조의금|조문/.test(text)?'memorial':'wedding';
   const um=text.match(/https?:\/\/[^\s]+/); if(um) res.url=um[0];
   let y,mo,d, m=text.match(/(20\d{2})\s*[년.\-\/]\s*(\d{1,2})\s*[월.\-\/]\s*(\d{1,2})/);
   if(m){ y=+m[1]; mo=+m[2]; d=+m[3]; }
@@ -3318,17 +3359,56 @@ function parseInvite(text){
   if(tm){ if(tm[1]==='오후')pm=true; if(tm[1]==='오전')am=true; hh=+tm[2]; if(tm[3])mm=+tm[3]; }
   else if(tm=text.match(/\b(\d{1,2}):(\d{2})\b/)){ hh=+tm[1]; mm=+tm[2]; }
   if(hh!=null){ if(pm&&hh<12)hh+=12; if(am&&hh===12)hh=0; if(hh>=0&&hh<=23) res.time=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0'); }
+  if(res.type==='memorial'){ // 고인 이름: 故 표기 우선, 없으면 '별세' 인접 이름 — 호칭(님)은 제거
+    const gm=text.match(/故\s*([가-힣]{2,4})/)||text.match(/([가-힣]{2,4})\s*님?\s*(?:께서\s*)?(?:별세|작고|영면)/);
+    if(gm) res.names='故 '+gm[1].replace(/님$/,'');
+  } else {
   let nm=text.match(/([가-힣]{2,4})\s*[♥❤♡💕&,·]\s*([가-힣]{2,4})/);
   if(!nm) nm=text.match(/신랑\s*[:：]?\s*([가-힣]{2,4})[\s\S]{0,24}신부\s*[:：]?\s*([가-힣]{2,4})/);
   const badNm=/^(부고|삼가|결혼|화혼|혼인|안내|예식|모바일|청첩장|초대장|초대|감사|마음|오전|오후|본식|피로연|장소|일시|축하)$/;
   if(nm && (badNm.test(nm[1])||badNm.test(nm[2]))) nm=null;
   if(nm) res.names=nm[1]+' ♥ '+nm[2];
-  const vk=/(웨딩|컨벤션|호텔|예식장|홀|가든|하우스|채플|파티움|아트홀|타워|클럽|더라움|루체|아펠가모|메리어트|그랜드|워커힐|라마다|롯데|신라|반얀트리|스퀘어|컨벤션센터)/;
-  for(const ln of text.split(/[\n\r]+/)){ if(vk.test(ln)){ res.venue=ln.trim().slice(0,40); break; } }
+  }
+  res.venue=_parseVenue(text);
   return res;
 }
-function importAcctRow(i,a){ const banks=[...BANKS]; if(a&&a.bank&&!banks.includes(a.bank)) banks.unshift(a.bank);
-  return `<label style="margin-top:${i?10:8}px">${i===0?'신랑측':'신부측'} 계좌 ${a&&a.number?'<span style="color:var(--ok);font-weight:600;font-size:11px">· 자동 검출</span>':'<span style="font-weight:400;color:var(--muted)">(선택)</span>'}</label>
+function _stripDT(s){ return s // 장소 줄에 섞인 날짜·요일·시간 조각 제거
+  .replace(/20\d{2}\s*[년.\-\/]\s*\d{1,2}\s*[월.\-\/]\s*\d{1,2}\s*일?/g,'')
+  .replace(/\(?[월화수목금토일]\s*요일\)?|\([월화수목금토일]\)/g,'')
+  .replace(/(오전|오후)\s*\d{1,2}\s*시\s*(\d{1,2}\s*분)?|\d{1,2}\s*:\s*\d{2}/g,'')
+  .replace(/\s{2,}/g,' ').trim(); }
+function _parseVenue(text){
+  const lines=[]; text.split(/[\n\r]+/).forEach(l=>{ l=l.trim(); if(!l) return;
+    if(l.length>60){ l.split(/[.!?…]\s+/).forEach(x=>{ x=x.trim(); if(x)lines.push(x); }); } else lines.push(l); });
+  const NAVI=/카카오내비|네이버지도|티맵|자세히보기|지도보기|약도|주차|버스|지하철|셔틀|복사|길찾기/;
+  const GREET=/(합니다|드립니다|드려요|해요|주세요|모시|축하|축복|감사|마음|저희|초대|배송|바랍니다|됩니다|입니다)/;
+  // 1) '오시는 길' 류 섹션 제목 다음의 짧은 상호 줄 — 키워드 없는 상호(메종디탈리 등) 대응
+  for(let i=0;i<lines.length;i++){
+    if(!/^(오시는\s?[길곳]|LOCATION|위치|위치\s?안내|장소|장소\s?안내|예식장\s?안내|웨딩홀\s?안내)\s*$/i.test(lines[i])) continue;
+    for(let k=i+1;k<Math.min(i+6,lines.length);k++){ const l=lines[k];
+      if(NAVI.test(l)||/^[\d\s\-()+:~.]+$/.test(l)||/^(tel|전화|문의)/i.test(l)) continue;
+      const v=_stripDT(l);
+      if(v.length>=2&&v.length<=32&&!GREET.test(v)) return v.slice(0,40);
+    }
+    break;
+  }
+  // 2) 키워드 후보 스코어링 — '첫 매치 승리'가 인사말 통짜를 집던 문제를 최고점 선택으로 교체
+  const vk=/(웨딩|컨벤션|호텔|예식장|홀|가든|하우스|채플|파티움|아트홀|타워|클럽|더라움|루체|아펠가모|메리어트|그랜드|워커힐|라마다|롯데|신라|반얀트리|스퀘어|컨벤션센터|성당|교회|장례식장)/;
+  let best='',bestS=-99,bestSpec=false;
+  for(const l0 of lines){ if(!vk.test(l0)) continue; const l=_stripDT(l0); if(!l) continue;
+    let s=0; const spec=/(웨딩홀|컨벤션|아트홀|채플|예식장|가든|파티움|성당|교회|장례식장)/.test(l);
+    if(spec) s+=2;
+    if(l.length<=16) s+=2; else if(l.length<=26) s+=1; else s-=2;
+    if(GREET.test(l)) s-=4;
+    if(NAVI.test(l)) s-=3;
+    if(/\d+\s*층|[가-힣A-Za-z]+\s*홀\s*$/.test(l)) s+=1;
+    if(s>bestS){ bestS=s; best=l; bestSpec=spec; } }
+  // 0점이라도 구체 시설어(웨딩홀 등)가 있으면 채택 — '○○웨딩홀에서 결혼합니다'형 og:description 구제
+  return (bestS>0||(bestS===0&&bestSpec))?best.slice(0,40):'';
+}
+function importAcctRow(i,a,type){ const banks=[...BANKS]; if(a&&a.bank&&!banks.includes(a.bank)) banks.unshift(a.bank);
+  const lbl=type==='memorial'?'상주측':(i===0?'신랑측':i===1?'신부측':'혼주측');
+  return `<label style="margin-top:${i?10:8}px">${lbl} 계좌 ${a&&a.number?'<span style="color:var(--ok);font-weight:600;font-size:11px">· 자동 검출</span>':'<span style="font-weight:400;color:var(--muted)">(선택)</span>'}</label>
   <div class="row">
     <div style="max-width:34%"><select id="ip_bank${i}">${banks.map(b=>`<option ${a&&a.bank===b?'selected':''}>${b}</option>`).join('')}</select></div>
     <div><input id="ip_num${i}" placeholder="계좌번호" value="${esc(a?a.number:'')}"></div>
@@ -3354,17 +3434,23 @@ function importView(){
   ${p&&!S.ui.importFetching?`<div class="card" id="imp-result">
     <h3>찾은 정보 · 확인 후 추가</h3>
     <p class="sub">자동으로 채운 값입니다. 틀린 곳은 직접 고쳐주세요.</p>
-    <label>이름</label><input id="ip_names" value="${esc(p.names)}" placeholder="예: 김민준 ♥ 이서연">
-    <div class="row"><div><label>날짜</label><input id="ip_date" type="date" value="${p.date}"></div>
+    <label>경조사 유형</label>
+    <div class="seg2">
+      ${['wedding','hwahon','memorial'].map(tp=>`<button class="${(p.type||'wedding')===tp?'on':''}" onclick="setImportType('${tp}')">${TYPES[tp].icon} ${TYPES[tp].label}</button>`).join('')}
+    </div>
+    <label style="margin-top:10px">${p.type==='memorial'?'고인 성함':'이름'}</label><input id="ip_names" value="${esc(p.names)}" placeholder="${p.type==='memorial'?'예: 故 김정호':'예: 김민준 ♥ 이서연'}">
+    <div class="row"><div><label>${p.type==='memorial'?'발인일':'날짜'}</label><input id="ip_date" type="date" value="${p.date}"></div>
       <div><label>시간</label><input id="ip_time" type="time" value="${p.time}"></div></div>
-    <label>장소</label><input id="ip_venue" value="${esc(p.venue)}">
-    <label>청첩장 링크</label><input id="ip_url" value="${esc(p.url)}" placeholder="https://...">
-    ${importAcctRow(0,accs[0])}
-    ${importAcctRow(1,accs[1])}
-    ${p.img?`<div class="note" style="margin-top:10px">🖼️ 청첩장 대표 사진도 함께 저장돼요 — 카톡 공유 시 썸네일로 쓰입니다.</div>`:''}
+    <label>${p.type==='memorial'?'빈소':'장소'}</label><input id="ip_venue" value="${esc(p.venue)}">
+    <label>${p.type==='memorial'?'부고장':'청첩장'} 링크</label><input id="ip_url" value="${esc(p.url)}" placeholder="https://...">
+    ${p.type==='memorial'?importAcctRow(0,accs[0],p.type)
+      :Array.from({length:Math.max(2,Math.min(4,accs.length))},(_,i)=>importAcctRow(i,accs[i],p.type)).join('')}
+    ${p.img?`<div class="note" style="margin-top:10px">🖼️ ${p.type==='memorial'?'부고장':'청첩장'} 대표 사진도 함께 저장돼요 — 카톡 공유 시 썸네일로 쓰입니다.</div>`:''}
     <button class="btn btn-sage" style="margin-top:13px" onclick="addImported()">＋ 내 경조사에 추가</button>
   </div>`:''}`;
 }
+function setImportType(t){ if(!S.ui.importParsed) return; S.ui.importParsed.type=t; save(); render();
+  setTimeout(()=>{ const el=document.getElementById('imp-result'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); },60); }
 
 /* ======================= 예상 하객·예산 계산기 ======================= */
 function planVals(ev){ const pl=ev.plan||{};
@@ -3589,6 +3675,7 @@ window.addEventListener('popstate', ()=>{
   if(atTopLevel()) return; // 최상위면 그대로 — 한 번 더 누르면 종료
   try{
     if(document.getElementById('calsheet')) closeCalSheet();
+    else if(document.getElementById('mapsheet')) closeMapSheet();
     else if(document.getElementById('tiepop')) closeTiePop();
     else if(document.getElementById('rgsheet')) closeRestoreGuide();
     else if(document.getElementById('calpop')) closeCalPopup();
@@ -3616,14 +3703,20 @@ try{ if(!TUT.on && cleanupDemo()) {} }catch(e){}  // 튜토리얼 중 앱이 꺼
 render();
 try{ tryAutoRecover(); }catch(e){}
 try{ payRecoverBoot(); }catch(e){}  // 미완 결제 자동 복구(승인 유실·설치앱 파티션)
-try{ if(S.ui.noti) fireDueNotis(); }catch(e){}
+try{ syncNotiPref(); if(S.ui.noti){ fireDueNotis(); registerDailySync(); } }catch(e){} // 설정 미러는 항상 (꺼짐도 SW에 전달 — 복구 후 유령 알림 방지)
+try{ if('serviceWorker' in navigator){ navigator.serviceWorker.addEventListener('message',ev=>{ // 알림 클릭 → 해당 행사로
+    if(ev.data&&ev.data.type==='open-event'&&ev.data.evId&&S.events.some(e=>e.id===ev.data.evId)){ S.ui.entered=true; openEvent(ev.data.evId); } });
+  const evq=new URLSearchParams(location.search).get('ev');
+  if(evq&&S.events.some(e=>e.id===evq)){ S.ui.entered=true; openEvent(evq); history.replaceState(null,'',location.pathname+location.hash); } } }catch(e){}
 try{ relayPull(); }catch(e){}  // 호스트: 릴레이 사서함의 하객 응답 자동 반영 (RELAY.url 설정 시에만)
 try{ bootRawSnapshot(); }catch(e){}  // 업데이트 직후에도 '가공 전 원본' 3세대 보존
 /* 종료·백그라운드 전환 시 자동 백업(기기 내 미러+스냅샷) — 리마인더 없이 항상 최신 유지 */
+function flushMirror(){ // 종료 직전엔 600ms 디바운스가 죽으므로 즉시 기록 — SW 백그라운드 알림이 마지막 순간의 행사도 보게
+  try{ if(typeof TUT!=='undefined'&&TUT.on) return; clearTimeout(_mirrorT); idbSet('state', JSON.stringify(coreData())); }catch(e){} }
 addEventListener('visibilitychange',()=>{ if(document.visibilityState!=='hidden') return;
   try{ localStorage.setItem(LS, JSON.stringify(S)); }catch(e){}
-  try{ mirror(); }catch(e){} try{ dailySnapshot(); }catch(e){} });
-addEventListener('pagehide',()=>{ try{ mirror(); }catch(e){} });
+  flushMirror(); try{ dailySnapshot(); }catch(e){} });
+addEventListener('pagehide',()=>{ flushMirror(); });
 
 /* PWA: 서비스 워커 등록 */
 if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('./service-worker.js?v=3').catch(()=>{});});}
