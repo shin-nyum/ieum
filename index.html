@@ -829,7 +829,8 @@ async function shareEvent(ev){
   if(ev.externalUrl && ev.shareImg){
     const pr=await _probeImg(ev.shareImg); // 실측 크기 확보(카카오 렌더 비율 힌트)
     if(RELAY.url){ ogImg=RELAY.url+'/img?u='+encodeURIComponent(ev.shareImg); ogDim=pr?{imageWidth:pr.w,imageHeight:pr.h}:{}; } // 프록시 경유 — 차단 CDN도 썸네일 유지
-    else if(pr){ ogImg=ev.shareImg; ogDim={imageWidth:pr.w,imageHeight:pr.h}; } }
+    // 프록시 없이 외부 CDN을 직접 넣으면 폰에서 로드돼도 카카오 서버 검증(핫링크·리퍼러)에 막혀 4002 → 릴레이 프록시 배포 전까지 자체 썸네일 (출시 후 실기기 4002 재현 2026-09-07)
+  }
   const text=`${evNamePlain(ev)} ${ev.subtitle}\n${dateText(ev)} · ${ev.venue}\n${mem?'부고 확인·조의 전하기':'청첩장 확인·캘린더·축의금 보내기'} ▸`;
   const ready=window.Kakao&&Kakao.isInitialized&&Kakao.isInitialized();
   if(ready){
