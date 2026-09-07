@@ -1,13 +1,34 @@
 {
-  "appId": "io.github.shinnyum.ieum",
+  "appId": "kr.ieum.app",
   "appName": "이음",
   "webDir": "www",
   "server": {
+    "androidScheme": "https",
     "iosScheme": "https",
-    "hostname": "shin-nyum.github.io"
+    "hostname": "shin-nyum.github.io",
+    "appStartPath": "/ieum/index.html"
+  },
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#F3EFE8",
+    "webContentsDebuggingEnabled": false
   },
   "ios": {
     "contentInset": "automatic",
     "backgroundColor": "#f3efe8"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "launchShowDuration": 0,
+      "backgroundColor": "#F3EFE8",
+      "androidScaleType": "CENTER_INSIDE",
+      "splashFullScreen": false,
+      "splashImmersive": false
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_notification_icon",
+      "iconColor": "#8F6852"
+    }
   }
 }

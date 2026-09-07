@@ -107,6 +107,17 @@ export default {
         return json({ n: parseInt((await env.REPLIES.get('op:' + k)) || '0', 10) });
       }
 
+      // 네이티브 앱 OTA 웹 번들 프록시 — 앱 WebView는 자기 오리진(shin-nyum.github.io) 요청을 로컬 서버가 가로채므로
+      // GitHub Pages의 최신 파일은 이 경유로만 받을 수 있다. 경로 화이트리스트 + 짧은 엣지 캐시.
+      if (req.method === 'GET' && url.pathname === '/web') {
+        const p = String(url.searchParams.get('p') || '');
+        if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,80}(\/[A-Za-z0-9._-]{1,80}){0,3}$/.test(p) || p.includes('..')) return json({ error: 'BAD_PATH' }, 400);
+        const r = await fetch('https://shin-nyum.github.io/ieum/' + p, { cf: { cacheTtl: 60, cacheEverything: true } });
+        if (!r.ok) return json({ error: 'UPSTREAM', status: r.status }, 502);
+        const ct = r.headers.get('content-type') || 'application/octet-stream';
+        return new Response(r.body, { headers: { 'Content-Type': ct, 'Cache-Control': 'no-store', ...CORS } });
+      }
+
       return json({ error: 'NOT_FOUND' }, 404);
     } catch (e) {
       return json({ error: 'INTERNAL', detail: String(e && e.message || e) }, 500);

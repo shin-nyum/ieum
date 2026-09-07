@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 이하 자동 백업 규칙: 기록 파일(files/ieum/)만 구글 드라이브에 백업. WebView 저장소·캐시·다운로드 웹번들은 제외 -->
+<full-backup-content>
+    <include domain="file" path="ieum/" />
+</full-backup-content>

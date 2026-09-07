@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ 자동 백업·기기 이전 규칙: 기록 파일(files/ieum/)만 -->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="file" path="ieum/" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="file" path="ieum/" />
+    </device-transfer>
+</data-extraction-rules>

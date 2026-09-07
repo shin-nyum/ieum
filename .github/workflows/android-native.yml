@@ -1,0 +1,57 @@
+name: Android Native (Capacitor .aab)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "native/android/**"
+      - "native/capacitor.config.json"
+      - "native/copy-web.js"
+      - "native/web-stub.js"
+      - "native/package.json"
+      - ".github/workflows/android-native.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "21" }
+
+      - name: Web assets → www, sync Capacitor
+        working-directory: native
+        run: |
+          npm ci --no-audit --no-fund
+          node copy-web.js
+          npx cap sync android
+
+      - name: Restore upload keystore
+        run: echo "${{ secrets.KEYSTORE_B64 }}" | base64 -d > native/android/ieum-upload.keystore
+
+      - name: Build signed bundle & APK
+        working-directory: native/android
+        env:
+          IEUM_KEYSTORE_FILE: ${{ github.workspace }}/native/android/ieum-upload.keystore
+          IEUM_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          IEUM_KEY_ALIAS: android
+          IEUM_KEY_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon bundleRelease assembleRelease
+          rm -f ieum-upload.keystore
+          cp app/build/outputs/bundle/release/app-release.aab ieum-native-release.aab
+          cp app/build/outputs/apk/release/app-release.apk ieum-native-release.apk
+          ls -la ieum-native-release.aab ieum-native-release.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ieum-android-native
+          path: |
+            native/android/ieum-native-release.aab
+            native/android/ieum-native-release.apk
+          retention-days: 30

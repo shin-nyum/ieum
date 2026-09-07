@@ -478,7 +478,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v94'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v95'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -574,7 +574,7 @@ function migrate(o){ // 어떤 과거 상태가 와도 안전하게 현재 스�
     if(!e.id || seen.has(e.id)) e.id=uid('e'); seen.add(e.id);
     if(typeof e.type!=='string'||!TYPES[e.type]) e.type='wedding';
     ['partyA','partyB','subtitle','date','time','venue','address','message','externalUrl'].forEach(k=>{ if(typeof e[k]!=='string') e[k]=e[k]==null?'':String(e[k]); });
-    if(typeof e.invitePhoto!=='string' || !/^data:image\//.test(e.invitePhoto)) delete e.invitePhoto; // 복원 페이로드의 위조 값(스크립트 주입) 차단 — data:image/ 만 허용
+    delete e.invitePhoto; // 초대카드 기능 철거(2026-09) — 잔존 사진 데이터 제거
     if(typeof e.thanksPhoto!=='string' || !/^data:image\//.test(e.thanksPhoto)) delete e.thanksPhoto;
     if(!Array.isArray(e.accounts)) e.accounts=[];
     e.accounts=e.accounts.filter(a=>a&&typeof a==='object');
@@ -611,18 +611,12 @@ function idbGet(k){ return idbOpen().then(db=>new Promise(res=>{ const tx=db.tra
 function coreData(){ return {events:S.events, people:S.people, settings:S.settings, meta:S.meta, theme:S.ui.theme||'auto'}; }
 let _mirrorT=null;
 function mirror(){ clearTimeout(_mirrorT); _mirrorT=setTimeout(()=>{ try{ idbSet('state', JSON.stringify(coreData())); }catch(e){} }, 600); }
-function tryAutoRecover(){ // 부팅 시: LS는 비었는데 미러에 실데이터가 있으면 복구
-  if(localStorage.getItem('ieum_wiped')){ return; } // 사용자가 명시 삭제함 — 미러로 되살리지 않음
-  if(S.events.length||S.people.length) { dailySnapshot(); return; }
-  idbGet('state').then(rawStr=>{ try{ const raw=rawStr&&JSON.parse(rawStr);
-    if(raw && ((raw.events&&raw.events.length)||(raw.people&&raw.people.length))){
-      // 복구 도착이 자동 튜토리얼과 경합하면: 투어를 정리하고 실데이터를 채택(데모 주입분은 abort가 제거)
-      try{ if(typeof TUT!=='undefined' && TUT.on) abortTutorial(); }catch(_){}
-      S.events=raw.events||[]; S.people=raw.people||[]; S.settings={...S.settings,...(raw.settings||{})};
-      S.meta={...S.meta,...(raw.meta||{})}; if(raw.theme)S.ui.theme=raw.theme;
-      S=migrate(S); try{ cleanupDemo(); }catch(_){} // 미러에 실려온 데모도 정리
-      save(); applyTheme(); render(); toast('저장소에서 데이터를 자동 복구했어요');
-    } }catch(e){} dailySnapshot(); });
+function tryAutoRecover(){ // 부팅 시: LS는 비었는데 미러(IDB)에 실데이터가 있으면 복구 → 그래도 비면 앱 내부 파일(네이티브)에서
+  if(localStorage.getItem('ieum_wiped')){ return Promise.resolve(); } // 사용자가 명시 삭제함 — 미러로 되살리지 않음
+  if(S.events.length||S.people.length) { dailySnapshot(); return Promise.resolve(); }
+  return idbGet('state').then(rawStr=>{ try{ const raw=rawStr&&JSON.parse(rawStr);
+    if(raw && ((raw.events&&raw.events.length)||(raw.people&&raw.people.length))) adoptRaw(raw); }catch(e){}
+    return nativeRecover().catch(()=>false); }).then(()=>{ dailySnapshot(); });
 }
 const APP_VER='1.2'; // 데이터 보호 정책 버전 — 부팅 스냅샷 라벨용
 function bootRawSnapshot(){ // 업데이트/마이그레이션 버그 대비: 가공 전 localStorage 원본을 3세대 롤링 보관 (IDB)
@@ -651,6 +645,7 @@ function save(){
   catch(e){ toast('저장 공간이 부족해요 — 데이터 정리나 백업을 권장'); }
   // 미러 갱신 제외 2경우: stale 탭 내비 저장 / 튜토리얼 중 데모 상태(자동복구 유일본을 데모로 덮는 사고 방지)
   if(changed && !(typeof TUT!=='undefined' && TUT.on)) mirror();
+  if(changed){ try{ nativeMirror(); nativeNotiSync(); }catch(_){} } // 네이티브: 앱 내부 파일 미러·알림 예약 (웹에선 no-op)
 }
 _lastDataSig=dataSig(); // 부팅 기준선
 function reset(){
@@ -660,6 +655,7 @@ function reset(){
   localStorage.removeItem(LS);
   try{ localStorage.setItem('ieum_wiped','1'); }catch(e){}           // 미러 부활 방지
   try{ indexedDB.deleteDatabase('ieum-db'); }catch(e){}              // state·snaps·pre-restore 전부 삭제
+  try{ nativeWipe(); }catch(e){}                                     // 네이티브 앱 내부 파일도
   S=seed(); _lastDataSig=dataSig(); applyTheme(); render(); toast('모든 데이터를 삭제했어요');
 }
 /* ---- 멀티탭 동기화: 다른 탭이 저장하면 이 탭도 그 상태를 채택 (last-writer 덮어쓰기 방지) ---- */
@@ -680,7 +676,8 @@ try{ if(navigator.storage&&navigator.storage.persist&&!localStorage.getItem('ieu
 function applyTheme(){ const t=(S.ui&&S.ui.theme)||'auto';
   const dark = t==='dark' || (t==='auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
   document.documentElement.dataset.theme = dark?'dark':'light';
-  const m=document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute('content', dark?'#201d19':'#a87f6a'); }
+  const m=document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute('content', dark?'#201d19':'#a87f6a');
+  try{ nativeStatusBar(); }catch(e){} }
 function setTheme(t){ S.ui.theme=t; save(); applyTheme(); render(); }
 try{ if(window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{ if(((S.ui&&S.ui.theme)||'auto')==='auto') applyTheme(); }); }catch(e){}
 
@@ -835,7 +832,7 @@ async function shortInviteLink(ev){ // 카카오 카드 전용 — 모바일 패
 async function shareEvent(ev){
   const link = (await shortInviteLink(ev)) || inviteLink(ev); const c=cfg(ev); const mem=ev.type==='memorial';
   // 썸네일 우선순위: ①연결된 청첩장 썸네일(브라우저에서 로드 확인된 경우만 — 차단 CDN이면 Failed request 방지 위해 제외)
-  // ②주최자가 고른 초대카드 디자인(자체 호스팅) ③기본 og 이미지
+  // ②기본 og 이미지 (초대카드 이미지 발송은 2026-09 철거 — 링크+썸네일만)
   let ogImg=mem?'https://shin-nyum.github.io/ieum/og-memorial3.jpg':'https://shin-nyum.github.io/ieum/og-image3.jpg';
   let ogDim={imageWidth:800,imageHeight:400}; // 크기 미명시 시 카카오가 확대·중앙크롭 → 잘림
   if(ev.externalUrl && ev.shareImg){
@@ -847,7 +844,7 @@ async function shareEvent(ev){
   const ready=window.Kakao&&Kakao.isInitialized&&Kakao.isInitialized();
   if(ready){
     // 모바일 카카오톡은 패킷 10K 상한 — 초대링크(인사말 포함)가 카드에 반복될수록 폭발(실기기 4002 재현) → 버튼 없이 카드 탭으로 열기(링크 2회), 그래도 크면 1회로 축소
-      const tpl=(lk)=>({objectType:'feed', content:{title:`${evNamePlain(ev)} ${ev.subtitle}`, description:`${dateText(ev)} · ${ev.venue}${mem?' · 탭하여 부고 확인':' · 탭하여 청첩장 열기'}`, imageUrl:ogImg, ...ogDim, link:lk}});
+      const tpl=(lk)=>({objectType:'feed', installTalk:true, content:{title:`${evNamePlain(ev)} ${ev.subtitle}`, description:`${dateText(ev)} · ${ev.venue}${mem?' · 탭하여 부고 확인':' · 탭하여 청첩장 열기'}`, imageUrl:ogImg, ...ogDim, link:lk}});
       let settings=tpl({mobileWebUrl:link,webUrl:link});
       const psize=(t)=>encodeURIComponent(JSON.stringify(t)).length+400; // 인텐트 URI 근사(고정 파라미터 여유 포함)
       if(psize(settings)>9500) settings=tpl({webUrl:link}); // 링크 1회 — 모바일은 webUrl로 열림
@@ -927,7 +924,7 @@ function shareReply(ev,code,nm,me,opt){ const o=opt||{incR:true,incP:true};
   }
   const summary=lines.join('\n');
   const ready=window.Kakao&&Kakao.isInitialized&&Kakao.isInitialized();
-  if(ready){ try{ Kakao.Share.sendDefault({objectType:'feed',
+  if(ready){ try{ Kakao.Share.sendDefault({objectType:'feed', installTalk:true,
       content:{title:`[이음] ${nm}입니다`, description:summary.split('\n').slice(1).join(' · ')||'마음을 전했어요',
         imageUrl:'https://shin-nyum.github.io/ieum/og-image3.jpg', imageWidth:800, imageHeight:400, link:{mobileWebUrl:link,webUrl:link}},
       buttons:[{title:'장부에 반영하기', link:{mobileWebUrl:link,webUrl:link}}]}); return; }catch(e){} }
@@ -967,7 +964,7 @@ async function relayPull(){ if(!RELAY.url) return; // 호스트: 내 행사 사�
         if(o.k===evKey(ev) && mergeGuestReply(ev,o)) n++; }catch(e){} });
       if(n){ save(); render(); setTimeout(()=>toast(`하객 응답 ${n}건이 장부에 자동 반영됐어요 ✓`),300); }
     }catch(e){} } }
-/* ---- 초대카드 이미지 공유: 문자·라인·인스타 DM 등 OG 썸네일이 없는 채널에서도 따뜻한 카드로 전달 ---- */
+/* ---- 청첩장 썸네일 실측(카카오 렌더 비율 힌트) ---- */
 const _probeCache={}; // URL별 결과 캐시 — 재공유 시 대기 없이
 function _probeImg(url,ms){ if(url in _probeCache) return Promise.resolve(_probeCache[url]);
   return new Promise(res0=>{ const res=v=>{ _probeCache[url]=v; res0(v); }; try{ if(!url||!/^https:/.test(url)) return res(false);
@@ -975,73 +972,6 @@ function _probeImg(url,ms){ if(url in _probeCache) return Promise.resolve(_probe
   im.onload=()=>{ if(!done){done=true;clearTimeout(t);res({w:im.naturalWidth||800,h:im.naturalHeight||400});} };
   im.onerror=()=>{ if(!done){done=true;clearTimeout(t);res(false);} };
   im.src=url; }catch(e){ res(false); } }); }
-function inviteCardSVG(ev,ci){ // 800x1000 좌표계(감사카드 장식 재활용) — 결혼=꽃 코너, 부고=국화 조의톤, 사진=상단 히어로
-  const mem=ev.type==='memorial'; const c=CARDS[ci!=null?ci:(mem?2:1)]; const P=c.pal;
-  const grad=`<linearGradient id="ivg" x1="0" y1="0" x2="0" y2="1">${c.bg.map((col,i)=>`<stop offset="${i/(c.bg.length-1)}" stop-color="${col}"/>`).join('')}</linearGradient>`;
-  const ph=ev.invitePhoto?`<clipPath id="ivp"><rect x="48" y="48" width="704" height="420" rx="18"/></clipPath>
-    <image href="${esc(ev.invitePhoto)}" x="48" y="48" width="704" height="420" preserveAspectRatio="xMidYMid slice" clip-path="url(#ivp)"/>
-    <rect x="48" y="48" width="704" height="420" rx="18" fill="none" stroke="${c.accent}" stroke-width="3" opacity=".9"/>
-    <rect x="40" y="40" width="720" height="436" rx="22" fill="none" stroke="${c.accent}" stroke-width="1" opacity=".45"/>`:'';
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000"><defs>${grad}</defs>`+
-    `<rect width="800" height="1000" fill="url(#ivg)"/>`+
-    `<rect x="34" y="34" width="732" height="932" rx="20" fill="#ffffff" opacity=".38"/>`+
-    (ev.invitePhoto?'':_decoSVG(c,false))+
-    ph+
-    (mem||ev.invitePhoto?'':_divider(560,P))+
-    `</svg>`; }
-function inviteCardLayout(ev){ const mem=ev.type==='memorial'; const c=mem?CARDS[2]:CARDS[1];
-  const ph=!!ev.invitePhoto; // 사진 히어로 시 텍스트를 하단으로 내림 (SVG·캔버스 공용 좌표)
-  return { mem, c, ph,
-    Y: ph?{lead:552,names:624,pill:656,date:752,venue:792,hint:845}
-         :{lead:168,names:mem?330:320,pill:mem?362:352,date:486,venue:528,hint:626},
-    lead: mem?'부  고':(ev.type==='hwahon'?'화혼 청첩':'결혼 청첩'),
-    names: evNamePlain(ev)||'', dday: dday(ev),
-    date: dateText(ev), venue: ev.venue||'',
-    hint: mem?'이음에서 부고 확인 · 조의 전하기':'이음에서 청첩장 확인 · 캘린더 저장 · 마음 전하기' }; }
-function inviteCardPaint(ctx,L){ // 캔버스 텍스트(명조 웹폰트)
-  ctx.textAlign='center';
-  const ink=L.c.ink, accent=L.c.accent;
-  ctx.fillStyle=accent; ctx.font=`600 24px 'Nanum Myeongjo', serif`;
-  try{ ctx.letterSpacing='8px'; }catch(e){}
-  ctx.fillText(L.lead,404,L.Y.lead);
-  try{ ctx.letterSpacing='0px'; }catch(e){}
-  ctx.fillStyle=ink; ctx.font=`700 52px 'Nanum Myeongjo', serif`;
-  ctx.fillText(L.names,400,L.Y.names);
-  if(L.dday){ const w=110; ctx.fillStyle=ink; roundRect(ctx,400-w/2,L.Y.pill,w,44,22); ctx.fill();
-    ctx.fillStyle='#fff'; ctx.font=`700 22px 'Malgun Gothic',sans-serif`; ctx.fillText(L.dday,400,L.Y.pill+30); }
-  ctx.fillStyle=ink; ctx.globalAlpha=.85; ctx.font=`26px 'Nanum Myeongjo', serif`;
-  ctx.fillText(L.date,400,L.Y.date);
-  if(L.venue) ctx.fillText(L.venue,400,L.Y.venue);
-  ctx.globalAlpha=.7; ctx.font=`21px 'Malgun Gothic',sans-serif`;
-  ctx.fillText(L.hint,400,L.Y.hint);
-  ctx.globalAlpha=1;
-  // 하단 브랜드: 링 로고 + 이음
-  ctx.strokeStyle=accent; ctx.lineWidth=4;
-  ctx.beginPath(); ctx.arc(372,880,16,0,7); ctx.stroke();
-  ctx.beginPath(); ctx.arc(390,880,16,0,7); ctx.stroke();
-  ctx.fillStyle=ink; ctx.font=`600 26px 'Nanum Myeongjo', serif`; ctx.textAlign='left';
-  ctx.fillText('이음',418,890); ctx.textAlign='center';
-  ctx.globalAlpha=.6; ctx.font=`15px 'Malgun Gothic',sans-serif`;
-  ctx.fillText('마음을 잇다',400,928); ctx.globalAlpha=1;
-}
-function roundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
-function shareInviteCard(ev){ // 카드 PNG + 링크 → OS 공유시트(문자·라인·인스타·카톡 어디로든)
-  const link=inviteLink(ev); const c=cfg(ev); const mem=ev.type==='memorial';
-  const text=`${evNamePlain(ev)} ${ev.subtitle}\n${dateText(ev)} · ${ev.venue||''}\n\n👇 ${mem?'부고 확인 · 조의 전하기':'청첩장 열기 · 마음 전하기'}\n${link}`; // 문자(MMS)는 url 필드를 버리므로 링크를 본문에 포함
-  toast('초대카드를 만드는 중…');
-  loadCardFonts(['myeongjo'], ()=>{
-    const L=inviteCardLayout(ev);
-    svgToPngBlob(inviteCardSVG(ev),1080,1350, blob=>{ // 4:5 (인스타 친화)
-      if(!blob){ copy(text); toast('카드 생성 실패 — 내용을 복사했어요'); return; }
-      const file=new File([blob],`이음_${c.doc}_${evNamePlain(ev)}.png`,{type:'image/png'});
-      const fb=()=>{ if(noDownload()){ copy(text); toast(isInApp()?'링크를 복사했어요 — Safari에서 열면 카드 이미지도 공유돼요':'링크를 복사했어요 — 원하는 앱에 붙여넣으세요'); return; }
-        dlBlob(blob,`이음_${c.doc}.png`); copy(text); toast('카드 저장 + 링크 복사 — 원하는 앱에 첨부하세요'); };
-      try{ if(navigator.canShare && navigator.canShare({files:[file]})){
-        navigator.share({files:[file], text}).catch(err=>{ if(err&&err.name==='AbortError')return; fb(); }); return; } }catch(e){}
-      fb();
-    }, ctx=>{ ctx.save(); ctx.scale(1080/800,1350/1000); inviteCardPaint(ctx,L); ctx.restore(); });
-  });
-}
 /* 외부 모바일청첩장 링크를 그대로 공유 → 그 청첩장의 썸네일이 카카오톡에 뜸 */
 function shareExternal(ev){ if(!ev.externalUrl){ toast('연결된 모바일청첩장이 없어요'); return; }
   const text=`${evNamePlain(ev)} ${ev.subtitle}\n${dateText(ev)} · ${ev.venue}`;
@@ -1217,6 +1147,7 @@ function render(){
   const v=S.ui.guestView;
   $('#app').innerHTML =
       v==='invite' ? inviteView()
+    : v==='handoff' ? handoffView()
     : v==='restore' ? restoreView()
     : v==='import' ? importView()
     : v==='allev' ? allEventsView()
@@ -1294,7 +1225,7 @@ function shareFromHost(kind){ const ev=hostEvent(); if(!ev)return;
   // 대규모 행사(FREE_GUESTS명+) 발송 게이트 — 장부 인원 기준. 오픈 수는 2차 전파로 부풀 수 있어 과금 근거로 쓰지 않음. 부고는 예외(장례 중 결제 UI 금지).
   if(!hasPass(ev) && ev.type!=='memorial' && (ev.guests||[]).length>=FREE_GUESTS){
     passTrack('bigEvent'); passPrompt(()=>shareFromHost(kind),`하객 ${FREE_GUESTS}명 이상의 큰 행사예요. 이미 보낸 초대장과 하객 응답 기록은 그대로 계속 작동하고, 패스는 새 발송에만 필요해요.`); return; }
-  if(kind==='card') shareInviteCard(ev); else if(kind==='ext') shareExternal(ev); else shareEvent(ev); }
+  if(kind==='ext') shareExternal(ev); else shareEvent(ev); }
 function hostView(){
   const ev=hostEvent(); const c=cfg(ev); const led=ledgerStats(ev);
   const hf=S.ui.hostFold||{};
@@ -1400,15 +1331,8 @@ function hostView(){
     <input placeholder="https://... (바른손/더카드 등)" value="${esc(ev.externalUrl)}" onchange="hostUrlChanged(this.value)">
     <p class="lblnote">${_hostFetching?'⏳ 청첩장 정보를 가져오는 중…':(ev.externalUrl?`✓ 연결됨 — ${c.doc} 썸네일이 그대로 쓰이고, 하객이 원본도 볼 수 있어요`:'링크를 넣으면 이름·날짜·계좌 자동 입력을 제안하고, 그 썸네일로 나가요')}</p>
     ${ev.externalUrl&&ev.shareImg?`<img src="${esc(ev.shareImg)}" alt="" style="width:76px;height:95px;object-fit:cover;border-radius:10px;border:1px solid var(--line);display:block;margin:4px 0 2px" onerror="this.style.display='none'">`:''}
-    <label style="margin-top:12px">${ev.type==='memorial'?`고인 사진 <span style="font-weight:400;color:var(--muted)">(선택 — 부고 카드 상단에 담겨요)</span>`:`초대카드 사진 <span style="font-weight:400;color:var(--muted)">(선택 — 문자·인스타용 초대카드 상단에 담겨요)</span>`}</label>
-    <div class="row" style="margin-top:6px">
-      <button class="btn btn-ghost btn-sm" onclick="setInvitePhoto()">${ev.type==='memorial'?'':'📷 '}사진 ${ev.invitePhoto?'변경':'추가'}</button>
-      ${ev.invitePhoto?`<button class="btn btn-ghost btn-sm" onclick="clearInvitePhoto()">사진 제거</button>`:''}
-    </div>
-    ${ev.invitePhoto?`<img src="${esc(ev.invitePhoto)}" alt="" style="width:100px;height:60px;object-fit:cover;border-radius:10px;border:1px solid var(--line);display:block;margin:6px 0 0" onerror="this.style.display='none'">`:''}
     <div class="stack" style="margin-top:10px">
       <button class="btn btn-kakao" onclick="shareFromHost('kakao')">카카오톡으로 보내기</button>
-      <button class="btn btn-ghost" onclick="shareFromHost('card')">${ev.type==='memorial'?'부고 카드로 보내기':'초대카드로 보내기'} <span style="font-weight:400;font-size:11.5px;opacity:.75">· ${ev.type==='memorial'?'문자·라인 등':'문자·라인·인스타 등'}</span></button>
       ${ev.externalUrl?`<button class="btn btn-line btn-sm" onclick="shareFromHost('ext')">청첩장 원본 그대로 보내기</button>`:''}
     </div>
     ${(!hasPass(ev)&&ev.type!=='memorial'&&(ev.guests||[]).length>=Math.ceil(FREE_GUESTS*0.8)&&(ev.guests||[]).length<FREE_GUESTS)?`<div class="note" style="margin-top:10px">장부에 <b>${(ev.guests||[]).length}명</b>이 기록됐어요. ${FREE_GUESTS}명 이상이면 새 발송에는 <b>이음 패스</b>가 필요해요 — 이미 보낸 초대장과 장부는 계속 작동합니다.</div>`:''}
@@ -2013,16 +1937,17 @@ function settingsView(){ const st=S.settings||{}; const ago=backupAgo();
       <button class="${!reciOn()?'on':''}" onclick="if(reciOn())toggleRecipro()">끄기</button>
     </div>
     <p class="lblnote" style="margin-top:6px">주고받은 기록이 있는 분의 경조사가 등록되면 보답을 챙겨드려요.</p>
-    <p class="lblnote" style="margin-top:14px;text-align:right;opacity:.7">이음 ${APP_BUILD}</p>
+    <p class="lblnote" style="margin-top:14px;text-align:right;opacity:.7">${NATIVE?`이음 앱 ${esc(NINFO.versionName||'')} · 웹 ${APP_BUILD} <button class="minibtn" style="margin-left:6px" onclick="manualWebUpdate()">업데이트 확인</button>`:`이음 ${APP_BUILD}`}</p>
   </div>
   <div class="card">
     <div class="secthead"><div class="t">💾 백업 · 기기 이전</div><div class="c">${ago?`마지막 백업 ${ago}`:'아직 백업 없음'}</div></div>
-    <p class="sub"><b>앱 업데이트로는 데이터가 지워지지 않고, 앱을 닫을 때마다 이 기기 안에 자동 백업됩니다.</b> 다만 데이터는 이 기기에만 저장되므로, 휴대폰을 바꿀 땐 <b>[🔗 링크로 기기 옮기기]</b>를 카톡 '나에게 보내기'로 보내고, 새 폰에서 <b>[품앗이 가계부 복원하기]</b> 버튼만 누르면 끝 — 파일 백업은 보조 수단이에요.</p>
+    ${NATIVE?`<p class="sub"><b>기록은 이음 앱 안에 저장돼요</b> — 크롬 등 브라우저 데이터를 지워도 그대로 남습니다. 휴대폰의 구글 계정 백업이 켜져 있으면 앱을 다시 설치하거나 새 폰을 설정할 때 자동 복원되고, 폰을 바꿀 땐 <b>[🔗 링크로 기기 옮기기]</b>가 가장 확실해요.</p>`:`<p class="sub"><b>앱 업데이트로는 데이터가 지워지지 않고, 앱을 닫을 때마다 이 기기 안에 자동 백업됩니다.</b> 다만 데이터는 이 기기에만 저장되므로, 휴대폰을 바꿀 땐 <b>[🔗 링크로 기기 옮기기]</b>를 카톡 '나에게 보내기'로 보내고, 새 폰에서 <b>[품앗이 가계부 복원하기]</b> 버튼만 누르면 끝 — 파일 백업은 보조 수단이에요.</p>`}
     <div class="stack">
       <button class="btn btn-primary" onclick="shareTransferLink()">링크로 기기 옮기기 <span style="font-weight:400;font-size:11.5px;opacity:.85">· 가장 쉬워요</span></button>
       <button class="btn btn-ghost" onclick="exportData()">백업 파일 만들기 <span style="font-weight:400;font-size:11.5px;opacity:.8">· 파일 보관용(보조)</span></button>
       <button class="btn btn-ghost" onclick="importData()">백업에서 복원 <span style="font-weight:400;font-size:11.5px;opacity:.8">· 따라하기 가이드</span></button>
     </div>
+    ${NATIVE?`<div class="row" style="margin-top:8px"><button class="btn btn-ghost btn-sm" onclick="nativeHandoff()">이전 버전(크롬)에서 가져오기</button><button class="btn btn-ghost btn-sm" onclick="nativeRestoreByCode()">코드로 가져오기</button></div>`:''}
     <div class="note">💡 백업 파일을 <b>카카오톡 나에게 보내기</b>나 구글 드라이브에 두면, 새 폰에서 그 파일을 열어 바로 복원할 수 있어요. 경조사 ${S.events.filter(e=>!e.demo&&!e.tut).length}건 · 사람 ${S.people.filter(p=>!p.demo&&!p.tut).length}명 · 가계부 이력 ${S.people.filter(p=>!p.demo&&!p.tut).reduce((s,p)=>s+((p.items||[]).length),0)}건 포함.</div>
   </div>
   <div class="card" style="padding:5px 4px">
@@ -2110,9 +2035,9 @@ function closeRestoreGuide(){ const bg=document.getElementById('rgsheet'); if(!b
   bg.classList.remove('show'); clearTimeout(_rgHideT); _rgHideT=setTimeout(()=>{ try{ bg.remove(); }catch(e){} },220); }
 /* ---- 기기 이전 링크: 백업을 압축해 링크에 담아 카톡으로 — 새 기기에서 탭하면 자동 적용 ---- */
 async function shareTransferLink(){ try{
-  const pl=backupPayload(); // 초대카드 사진(dataURL 수십만 자)은 링크에 못 실림 — 링크 이전에서만 제외(파일 백업은 포함)
+  const pl=backupPayload(); // 감사 인사 사진(dataURL 수십만 자)은 링크에 못 실림 — 링크 이전에서만 제외(파일 백업은 포함)
   let _photoDropped=false;
-  pl.data.events=pl.data.events.map(e=>{ if(!e.invitePhoto&&!e.thanksPhoto) return e; _photoDropped=true; const cp={...e}; delete cp.invitePhoto; delete cp.thanksPhoto; return cp; });
+  pl.data.events=pl.data.events.map(e=>{ if(!e.thanksPhoto) return e; _photoDropped=true; const cp={...e}; delete cp.thanksPhoto; return cp; });
   const json=JSON.stringify(pl);
   const z=lzwEnc(json), p0=b64urlEnc(json);
   const enc=(z.length<p0.length?'z'+z:'p'+p0); // 작은 데이터는 평문이 더 짧음 — 짧은 쪽 채택
@@ -2122,10 +2047,10 @@ async function shareTransferLink(){ try{
       if(r.ok) link=base+'#r='+code; }catch(e){} }
   if(!link){ if(enc.length>60000){ toast('기록이 많아 링크로 담기 어려워요 — [백업 파일 만들기]를 이용해 주세요'); return; }
     link=base+'#b='+enc; }
-  if(_photoDropped) setTimeout(()=>toast('사진(초대·부고 카드)은 링크에 담기지 않아요 — [백업 파일 만들기]에는 포함돼요'),1600); // 공유 동작 뒤 안내(직전 토스트에 안 묻히게)
+  if(_photoDropped) setTimeout(()=>toast('감사 인사 사진은 링크에 담기지 않아요 — [백업 파일 만들기]에는 포함돼요'),1600); // 공유 동작 뒤 안내(직전 토스트에 안 묻히게)
   // 원문 URL을 그대로 보이지 않게: 카카오 공유 카드의 버튼('품앗이 가계부 복원하기')에 링크를 숨겨 전달
   const ready=window.Kakao&&Kakao.isInitialized&&Kakao.isInitialized();
-  if(ready){ try{ Kakao.Share.sendDefault({objectType:'feed',
+  if(ready){ try{ Kakao.Share.sendDefault({objectType:'feed', installTalk:true,
       content:{title:'이음 — 기기 옮기기', description:'새 폰에서 아래 버튼을 누르면 품앗이 가계부가 그대로 복원돼요.',
         imageUrl:'https://shin-nyum.github.io/ieum/og-image3.jpg', imageWidth:800, imageHeight:400, link:{mobileWebUrl:link,webUrl:link}},
       buttons:[{title:'품앗이 가계부 복원하기', link:{mobileWebUrl:link,webUrl:link}}]});
@@ -2140,7 +2065,7 @@ function handleIncomingBackup(p){ // 새 기기가 비어 있으면 자동 적�
   if(empty){ applyRestore('merge'); setTimeout(()=>toast('이전 기기의 기록을 그대로 옮겨왔어요 ✓'),500); }
   else { S.ui.tab='guest'; S.ui.guestView='restore'; save(); render(); } }
 function evKey(e){ return [e.partyA,e.partyB,e.date,e.venue].join('|'); }
-function evHasContent(e){ return !!(e.partyA||e.partyB||e.date||e.venue||(e.guests&&e.guests.length)||e.myGift||e.invitePhoto||e.thanksPhoto); }
+function evHasContent(e){ return !!(e.partyA||e.partyB||e.date||e.venue||(e.guests&&e.guests.length)||e.myGift||e.thanksPhoto); }
 function applyRestore(mode){ const p=PENDING_RESTORE; if(!p)return;
   if(mode==='replace'&&(S.events.length||S.people.length)){
     if(!confirm(`현재 기기의 경조사 ${S.events.length}건·사람 ${S.people.length}명이 백업 내용으로 교체(삭제)됩니다.\n두 기기 데이터를 합치려면 '병합'을 이용하세요.\n\n계속할까요?`)) return; }
@@ -2189,7 +2114,7 @@ function restoreView(){ const p=PENDING_RESTORE; if(!p){ S.ui.guestView='list'; 
        주의: 사파리 ITP는 '사파리 사용일 7일 무방문' 시 localStorage+IDB 미러+snaps를 오리진 단위로 동반 삭제 →
        무설치 iOS의 실질 안전망은 off-device 둘뿐(파일백업, #g= 주최자 장부 반영). storage.persist()는 이 삭제를 못 막음. ---- */
 function isIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream; }
-function isStandalone(){ try{ return window.navigator.standalone===true || (window.matchMedia&&matchMedia('(display-mode: standalone)').matches); }catch(e){ return false; } }
+function isStandalone(){ try{ return NATIVE===true || window.navigator.standalone===true || (window.matchMedia&&matchMedia('(display-mode: standalone)').matches); }catch(e){ return false; } }
 /* 인앱 웹뷰(카톡·인스타·페북·네이버앱·라인 등): navigator.share(files)·a[download]·커스텀 스킴이 막히거나 무시됨.
    Whale·삼성인터넷은 정식 브라우저라 제외(오탐 방지). NAVER는 'NAVER(inapp' 토큰으로 한정. */
 function isInApp(){ return /KAKAOTALK|Instagram|FBAN|FBAV|NAVER\(inapp|\bLine\/|DaumApps|everytimeApp/i.test(navigator.userAgent); }
@@ -2262,7 +2187,8 @@ const DOCS={
 
 1. 수집·저장 항목
    - 이용자가 입력한 경조사 정보, 계좌·금액, 사람(품앗이) 내역, 설정값
-   - 위 정보는 이용자 기기의 브라우저 저장소(localStorage)에만 저장되며, 이음 운영자를 포함한 외부로 전송·수집되지 않습니다.
+   - 위 정보는 이용자 기기 안(앱 내부 저장소·브라우저 저장소)에만 저장되며, 이음 운영자를 포함한 외부로 전송·수집되지 않습니다.
+   - 안드로이드 앱: 휴대폰의 구글 계정 백업(자동 백업)이 켜져 있으면 안드로이드 시스템이 이 기록 파일을 이용자 본인의 구글 드라이브에 백업할 수 있습니다. 이는 이용자 계정에 귀속되며 이음 운영자는 접근할 수 없습니다.
 
 2. 제3자 서비스
    - 송금은 토스·카카오페이·뱅킹 앱 등 이용자가 직접 실행하며, 이음은 자금·계좌에 접근하거나 중개하지 않습니다.
@@ -2553,119 +2479,6 @@ function exportLedgerCSV(){ const ev=hostEvent(); const c=cfg(ev);
   const csv='﻿'+rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\r\n');
   exportFile(new Blob([csv],{type:'text/csv;charset=utf-8'}), `${evNamePlain(ev)}_장부.csv`, '이음 장부', '엑셀(CSV)로 내보냈어요'); }
 function openThanks(){ S.ui.hostSub='thanks'; S.ui.tab='host'; save(); render(); window.scrollTo(0,0); }
-/* ===== 초대카드 장식 팔레트 — 감사카드 제작 기능 철거 후 초대카드([1] 결혼 코너·[2] 부고 국화)만 사용 ===== */
-// pal: f1/f2 꽃, leaf/leaf2 잎, core 꽃심 · deco: 장식 배치 타입 · mood:'mourn'=조의
-const CARDS=[
- {bg:['#ffffff','#faf6f0'], ink:'#4a443c', accent:'#b39763', deco:'clean',    pal:{f1:'#e8d9b8',f2:'#f3ead6',leaf:'#a8bda5',leaf2:'#c6d5c3',core:'#fffdf8'}},
- {bg:['#fdf3f0','#f9dfe2'], ink:'#7d4a56', accent:'#c98a97', deco:'corners',  pal:{f1:'#f2aebe',f2:'#f7cdd6',leaf:'#a8c5a5',leaf2:'#c4d8c0',core:'#fff6f0'}},
- {bg:['#f5f4f1','#e4e2dc'], ink:'#565049', accent:'#8f8a80', deco:'mum',      pal:{f1:'#ffffff',f2:'#f0eee8',leaf:'#9aa694',leaf2:'#b8c1b2',core:'#e8e4da'}, mood:'mourn'}
-];
-/* --- SVG 장식 요소 라이브러리 --- */
-function _flower(cx,cy,r,fill,core,rot,op){ // 5잎 레이어드 플라워 — 수채 느낌(반투명 겹)
-  const P=(rr)=>`M0 ${-rr} C ${rr*.52} ${-rr*.78} ${rr*.58} ${-rr*.12} 0 0 C ${-rr*.58} ${-rr*.12} ${-rr*.52} ${-rr*.78} 0 ${-rr} Z`;
-  const ring=(rr,f,o,off)=>[0,72,144,216,288].map(a=>`<path d="${P(rr)}" fill="${f}" opacity="${o}" transform="rotate(${a+(off||0)})"/>`).join('');
-  return `<g transform="translate(${cx} ${cy}) rotate(${rot||0})" opacity="${op==null?1:op}">`+
-    ring(r*1.18,fill,.28,36)+ring(r,fill,.85)+ring(r*.55,'#ffffff',.30)+
-    `<circle r="${r*.2}" fill="${core}"/><circle r="${r*.08}" fill="#ffffff" opacity=".6"/></g>`; }
-function _mumFlower(cx,cy,r,fill,fill2,core){ // 국화(다층 12+12잎)
-  const p=(rr)=>`M0 ${-rr} C ${rr*.3} ${-rr*.85} ${rr*.3} ${-rr*.1} 0 0 C ${-rr*.3} ${-rr*.1} ${-rr*.3} ${-rr*.85} 0 ${-rr} Z`;
-  return `<g transform="translate(${cx} ${cy})">${Array.from({length:12},(_,i)=>`<path d="${p(r)}" fill="${fill2}" transform="rotate(${i*30+15})"/>`).join('')}${Array.from({length:12},(_,i)=>`<path d="${p(r*.72)}" fill="${fill}" transform="rotate(${i*30})"/>`).join('')}<circle r="${r*.16}" fill="${core}"/></g>`; }
-function _leafE(cx,cy,len,w,fill,rot,op){ return `<ellipse cx="${cx}" cy="${cy}" rx="${w}" ry="${len}" fill="${fill}" opacity="${op==null?0.9:op}" transform="rotate(${rot} ${cx} ${cy})"/>`; }
-function _branch(x,y,len,rot,fill,fill2){ let s=`<g transform="translate(${x} ${y}) rotate(${rot})"><path d="M0 0 Q ${len*.12} ${-len*.5} 0 ${-len}" stroke="${fill}" stroke-width="3.5" fill="none" opacity=".75"/>`;
-  for(let i=1;i<=6;i++){ const ly=-len*i/6.8, sd=i%2?1:-1;
-    s+=`<ellipse cx="${sd*11}" cy="${ly}" rx="7.5" ry="15" fill="${i%3?fill:fill2}" opacity="${0.92-i*0.06}" transform="rotate(${sd*42} ${sd*11} ${ly})"/>`; }
-  return s+'</g>'; }
-function _cluster(cx,cy,pal,scale,rot){ return `<g transform="translate(${cx} ${cy}) rotate(${rot||0}) scale(${scale||1})">
-  ${_leafE(-30,-4,24,9,pal.leaf,-42)}${_leafE(28,-8,26,9,pal.leaf2,36)}${_leafE(2,-30,22,8,pal.leaf,-4,.7)}
-  ${_flower(0,0,30,pal.f1,pal.core)}${_flower(36,18,17,pal.f2,pal.core,25,.95)}
-  <circle cx="-26" cy="20" r="5.5" fill="${pal.f2}"/><circle cx="14" cy="-34" r="4" fill="${pal.f2}" opacity=".85"/></g>`; }
-function _divider(y,pal){ return `<g>${_leafE(352,y,10,4,pal.leaf,-90,.8)}<circle cx="400" cy="${y}" r="4.5" fill="${pal.f1}"/>${_leafE(448,y,10,4,pal.leaf,90,.8)}</g>`; }
-function _decoSVG(c,photo){ const P=c.pal;
-  if(c.deco==='clean'){ // 클린 화이트: 상단 더블 골드라인 + 미니 클러스터, 하단 라인
-    return `<path d="M300 96 H500" stroke="${c.accent}" stroke-width="1.4" opacity=".7"/>
-    <path d="M330 106 H470" stroke="${c.accent}" stroke-width=".8" opacity=".5"/>
-    ${_cluster(400,66,P,.5,0)}
-    <path d="M330 908 H470" stroke="${c.accent}" stroke-width=".8" opacity=".5"/>
-    <circle cx="400" cy="908" r="2.4" fill="${c.accent}" opacity=".8"/>`; }
-  if(c.deco==='couple'){ // 신랑신부 일러스트 (하단 중앙, 사진 없을 때만) + 코너 스프레이
-    const pair = photo ? '' : `<g transform="translate(400 852)">
-      <g transform="translate(-42 0)"><path d="M-24 96 L-16 18 Q0 6 16 18 L24 96 Z" fill="#3b352f"/>
-        <path d="M-5 22 L0 44 L5 22 Q0 18 -5 22 Z" fill="#fffdf8"/>
-        <circle cx="0" cy="0" r="17" fill="#f7dcc4"/>
-        <path d="M-17 -4 A17 17 0 0 1 17 -4 Q10 -16 0 -16 Q-10 -16 -17 -4 Z" fill="#3b352f"/></g>
-      <g transform="translate(42 0)"><path d="M-26 96 Q-20 30 -10 20 Q0 12 10 20 Q20 30 26 96 Z" fill="#ffffff" stroke="#eee4d8" stroke-width="1.5"/>
-        <circle cx="0" cy="0" r="16" fill="#f7dcc4"/>
-        <path d="M-16 -3 A16 16 0 0 1 16 -3 Q8 -15 0 -15 Q-8 -15 -16 -3 Z" fill="#4a3c33"/>
-        <circle cx="0" cy="-19" r="6" fill="#4a3c33"/>
-        <circle cx="-14" cy="34" r="6" fill="${P.f1}"/><circle cx="-20" cy="40" r="5" fill="${P.f2}"/><circle cx="-9" cy="41" r="5" fill="${P.leaf}"/></g>
-      <path d="M-6 -34 C-6 -38 0 -38 0 -34 C0 -38 6 -38 6 -34 C6 -30 0 -26 0 -26 C0 -26 -6 -30 -6 -34 Z" fill="${c.accent}" opacity=".8"/></g>`;
-    return `${_cluster(84,86,P,.85,-12)}${_cluster(716,86,P,.85,12)}${pair}`; }
-  switch(c.deco){
-   case 'corners': return _cluster(95,95,P,1,-18)+_cluster(705,95,P,1,18)+_cluster(95,905,P,.9,198)+_cluster(705,905,P,.9,162);
-   case 'wreath': { const r=photo?196:170, cy=photo?350:322; let s='';
-     for(let i=0;i<28;i++){ const a=i/28*2*Math.PI, lx=400+Math.cos(a)*r, ly=cy+Math.sin(a)*r;
-       s+=_leafE(lx,ly,17,6.5,i%2?P.leaf:P.leaf2,a*180/Math.PI+90,.85); }
-     s+=_flower(400-r*.71,cy-r*.71,18,P.f1,P.core,-20)+_flower(400+r*.71,cy-r*.71,18,P.f1,P.core,20)
-       +_flower(400,cy+r,22,P.f2,P.core)+`<circle cx="${400-r}" cy="${cy}" r="5" fill="${P.f2}"/><circle cx="${400+r}" cy="${cy}" r="5" fill="${P.f2}"/>`;
-     return s; }
-   case 'branches': return _branch(120,940,300,28,P.leaf,P.leaf2)+_branch(680,60,300,208,P.leaf,P.leaf2)
-     +_flower(140,890,16,P.f2,P.core,0,.9)+_flower(662,108,16,P.f2,P.core,0,.9);
-   case 'arch': { const s=`<path d="M120 940 L120 300 A280 280 0 0 1 680 300 L680 940" fill="none" stroke="${c.accent}" stroke-width="3" opacity=".55"/>
-     <path d="M145 940 L145 305 A255 255 0 0 1 655 305 L655 940" fill="none" stroke="${c.accent}" stroke-width="1.5" opacity=".4"/>`;
-     return s+_cluster(120,300,P,.8,-10)+_cluster(680,300,P,.8,10); }
-   case 'scallop': { let path='M60 60'; for(let x=60;x<740;x+=40) path+=` A20 20 0 0 1 ${x+40} 60`;
-     for(let y=60;y<940;y+=40) path+=` A20 20 0 0 1 740 ${y+40}`;
-     for(let x=740;x>60;x-=40) path+=` A20 20 0 0 1 ${x-40} 940`;
-     for(let y=940;y>60;y-=40) path+=` A20 20 0 0 1 60 ${y-40}`;
-     return `<path d="${path} Z" fill="none" stroke="${c.accent}" stroke-width="2.5" opacity=".5"/>`
-       +_branch(96,180,150,150,P.leaf,P.leaf2)+_branch(704,820,150,-30,P.leaf,P.leaf2); }
-   case 'ribbon': { const conf=[[120,230],[205,140],[595,150],[680,240],[150,760],[650,780],[255,885],[545,895],[100,520],[700,560]];
-     return `<path d="M232 130 L200 172 L245 165 L262 196 Z" fill="${P.f2}"/>
-      <path d="M568 130 L600 172 L555 165 L538 196 Z" fill="${P.f2}"/>
-      <rect x="240" y="76" width="320" height="52" rx="26" fill="${P.f1}"/>
-      <rect x="240" y="76" width="320" height="52" rx="26" fill="none" stroke="#ffffff" stroke-width="2" opacity=".6"/>`
-      +conf.map(([x,y],i)=>i%2?`<circle cx="${x}" cy="${y}" r="${5+(i%3)*2}" fill="${i%3?P.f1:P.f2}" opacity=".75"/>`
-        :`<rect x="${x}" y="${y}" width="11" height="11" rx="3" fill="${P.leaf}" opacity=".65" transform="rotate(${20+i*9} ${x} ${y})"/>`).join(''); }
-   case 'lineleaf': return `<rect x="70" y="70" width="660" height="860" rx="26" fill="none" stroke="${c.accent}" stroke-width="2" opacity=".55"/>
-     <rect x="86" y="86" width="628" height="828" rx="18" fill="none" stroke="${c.accent}" stroke-width="1" opacity=".4"/>`
-     +_branch(70,330,190,180,P.leaf,P.leaf2)+_branch(730,670,190,0,P.leaf,P.leaf2);
-   case 'petals': { const pts=[[110,150,-20],[220,90,15],[620,110,30],[700,190,-15],[90,420,25],[715,500,-30],[140,820,10],[660,860,-20],[300,935,18],[520,70,-25]];
-     return pts.map(([x,y,r],i)=>`<path d="M0 -16 C 9 -12 10 -2 0 0 C -10 -2 -9 -12 0 -16 Z" fill="${i%2?P.f1:P.f2}" opacity=".85" transform="translate(${x} ${y}) rotate(${r}) scale(${1+(i%3)*.3})"/>`).join('')
-       +_flower(120,105,22,P.f1,P.core,-10)+_flower(680,860,22,P.f1,P.core,15); }
-   case 'goldframe': return `<rect x="64" y="64" width="672" height="872" fill="none" stroke="${c.accent}" stroke-width="3" opacity=".7"/>
-     <rect x="78" y="78" width="644" height="844" fill="none" stroke="${c.accent}" stroke-width="1.2" opacity=".55"/>
-     ${[[64,64,0],[736,64,90],[736,936,180],[64,936,270]].map(([x,y,r])=>`<g transform="translate(${x} ${y}) rotate(${r})">
-       <path d="M0 0 C 30 4 40 18 42 42 M0 0 C 4 30 18 40 42 42" stroke="${c.accent}" stroke-width="2.5" fill="none" opacity=".8"/>
-       ${_leafE(24,24,12,5,P.leaf,45,.8)}</g>`).join('')}`;
-   case 'sealdots': { let dots=''; for(let gy=0;gy<12;gy++)for(let gx=0;gx<9;gx++){ dots+=`<circle cx="${76+gx*81}" cy="${76+gy*77.5}" r="2.6" fill="${c.accent}" opacity=".22"/>`; }
-     return dots+`<circle cx="400" cy="120" r="34" fill="${P.f1}" opacity=".95"/><circle cx="400" cy="120" r="34" fill="none" stroke="${P.core}" stroke-width="2" stroke-dasharray="3 4"/>
-     <path d="M400 112 C 396 105 385 106 385 114 C 385 121 393 124 400 130 C 407 124 415 121 415 114 C 415 106 404 105 400 112 Z" fill="${P.core}"/>`; }
-   case 'mum': return _mumFlower(190,878,52,P.f1,P.f2,P.core)+_mumFlower(280,910,38,P.f1,P.f2,P.core)+_mumFlower(120,925,30,P.f1,P.f2,P.core)
-     +_leafE(240,860,26,9,P.leaf,-35,.8)+_leafE(150,880,24,8,P.leaf2,40,.8)+_leafE(330,885,22,8,P.leaf,25,.7)
-     +`<line x1="120" y1="140" x2="680" y2="140" stroke="${c.accent}" stroke-width="1.5" opacity=".5"/>`;
-   case 'halfwreath': { let s=''; const cy=photo?350:330, r=photo?196:165;
-     for(let i=0;i<16;i++){ const a=Math.PI*(0.9+i/15*1.2), lx=400+Math.cos(a)*r, ly=cy+Math.sin(a)*r*0.95;
-       s+=_leafE(lx,ly,16,6,i%2?P.leaf:P.leaf2,a*180/Math.PI+90,.8); }
-     return s+_mumFlower(400-r*.74,cy-r*.62,30,P.f1,P.f2,P.core)+_mumFlower(400+r*.74,cy-r*.62,30,P.f1,P.f2,P.core)
-       +_leafE(400-r*.45,cy-r*.85,14,5,P.leaf,-30,.7)+_leafE(400+r*.45,cy-r*.85,14,5,P.leaf2,30,.7); }
-  } return ''; }
-/* ---- 카드 웹폰트 로더 (초대카드 캔버스 텍스트용 — 명조만 사용) ---- */
-const CARD_FONTS={
- myeongjo:{label:'명조',   css:"'Nanum Myeongjo','Apple SD Gothic Neo',serif", g:'Nanum+Myeongjo:wght@400;700', scale:1},
-};
-const _fontsLoaded={};
-function loadCardFonts(keys,cb){ // 구글폰트 CSS 지연 주입(+캔버스용 로드 대기)
-  const need=(keys||Object.keys(CARD_FONTS)).filter(k=>CARD_FONTS[k]&&!_fontsLoaded[k]);
-  need.forEach(k=>{ _fontsLoaded[k]=true;
-    const l=document.createElement('link'); l.rel='stylesheet';
-    l.href='https://fonts.googleapis.com/css2?family='+CARD_FONTS[k].g+'&display=swap';
-    document.head.appendChild(l); });
-  if(!cb) return;
-  try{ Promise.all((keys||[]).map(k=>document.fonts.load(`29px ${CARD_FONTS[k].css.split(',')[0]}`,'가나다 감사합니다')))
-    .then(()=>document.fonts.ready).then(()=>cb()).catch(()=>cb()); }
-  catch(e){ setTimeout(cb,600); }
-}
-function svgToPngBlob(svg,w,h,cb,paint){ try{ const img=new Image(); img.onload=()=>{ try{ const cv=document.createElement('canvas'); cv.width=w; cv.height=h; const ctx=cv.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); ctx.drawImage(img,0,0,w,h); if(paint)paint(ctx); cv.toBlob(cb,'image/png'); }catch(e){cb(null);} }; img.onerror=()=>cb(null); img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg); }catch(e){cb(null);} }
 function thankSamples(ev){ return cfg(ev).label==='부고'
   ? ['{이름}님, 바쁘신 중에도 귀한 걸음 하시어 위로해 주심에 진심으로 깊은 감사의 말씀을 드립니다. 베풀어주신 따뜻한 마음 잊지 않고 고이 간직하겠습니다. 항상 건강과 평안이 함께하시길 기원합니다.',
      '{이름}님, 바쁘신 중에도 걸음 해주셔서 감사합니다. 베풀어주신 마음 잊지 않겠습니다.',
@@ -2694,21 +2507,6 @@ function setThanksPhoto(){ const inp=document.createElement('input'); inp.type='
       img.onerror=()=>{ toast('사진을 읽을 수 없어요 — JPG·PNG로 시도해 주세요'); };
       img.src=r.result; }; r.readAsDataURL(f); }; inp.click(); }
 function clearThanksPhoto(){ const ev=hostEvent(); if(!ev)return; own(ev); delete ev.thanksPhoto; save(); render(); }
-/* 초대카드 커스텀 사진 — 행사별 저장(ev.invitePhoto). #e= 초대링크는 필드 화이트리스트라 미포함, 이전 링크는 별도 제외 */
-function setInvitePhoto(){ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
-  inp.style.cssText='position:fixed;left:-9999px;opacity:0'; document.body.appendChild(inp); // iOS: detached input GC 방지
-  inp.onchange=e=>{ const f=e.target.files&&e.target.files[0]; try{ inp.remove(); }catch(_){} if(!f)return;
-    const r=new FileReader(); r.onload=()=>{ const img=new Image();
-      img.onload=()=>{ const ev=hostEvent(); if(!ev)return;
-        try{ const MAX=1100; const s=Math.min(1, MAX/Math.max(img.width,img.height));
-          const w=Math.max(1,Math.round(img.width*s)), h=Math.max(1,Math.round(img.height*s));
-          const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
-          cv.getContext('2d').drawImage(img,0,0,w,h);
-          own(ev); ev.invitePhoto=cv.toDataURL('image/jpeg',0.82);
-        }catch(err){ if(r.result&&r.result.length<400000){ own(ev); ev.invitePhoto=r.result; } else { toast('사진을 처리할 수 없어요 — 다른 사진으로 시도해 주세요'); } } save(); render(); };
-      img.onerror=()=>{ toast('사진을 읽을 수 없어요 — JPG·PNG로 시도해 주세요'); }; // 디코드 실패분(HEIC 등)은 어차피 렌더 불가 → 원본 저장 금지(용량 초과 방지)
-      img.src=r.result; }; r.readAsDataURL(f); }; inp.click(); }
-function clearInvitePhoto(){ const ev=hostEvent(); if(!ev)return; own(ev); delete ev.invitePhoto; save(); render(); }
 function thanksView(){ const ev=hostEvent(); const c=cardState(ev); const samples=thankSamples(ev);
   const recip=ev.guests.filter(g=>g.rsvp.status==='yes'||(g.pay&&g.pay.amount!=null));
   const previewName=(recip[0]||{}).name||'○○'; const mem=ev.type==='memorial';
@@ -2963,7 +2761,7 @@ function notiShow(title,opts){ // Android(설치형/TWA)는 페이지 컨텍스�
   }catch(e){} }
 let BG_NOTI=false; // periodic sync 가용 여부 — 설정 카피·토글 안내를 정직하게 분기
 try{ if('serviceWorker' in navigator) Promise.race([navigator.serviceWorker.ready.catch(()=>null), new Promise(r=>setTimeout(()=>r(null),4000))])
-  .then(reg=>{ BG_NOTI=!!(reg&&('periodicSync' in reg)); }); }catch(e){}
+  .then(reg=>{ if(!NATIVE) BG_NOTI=!!(reg&&('periodicSync' in reg)); }); }catch(e){}
 function syncNotiPref(){ try{ idbSet('noti', S.ui.noti?'1':'0'); }catch(e){} } // SW(백그라운드 체크)가 읽는 설정 미러
 async function registerDailySync(){ try{ // 설치형 PWA/TWA에서만 지원 — 미지원·미설치는 조용히 무시(앱 열 때 알림으로 폴백)
   if(!('serviceWorker' in navigator)) return;
@@ -3545,7 +3343,8 @@ function clearBootHash(){ // 일부 웹뷰는 문서 파싱 중 replaceState를 
   if(!p){ setTimeout(()=>toast('이전 링크가 손상됐어요 — 파일 백업을 이용해 주세요'),400); return; }
   handleIncomingBackup(p);
 }catch(e){} })();
-(function(){ try{ const m=(location.hash||'').match(/[#&]r=([A-Za-z0-9_-]+)/); if(!m) return;
+(function(){ try{ const m=(location.hash||'').match(/[#&]r=([A-Za-z0-9_-]+)/)||(location.search||'').match(/[?&]r=([a-z0-9]{8,24})(?:&|$)/); if(!m) return;
+  try{ if(/[?&]r=/.test(location.search)) history.replaceState(null,'',location.pathname+location.hash); }catch(_){}
   clearBootHash(); if(!RELAY.url){ setTimeout(()=>toast('이전 링크를 열 수 없어요 — 파일 백업을 이용해 주세요'),400); return; }
   fetch(RELAY.url+'/backup?k='+encodeURIComponent(m[1])).then(r=>r.ok?r.json():null).then(o=>{
     if(!o||!o.j){ toast('이전 링크가 만료됐어요 — 파일 백업을 이용해 주세요'); return; }
@@ -3692,6 +3491,217 @@ function cleanupDemo(){ let changed=false;
   if(changed) save(); return changed; }
 window.addEventListener('resize', ()=>{ try{ if(TUT.on){ const el=document.querySelector(TUT_STEPS[TUT.i].sel); const box=document.getElementById('tutbox'); if(el&&box) tutPlace(el,box); } }catch(e){} });
 
+/* ======================= 네이티브 컨테이너(Capacitor Android) 브리지 =======================
+   같은 index.html이 Play 앱(WebView)에서도 돈다. 네이티브에서만 갈아끼우는 것:
+   ① 저장: 앱 내부 파일(files/ieum/state.json) 미러 → 크롬 데이터 삭제와 무관 + 구글 자동 백업 대상
+   ② 공유시트·파일 저장(Share/Filesystem)  ③ 알림(AlarmManager 예약, 앱을 열지 않아도 도착)
+   ④ 딥링크·공유받기(App Links / ACTION_SEND)  ⑤ 뒤로가기  ⑥ OTA 웹 번들(Pages 최신본을 앱이 스스로 받음)
+   ⑦ 이전 버전(TWA=크롬 저장소) 기록 가져오기(handoff)
+   플러그인 호출은 Capacitor 코어 JS 없이 네이티브 브리지의 nativePromise/addListener를 직접 쓴다(단일 파일 앱). */
+var NATIVE=!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform());
+const nP=(p,m,o)=>NATIVE?Capacitor.nativePromise(p,m,o||{}):Promise.reject(new Error('not native'));
+function nOn(p,e,cb){ try{ if(NATIVE) Capacitor.addListener(p,e,cb); }catch(_){} }
+const NFILE='ieum/state.json', NPREV='ieum/prev.json';
+let NINFO={versionName:'',versionCode:0,serverBasePath:'',rolledBack:false};
+const WEB_STUB='<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>이음</title><style>html,body{margin:0;background:#f3efe8}</style><script>location.replace("/ieum/index.html"+location.search+location.hash)<\/script></head><body></body></html>'; // <\/script>: HTML 파서가 스크립트 블록을 조기 종료하지 않도록
+
+/* ---- ① 앱 내부 파일 미러: save()마다 디바운스 기록, 종료 시 즉시. 부팅 시 비어 있으면 여기서 복구 ---- */
+let _nmT=null,_nmLast=null;
+function nativeMirror(){ if(!NATIVE) return; clearTimeout(_nmT); _nmT=setTimeout(nativeFlush,1200); }
+function nativeStateJSON(){ let j=JSON.stringify(coreData());
+  if(j.length>18e6){ const c=coreData(); c.events=c.events.map(e=>{ if(!e.thanksPhoto) return e; const x={...e}; delete x.thanksPhoto; return x; }); j=JSON.stringify(c); } // 자동백업 25MB 한도 보호
+  return j; }
+function nativeFlush(){ if(!NATIVE) return; try{ if(typeof TUT!=='undefined'&&TUT.on) return; clearTimeout(_nmT);
+  const j=nativeStateJSON(); if(j===_nmLast) return; _nmLast=j;
+  const today=todayStr(); let pre=Promise.resolve();
+  try{ if(localStorage.getItem('ieum_nprev')!==today){ localStorage.setItem('ieum_nprev',today);
+    pre=nP('Filesystem','copy',{from:NFILE,to:NPREV,directory:'DATA',toDirectory:'DATA'}).catch(()=>{}); } }catch(_){}
+  pre.then(()=>nP('Filesystem','writeFile',{path:NFILE,data:j,directory:'DATA',encoding:'utf8',recursive:true})).catch(()=>{}); }catch(e){} }
+function nativeWipe(){ if(!NATIVE) return; [NFILE,NPREV].forEach(f=>nP('Filesystem','deleteFile',{path:f,directory:'DATA'}).catch(()=>{})); _nmLast=null; }
+function adoptRaw(raw,msg){ // 미러(IDB·앱 파일)에서 실데이터 채택 — tryAutoRecover와 공용
+  try{ if(typeof TUT!=='undefined' && TUT.on) abortTutorial(); }catch(_){}
+  S.events=raw.events||[]; S.people=raw.people||[]; S.settings={...S.settings,...(raw.settings||{})};
+  S.meta={...S.meta,...(raw.meta||{})}; if(raw.theme)S.ui.theme=raw.theme;
+  S=migrate(S); try{ cleanupDemo(); }catch(_){}
+  save(); applyTheme(); render(); toast(msg||'저장소에서 데이터를 자동 복구했어요'); }
+async function nativeRecover(){ if(!NATIVE) return false;
+  try{ if(localStorage.getItem('ieum_wiped')) return false; }catch(_){}
+  if(S.events.length||S.people.length) return false;
+  let raw=null;
+  for(const f of [NFILE,NPREV]){ try{ const r=await nP('Filesystem','readFile',{path:f,directory:'DATA',encoding:'utf8'});
+      const o=r&&r.data?JSON.parse(r.data):null;
+      if(o&&((o.events&&o.events.length)||(o.people&&o.people.length))){ raw=o; break; } }catch(e){} }
+  if(!raw||S.events.length||S.people.length) return false;
+  adoptRaw(raw,'앱 저장소에서 기록을 복구했어요'); return true; }
+
+/* ---- ② 공유시트·파일: navigator.share/dlBlob을 네이티브로 ---- */
+function _blobB64(blob){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]||''); r.onerror=()=>rej(r.error); r.readAsDataURL(blob); }); }
+function _abToB64(buf){ const u=new Uint8Array(buf); let s=''; for(let i=0;i<u.length;i+=0x8000) s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000)); return btoa(s); }
+function _abortErr(){ const e=new Error('share canceled'); e.name='AbortError'; return e; }
+async function nativeShareFiles(files,text,title){ const uris=[];
+  for(const f of files){ const name=String(f.name||'file').replace(/[^\w.\-가-힣 ]/g,'_'); const path='share/'+Date.now().toString(36)+'_'+name;
+    await nP('Filesystem','writeFile',{path,data:await _blobB64(f),directory:'CACHE',recursive:true});
+    const u=await nP('Filesystem','getUri',{path,directory:'CACHE'}); uris.push(u.uri); }
+  return nP('Share','share',{title:title||'', text:text||'', files:uris}).catch(()=>{ throw _abortErr(); }); }
+if(NATIVE){
+  navigator.share=async(o)=>{ o=o||{}; if(o.files&&o.files.length) return nativeShareFiles(o.files,o.text,o.title);
+    return nP('Share','share',{title:o.title||'', text:o.text||'', url:o.url||'', dialogTitle:o.title||'공유'}).catch(()=>{ throw _abortErr(); }); };
+  navigator.canShare=()=>true;
+  window.dlBlob=(blob,name)=>{ nativeShareFiles([new File([blob],name,{type:blob.type||'application/octet-stream'})],name,name).catch(()=>{}); };
+  // 카카오 SDK 등이 window.open으로 여는 intent://·외부 링크 → WebView는 새 창을 못 열므로 현재 창 내비게이션으로(플러그인이 가로채 외부 앱 실행). 같은 URL 연속 호출 1회로 합침
+  let _wo={u:'',t:0}; window.open=(u)=>{ try{ if(u){ const now=Date.now(); if(!(_wo.u===u&&now-_wo.t<800)){ _wo={u:String(u),t:now}; location.href=u; } } }catch(_){} return null; };
+  nOn('IeumNative','openFailed',d=>{ const s=d&&d.scheme||''; toast(s==='supertoss'?'토스 앱이 없어요 — 계좌번호를 복사해 보내주세요':s==='kakaolink'||s==='intent'?'카카오톡을 열 수 없어요 — 기본 공유로 보내주세요':'연결된 앱을 열 수 없어요'); });
+}
+
+/* ---- ③ 알림: AlarmManager 예약(앱을 열지 않아도 도착). SW 사다리와 같은 문구 ---- */
+function dueMessageJS(ev,days){ const mem=ev.type==='memorial';
+  const nm=mem?(ev.partyA||''):(ev.partyA||'')+(ev.partyB?'·'+ev.partyB:''); const label=mem?'':(ev.type==='hwahon'?'화혼':'결혼식');
+  const when=(ev.date||'')+(ev.time?' '+ev.time:'')+(ev.venue?' · '+ev.venue:'');
+  if(days===7){ if(mem) return null; return {title:`일주일 뒤, ${nm}님의 ${label}이에요`, body:when+' — 마음을 미리 준비해 보세요'}; }
+  if(days===1) return mem?{title:`${nm}님 부고 — 내일 발인이에요`,body:when}:{title:`내일, ${nm}님의 ${label}이에요`,body:when+' — 마음을 준비해 주세요'};
+  if(days===0) return mem?{title:`${nm}님 부고 — 오늘 발인이에요`,body:when}:{title:`오늘, ${nm}님의 ${label}이에요`,body:when};
+  if(days===-1){ if(ev.role!=='host') return null;
+    return mem?{title:'조문해 주신 분들께 감사 인사를 전할 차례예요',body:'이음의 [답례 인사 준비하기]에서 문구와 사진을 준비할 수 있어요'}
+              :{title:'어제 함께해 주신 분들께 감사 인사를 보낼 차례예요',body:'이음의 [감사 인사 준비하기]에서 한 번에 준비할 수 있어요'}; }
+  return null; }
+function nativeNotiId(evId,days){ let h=2166136261; const s=String(evId)+':'+days; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0)%2000000000+1; }
+function nativeNotiPlan(now,events){ // 순수 함수(테스트용): D-7·D-1·D-0·D+1 09:00, 미래 60일 내, 가까운 순 60건
+  const t=now||new Date(); const out=[];
+  (events||S.events).forEach(ev=>{ if(ev.demo||ev.tut||ev.draft||!ev.date||!(ev.partyA||'').trim()) return;
+    [7,1,0,-1].forEach(days=>{ const m=dueMessageJS(ev,days); if(!m) return;
+      const at=new Date(ev.date+'T09:00:00'); if(isNaN(at)) return; at.setDate(at.getDate()-days);
+      if(at<=t||at-t>60*86400000) return;
+      out.push({id:nativeNotiId(ev.id,days), title:m.title, body:m.body, at, extra:{evId:ev.id,days}}); }); });
+  out.sort((a,b)=>a.at-b.at); return out.slice(0,60); }
+let _nnT=null;
+function nativeNotiSync(){ if(!NATIVE) return; clearTimeout(_nnT); _nnT=setTimeout(async()=>{ try{
+  const pend=await nP('LocalNotifications','getPending'); const ids=((pend&&pend.notifications)||[]).map(n=>({id:n.id}));
+  if(ids.length) await nP('LocalNotifications','cancel',{notifications:ids});
+  if(!S.ui.noti) return; const perm=await nP('LocalNotifications','checkPermissions'); if(!perm||perm.display!=='granted') return;
+  const plan=nativeNotiPlan(); if(!plan.length) return;
+  await nP('LocalNotifications','schedule',{notifications:plan.map(n=>({id:n.id,title:n.title,body:n.body,channelId:'ieum-due',smallIcon:'ic_notification_icon',extra:n.extra,isExactNotification:false,schedule:{at:n.at.toISOString(),allowWhileIdle:true}}))});
+ }catch(e){} },800); }
+if(NATIVE){
+  BG_NOTI=true;
+  nP('LocalNotifications','createChannel',{id:'ieum-due',name:'경조사 알림',description:'경조사 일주일 전·전날·당일 알림',importance:4,visibility:1}).catch(()=>{});
+  window.toggleNoti=function(){
+    if(S.ui.noti){ S.ui.noti=false; save(); nativeNotiSync(); render(); toast('알림을 껐어요'); return; }
+    nP('LocalNotifications','requestPermissions').then(p=>{
+      if(p&&p.display==='granted'){ S.ui.noti=true; save(); nativeNotiSync(); render(); toast('알림을 켰어요 — 일주일 전·전날·당일에 알려드려요'); }
+      else toast('알림 권한이 거부되었어요 — 휴대폰 설정 › 앱 › 이음에서 허용해 주세요'); }).catch(()=>toast('알림을 켤 수 없어요')); };
+  window.notiShow=function(title,opts){ nP('LocalNotifications','schedule',{notifications:[{id:(Date.now()%1e9)+1,title,body:(opts&&opts.body)||'',channelId:'ieum-due',smallIcon:'ic_notification_icon',isExactNotification:false}]}).catch(()=>{}); };
+  nOn('LocalNotifications','localNotificationActionPerformed',e=>{ try{ const x=e&&e.notification&&e.notification.extra; const id=x&&x.evId;
+    if(id&&S.events.some(v=>v.id===id)){ S.ui.entered=true; openEvent(id); } }catch(_){} });
+}
+
+/* ---- ④ 딥링크(App Links)·공유받기(ACTION_SEND): 앱은 https://shin-nyum.github.io/ieum/index.html 을 로컬로 서빙하므로
+        들어온 URL의 쿼리·해시만 붙여 다시 열면 기존 부팅 핸들러(#e=/#i=/#g=/#r=/#b=/?shared_text=)가 그대로 처리 ---- */
+function nativeHandleUrl(u){ try{ const x=new URL(u); if(!/(^|\.)shin-nyum\.github\.io$/.test(x.host)) return false;
+  let hash=x.hash||'', search=x.search||'';
+  const rq=new URLSearchParams(search).get('r'); if(rq&&!hash){ hash='#r='+rq; search=''; } // intent:// 링크는 해시를 못 실어 ?r= 로 옴
+  if(!hash&&!search) return false;
+  try{ localStorage.setItem(LS, JSON.stringify(S)); }catch(_){}
+  location.replace('/ieum/index.html'+search+hash); return true; }catch(e){ return false; } }
+function nativeHandleShared(text,subject){ try{ const q=new URLSearchParams(); q.set('shared_text',String(text||'')); if(subject) q.set('shared_title',String(subject));
+  try{ localStorage.setItem(LS, JSON.stringify(S)); }catch(_){} location.replace('/ieum/index.html?'+q.toString()); }catch(e){} }
+if(NATIVE){
+  nOn('App','appUrlOpen',d=>{ if(d&&d.url) nativeHandleUrl(d.url); });
+  nOn('IeumNative','shareText',d=>{ if(d&&d.text) nativeHandleShared(d.text,d.subject); });
+}
+
+/* ---- ⑤ 뒤로가기: 웹의 popstate 로직을 그대로 — 히스토리가 있으면 back, 없으면 한 단계 위로, 최상위면 홈으로(종료 대신 최소화) ---- */
+if(NATIVE){ nOn('App','backButton',d=>{ try{
+  if(d&&d.canGoBack){ history.back(); return; }
+  if(!atTopLevel()){ backStep(); return; }
+  nP('App','minimizeApp').catch(()=>{}); }catch(_){} }); }
+
+/* ---- ⑥ OTA 웹 번들: Pages의 bundle.json(빌드·sha256)을 릴레이 경유로 확인 → 파일 검증 저장 → Capacitor 서버 경로 전환(재부팅 시 자동 적용)
+        부팅 실패 시 MainActivity가 2회 만에 내장 번들로 롤백, 앱 버전이 바뀌면 Capacitor가 경로 초기화 ---- */
+async function checkWebUpdate(force){ if(!NATIVE||!RELAY.url) return 'skip';
+  const now=Date.now(); let last=0; try{ last=+localStorage.getItem('ieum_ota_at')||0; }catch(_){}
+  if(!force&&now-last<6*3600e3) return 'throttled';
+  try{ localStorage.setItem('ieum_ota_at',String(now)); }catch(_){}
+  let man=null; try{ const r=await fetch(RELAY.url+'/web?p=bundle.json&t='+now,{cache:'no-store'}); if(!r.ok) return 'nomanifest'; man=await r.json(); }catch(e){ return 'offline'; }
+  if(!man||!man.build||!Array.isArray(man.files)||!/^[A-Za-z0-9._-]{1,32}$/.test(man.build)) return 'badmanifest';
+  if(man.build===APP_BUILD) return 'latest';
+  let bad=''; try{ bad=localStorage.getItem('ieum_ota_bad')||''; }catch(_){} if(bad===man.build) return 'bad';
+  let ready=''; try{ ready=localStorage.getItem('ieum_ota_ready')||''; }catch(_){}
+  if(ready===man.build){ nativeApplyBundle(man.build); return 'ready'; }
+  const dir='web/'+man.build; let total=0;
+  try{ for(const f of man.files){ if(!/^[A-Za-z0-9][A-Za-z0-9._-]{0,80}$/.test(f.p)||!/^[a-f0-9]{64}$/.test(f.h||'')) throw new Error('bad entry');
+      const r=await fetch(RELAY.url+'/web?p='+encodeURIComponent(f.p)+'&v='+encodeURIComponent(man.build),{cache:'no-store'}); if(!r.ok) throw new Error('dl '+f.p);
+      const buf=await r.arrayBuffer(); total+=buf.byteLength; if(total>12e6) throw new Error('too big');
+      const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',buf))].map(b=>b.toString(16).padStart(2,'0')).join('');
+      if(hash!==f.h) throw new Error('hash '+f.p);
+      await nP('Filesystem','writeFile',{path:dir+'/ieum/'+f.p,data:_abToB64(buf),directory:'DATA',recursive:true}); }
+    await nP('Filesystem','writeFile',{path:dir+'/index.html',data:WEB_STUB,directory:'DATA',encoding:'utf8',recursive:true});
+    try{ localStorage.setItem('ieum_ota_ready',man.build); }catch(_){}
+    nativeApplyBundle(man.build); return 'downloaded';
+  }catch(e){ return 'failed'; } }
+function otaBusy(){ try{ const a=document.activeElement; if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true;
+  if(document.querySelector('.sheet-bg.show')) return true; if(typeof TUT!=='undefined'&&TUT.on) return true; if(PENDING_RESTORE) return true; }catch(_){} return false; }
+function nativeApplyBundle(build){ if(otaBusy()){ try{ localStorage.setItem('ieum_ota_pending',build); }catch(_){} return; }
+  nP('Filesystem','getUri',{path:'web/'+build,directory:'DATA'}).then(u=>{ const path=String(u&&u.uri||'').replace(/^file:\/\//,'');
+    if(!path) return; nativeFlush(); try{ localStorage.setItem(LS, JSON.stringify(S)); localStorage.removeItem('ieum_ota_pending'); }catch(_){}
+    nP('WebView','setServerBasePath',{path}).catch(()=>{}); nP('WebView','persistServerBasePath').catch(()=>{}); }).catch(()=>{}); }
+async function nativeCleanupBundles(){ try{ const cur=(NINFO.serverBasePath||'').match(/\/web\/([^/]+)\/?$/); const keep=cur?cur[1]:null;
+  let ready=''; try{ ready=localStorage.getItem('ieum_ota_ready')||''; }catch(_){}
+  const d=await nP('Filesystem','readdir',{path:'web',directory:'DATA'});
+  for(const f of (d&&d.files)||[]){ const n=f.name||f; if(n===keep||n===ready) continue; await nP('Filesystem','rmdir',{path:'web/'+n,directory:'DATA',recursive:true}).catch(()=>{}); } }catch(e){} }
+async function nativeBoot(){ if(!NATIVE) return;
+  try{ NINFO=await nP('IeumNative','getInfo'); }catch(e){}
+  if(NINFO.rolledBack){ try{ const b=localStorage.getItem('ieum_ota_ready')||''; if(b){ localStorage.setItem('ieum_ota_bad',b); localStorage.removeItem('ieum_ota_ready'); } }catch(_){} setTimeout(()=>toast('업데이트에 문제가 있어 기본 버전으로 돌아왔어요'),800); }
+  nP('IeumNative','webReady').catch(()=>{});
+  try{ const p=localStorage.getItem('ieum_ota_pending'); if(p&&p!==APP_BUILD&&!otaBusy()){ nativeApplyBundle(p); return; } if(p===APP_BUILD) localStorage.removeItem('ieum_ota_pending'); }catch(_){}
+  try{ if((localStorage.getItem('ieum_ota_ready')||'')===APP_BUILD) localStorage.removeItem('ieum_ota_ready'); }catch(_){}
+  setTimeout(()=>{ nativeCleanupBundles(); checkWebUpdate(false); },2500);
+  nOn('App','appStateChange',s=>{ if(s&&s.isActive){ checkWebUpdate(false); nativeNotiSync(); } else { nativeFlush(); } });
+  nOn('App','pause',()=>nativeFlush());
+  try{ nativeStatusBar(); }catch(_){}
+}
+function nativeStatusBar(){ if(!NATIVE) return; const dark=document.documentElement.dataset.theme==='dark';
+  const st=dark?'DARK':'LIGHT'; nP('SystemBars','setStyle',{style:st}).catch(()=>{}); nP('StatusBar','setStyle',{style:st}).catch(()=>{}); } // 헤더가 크림(라이트)·검정(다크): LIGHT=어두운 아이콘, DARK=밝은 아이콘
+async function manualWebUpdate(){ toast('업데이트 확인 중…'); const r=await checkWebUpdate(true);
+  toast({latest:'최신 버전이에요 ('+APP_BUILD+')',downloaded:'새 버전을 받았어요 — 잠시 후 적용돼요',ready:'새 버전이 준비돼 있어요 — 잠시 후 적용돼요',offline:'네트워크에 연결되지 않아요',throttled:'최신 상태예요',bad:'해당 버전은 이 앱에서 열리지 않아 건너뛰었어요'}[r]||'업데이트를 확인하지 못했어요'); }
+
+/* ---- ⑦ 이전 버전(TWA) 기록 가져오기: 옛 앱의 기록은 크롬 저장소에 있다 → 크롬 커스텀탭으로 웹 이음(?handoff=1)을 열어
+        릴레이에 7일 1회용 백업을 올리고, 앱을 여는 intent 링크(?r=코드)로 되돌아오면 기존 #r= 복원 흐름이 받는다 ---- */
+function nativeHandoff(){ if(!NATIVE) return; nP('Browser','open',{url:'https://shin-nyum.github.io/ieum/index.html?handoff=1',presentationStyle:'popover'}).catch(()=>toast('브라우저를 열 수 없어요')); }
+function nativeRestoreByCode(){ const k=(prompt('이전 폰/크롬 화면에 표시된 8자리 코드를 입력하세요')||'').trim().toLowerCase();
+  if(!/^[a-z0-9]{8,24}$/.test(k)){ if(k) toast('코드 형식이 올바르지 않아요'); return; }
+  if(!RELAY.url){ toast('지금은 코드로 가져올 수 없어요'); return; } toast('가져오는 중…');
+  fetch(RELAY.url+'/backup?k='+encodeURIComponent(k)).then(r=>r.ok?r.json():null).then(o=>{
+    if(!o||!o.j){ toast('코드가 만료됐거나 없어요 — 크롬 화면에서 다시 만들어 주세요'); return; }
+    let p=null; try{ const c=String(o.j); const body=c.slice(1); p=parseBackup(c[0]==='z'?lzwDec(body):b64urlDec(body)); }catch(e){}
+    if(p) handleIncomingBackup(p); else toast('가져온 데이터가 손상됐어요'); }).catch(()=>toast('네트워크 오류 — 잠시 후 다시 시도해 주세요')); }
+let HANDOFF=null; // 웹(크롬) 쪽 handoff 상태: {k, ev, pp, err}
+function handoffPrepare(){ if(HANDOFF||NATIVE) return; HANDOFF={k:null,ev:0,pp:0,err:null,busy:true}; (async()=>{ try{
+  const pl=backupPayload(); const ev=pl.data.events.length, pp=pl.data.people.length;
+  if(!ev&&!pp){ HANDOFF={k:null,ev:0,pp:0,err:'empty',busy:false}; render(); return; }
+  let json=JSON.stringify(pl); if(json.length>1500000){ pl.data.events=pl.data.events.map(e=>{ if(!e.thanksPhoto) return e; const x={...e}; delete x.thanksPhoto; return x; }); json=JSON.stringify(pl); }
+  const z=lzwEnc(json), p0=b64urlEnc(json); const enc=(z.length<p0.length?'z'+z:'p'+p0);
+  if(!RELAY.url) throw new Error('relay');
+  const k=Math.random().toString(36).slice(2,10).replace(/[^a-z0-9]/g,'a').padEnd(8,'a');
+  const r=await fetch(RELAY.url+'/backup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({k,j:enc})});
+  if(!r.ok) throw new Error('post'); HANDOFF={k,ev,pp,err:null,busy:false}; render();
+ }catch(e){ HANDOFF={k:null,ev:0,pp:0,err:'net',busy:false}; render(); } })(); }
+function handoffView(){ if(!HANDOFF) setTimeout(handoffPrepare,0); const h=HANDOFF||{busy:true};
+  const url='https://shin-nyum.github.io/ieum/index.html?r='+(h.k||'');
+  const intent=h.k?`intent://shin-nyum.github.io/ieum/index.html?r=${h.k}#Intent;scheme=https;package=kr.ieum.app;S.browser_fallback_url=${encodeURIComponent(url)};end`:'';
+  return `<div class="listhead"><div class="t serif">이음 앱으로 기록 옮기기</div></div>
+  <div class="card">
+    ${h.busy?`<p class="sub">이 화면(크롬)에 저장된 기록을 준비하는 중…</p>`
+    :h.err==='empty'?`<h3>옮길 기록이 없어요</h3><p class="sub">이 브라우저에는 저장된 경조사·가계부 기록이 없어요. 다른 브라우저(삼성 인터넷 등)나 예전 폰에서 열어 보세요.</p>`
+    :h.err?`<h3>준비하지 못했어요</h3><p class="sub">네트워크를 확인하고 다시 시도해 주세요.</p><button class="btn btn-ghost" onclick="HANDOFF=null;render()">다시 시도</button>`
+    :`<h3>기록을 준비했어요</h3>
+      <div class="stats" style="margin-top:10px"><div class="stat"><div class="v">${h.ev}</div><div class="k">경조사</div></div><div class="stat"><div class="v">${h.pp}</div><div class="k">주고받은 사람</div></div></div>
+      <a class="btn btn-primary" style="margin-top:14px;display:block;text-align:center;text-decoration:none" href="${intent}">이음 앱으로 가져가기</a>
+      <div class="note" style="margin-top:12px">앱이 열리지 않으면 이음 앱의 <b>설정 › 코드로 가져오기</b>에 아래 코드를 입력하세요 (7일 내 1회).<div style="font-size:26px;font-weight:800;letter-spacing:4px;text-align:center;margin:8px 0 2px;font-family:monospace">${h.k}</div></div>
+      <p class="lblnote" style="margin-top:8px">가져간 뒤에도 이 화면의 기록은 그대로 남아 있어요. 앱에서 확인한 뒤 필요 없으면 크롬 데이터를 정리해도 됩니다.</p>`}
+  </div>`; }
+(function(){ try{ if(NATIVE) return; const q=new URLSearchParams(location.search); if(q.get('handoff')!=='1') return;
+  history.replaceState(null,'',location.pathname); S.ui.entered=true; S.ui.tab='guest'; S.ui.guestView='handoff'; save(); }catch(e){} })();
+
 /* ======================= 안드로이드 뒤로가기 지원 ======================= */
 // 세부 화면에서 하드웨어 백버튼 = 앱 종료가 아니라 '한 단계 위로'. 가드 엔트리 1개 유지 패턴.
 let _histGuard=false;
@@ -3701,6 +3711,10 @@ function histGuard(){ if(_histGuard || atTopLevel()) return;
 window.addEventListener('popstate', ()=>{
   _histGuard=false;
   if(atTopLevel()) return; // 최상위면 그대로 — 한 번 더 누르면 종료
+  backStep();
+  histGuard(); // 여전히 세부 화면이면 가드 재장전
+});
+function backStep(){ // 한 단계 위로 (popstate·네이티브 뒤로가기 공용)
   try{
     if(document.getElementById('calsheet')) closeCalSheet();
     else if(document.getElementById('mapsheet')) closeMapSheet();
@@ -3720,8 +3734,7 @@ window.addEventListener('popstate', ()=>{
       else if(['list','ledger','reco','more'].includes(v)) goLanding(); // 메인 탭에서 백=랜딩 (바로 종료 방지)
       else backToList(); }
   }catch(e){}
-  histGuard(); // 여전히 세부 화면이면 가드 재장전
-});
+}
 
 /* ======================= 부팅 ======================= */
 window.addEventListener('error', ()=>{ try{ toast('일시적인 문제가 발생했어요'); }catch(e){} });
@@ -3729,9 +3742,10 @@ applyTheme();
 kakaoInit();
 try{ if(!TUT.on && cleanupDemo()) {} }catch(e){}  // 튜토리얼 중 앱이 꺼져 남은 데모 자동 정리
 render();
+try{ nativeBoot(); }catch(e){}
 try{ tryAutoRecover(); }catch(e){}
 try{ payRecoverBoot(); }catch(e){}  // 미완 결제 자동 복구(승인 유실·설치앱 파티션)
-try{ syncNotiPref(); if(S.ui.noti){ fireDueNotis(); registerDailySync(); } }catch(e){} // 설정 미러는 항상 (꺼짐도 SW에 전달 — 복구 후 유령 알림 방지)
+try{ syncNotiPref(); if(S.ui.noti){ if(NATIVE) nativeNotiSync(); else { fireDueNotis(); registerDailySync(); } } }catch(e){} // 설정 미러는 항상 (꺼짐도 SW에 전달 — 복구 후 유령 알림 방지)
 try{ if('serviceWorker' in navigator){ navigator.serviceWorker.addEventListener('message',ev=>{ // 알림 클릭 → 해당 행사로
     if(ev.data&&ev.data.type==='open-event'&&ev.data.evId&&S.events.some(e=>e.id===ev.data.evId)){ S.ui.entered=true; openEvent(ev.data.evId); } });
   const evq=new URLSearchParams(location.search).get('ev');
@@ -3740,14 +3754,15 @@ try{ relayPull(); }catch(e){}  // 호스트: 릴레이 사서함의 하객 응�
 try{ bootRawSnapshot(); }catch(e){}  // 업데이트 직후에도 '가공 전 원본' 3세대 보존
 /* 종료·백그라운드 전환 시 자동 백업(기기 내 미러+스냅샷) — 리마인더 없이 항상 최신 유지 */
 function flushMirror(){ // 종료 직전엔 600ms 디바운스가 죽으므로 즉시 기록 — SW 백그라운드 알림이 마지막 순간의 행사도 보게
-  try{ if(typeof TUT!=='undefined'&&TUT.on) return; clearTimeout(_mirrorT); idbSet('state', JSON.stringify(coreData())); }catch(e){} }
+  try{ if(typeof TUT!=='undefined'&&TUT.on) return; clearTimeout(_mirrorT); idbSet('state', JSON.stringify(coreData())); }catch(e){}
+  try{ nativeFlush(); }catch(e){} }
 addEventListener('visibilitychange',()=>{ if(document.visibilityState!=='hidden') return;
   try{ localStorage.setItem(LS, JSON.stringify(S)); }catch(e){}
   flushMirror(); try{ dailySnapshot(); }catch(e){} });
 addEventListener('pagehide',()=>{ flushMirror(); });
 
 /* PWA: 서비스 워커 등록 */
-if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('./service-worker.js?v=3').catch(()=>{});});}
+if(!NATIVE && 'serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('./service-worker.js?v=3').catch(()=>{});});} // 네이티브 앱은 번들 서빙+OTA — SW 불필요
 </script>
 </body>
 </html>
