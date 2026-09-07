@@ -478,6 +478,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
+const APP_BUILD='v93'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -839,6 +840,7 @@ async function shareEvent(ev){
       let settings=tpl({mobileWebUrl:link,webUrl:link});
       const psize=(t)=>encodeURIComponent(JSON.stringify(t)).length+400; // 인텐트 URI 근사(고정 파라미터 여유 포함)
       if(psize(settings)>9500) settings=tpl({webUrl:link}); // 링크 1회 — 모바일은 webUrl로 열림
+      toast(`카카오 카드 ${(psize(settings)/1024).toFixed(1)}KB · ${APP_BUILD}`); // 지원용 진단(빌드·패킷 크기) — 카톡이 열리기 전 잠깐 표시
     try{ Kakao.Share.sendDefault(settings);
       // 설치형 PWA/TWA에선 kakaolink 스킴이 조용히 무시될 수 있음(throw 없음) → 이탈 없으면 기본 공유로 폴백
       let left=false; const onLeave=()=>{left=true;};
@@ -2000,6 +2002,7 @@ function settingsView(){ const st=S.settings||{}; const ago=backupAgo();
       <button class="${!reciOn()?'on':''}" onclick="if(reciOn())toggleRecipro()">끄기</button>
     </div>
     <p class="lblnote" style="margin-top:6px">주고받은 기록이 있는 분의 경조사가 등록되면 보답을 챙겨드려요.</p>
+    <p class="lblnote" style="margin-top:14px;text-align:right;opacity:.7">이음 ${APP_BUILD}</p>
   </div>
   <div class="card">
     <div class="secthead"><div class="t">💾 백업 · 기기 이전</div><div class="c">${ago?`마지막 백업 ${ago}`:'아직 백업 없음'}</div></div>
