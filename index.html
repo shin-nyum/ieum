@@ -834,11 +834,12 @@ async function shareEvent(ev){
   const text=`${evNamePlain(ev)} ${ev.subtitle}\n${dateText(ev)} · ${ev.venue}\n${mem?'부고 확인·조의 전하기':'청첩장 확인·캘린더·축의금 보내기'} ▸`;
   const ready=window.Kakao&&Kakao.isInitialized&&Kakao.isInitialized();
   if(ready){
-    try{ Kakao.Share.sendDefault({objectType:'feed',
-      content:{title:`${evNamePlain(ev)} ${ev.subtitle}`, description:`${dateText(ev)} · ${ev.venue}`,
-        imageUrl:ogImg, ...ogDim,
-        link:{mobileWebUrl:link,webUrl:link}},
-      buttons:[{title:`${c.doc} 열기`,link:{mobileWebUrl:link,webUrl:link}}]});
+    // 모바일 카카오톡은 패킷 10K 상한 — 초대링크(인사말 포함)가 카드에 반복될수록 폭발(실기기 4002 재현) → 버튼 없이 카드 탭으로 열기(링크 2회), 그래도 크면 1회로 축소
+      const tpl=(lk)=>({objectType:'feed', content:{title:`${evNamePlain(ev)} ${ev.subtitle}`, description:`${dateText(ev)} · ${ev.venue}${mem?' · 탭하여 부고 확인':' · 탭하여 청첩장 열기'}`, imageUrl:ogImg, ...ogDim, link:lk}});
+      let settings=tpl({mobileWebUrl:link,webUrl:link});
+      const psize=(t)=>encodeURIComponent(JSON.stringify(t)).length+400; // 인텐트 URI 근사(고정 파라미터 여유 포함)
+      if(psize(settings)>9500) settings=tpl({webUrl:link}); // 링크 1회 — 모바일은 webUrl로 열림
+    try{ Kakao.Share.sendDefault(settings);
       // 설치형 PWA/TWA에선 kakaolink 스킴이 조용히 무시될 수 있음(throw 없음) → 이탈 없으면 기본 공유로 폴백
       let left=false; const onLeave=()=>{left=true;};
       ['visibilitychange','pagehide','blur'].forEach(t=>addEventListener(t,onLeave,{once:true}));
