@@ -58,6 +58,23 @@ export default {
         return json({ j });
       }
 
+      // 짧은 초대링크(#i=) — 카카오톡 모바일 패킷 10K 한도 회피: 카드에는 코드만 싣고 페이로드는 여기서 조회 (TTL 400일, 삭제 없음)
+      if (req.method === 'POST' && url.pathname === '/invite') {
+        let body; try { body = await req.json(); } catch { return json({ error: 'BAD_JSON' }, 400); }
+        const k = String(body.k || ''), code = String(body.code || '');
+        if (!/^[a-z0-9]{10,24}$/.test(k)) return json({ error: 'BAD_KEY' }, 400);
+        if (!/^[A-Za-z0-9_-]{20,20000}$/.test(code)) return json({ error: 'BAD_CODE' }, 400);
+        await env.REPLIES.put('iv:' + k, code, { expirationTtl: 60 * 60 * 24 * 400 });
+        return json({ ok: true });
+      }
+      if (req.method === 'GET' && url.pathname === '/invite') {
+        const k = String(url.searchParams.get('k') || '');
+        if (!/^[a-z0-9]{10,24}$/.test(k)) return json({ error: 'BAD_KEY' }, 400);
+        const code = await env.REPLIES.get('iv:' + k);
+        if (!code) return json({ error: 'NOT_FOUND' }, 404);
+        return json({ code });
+      }
+
       // 청첩장 썸네일 프록시 — 카카오 스크레이퍼를 차단하는 CDN 우회 (이미지 전용 · 실패 시 기본 이미지로 리다이렉트)
       if (req.method === 'GET' && url.pathname === '/img') {
         const FALLBACK = 'https://shin-nyum.github.io/ieum/og-image3.jpg';

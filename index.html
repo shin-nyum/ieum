@@ -478,7 +478,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v93'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v94'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -821,8 +821,19 @@ function decodeInvite(code){ try{
 function inviteLink(ev){ const base=location.href.split('#')[0].split('?')[0]; const dir=base.replace(/[^/]*$/,'');
   const page = ev.type==='memorial' ? dir+'memorial.html' : base;  /* 부고는 조의용 썸네일 페이지로 */
   return page + '#e=' + encodeInvite(ev); }
+async function shortInviteLink(ev){ // 카카오 카드 전용 — 모바일 패킷 10K 한도 회피(인사말 길이 무관). 행사별 캐시, 실패 시 null(호출측이 전체 링크로 폴백)
+  if(!RELAY.url) return null;
+  try{ const code=encodeInvite(ev); const sig=_fnv(code);
+    const base=location.href.split('#')[0].split('?')[0]; const dir=base.replace(/[^/]*$/,''); const page=ev.type==='memorial'?dir+'memorial.html':base;
+    if(ev.shortInv&&ev.shortInv.k&&ev.shortInv.sig===sig) return page+'#i='+ev.shortInv.k;
+    const k=(Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4)).replace(/[^a-z0-9]/g,'a');
+    const ctl=new AbortController(); const tm=setTimeout(()=>ctl.abort(),6000);
+    const r=await fetch(RELAY.url+'/invite',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({k,code}),signal:ctl.signal}); clearTimeout(tm);
+    if(!r.ok) return null;
+    ev.shortInv={k,sig}; save(); return page+'#i='+k;
+  }catch(e){ return null; } }
 async function shareEvent(ev){
-  const link = inviteLink(ev); const c=cfg(ev); const mem=ev.type==='memorial';
+  const link = (await shortInviteLink(ev)) || inviteLink(ev); const c=cfg(ev); const mem=ev.type==='memorial';
   // 썸네일 우선순위: ①연결된 청첩장 썸네일(브라우저에서 로드 확인된 경우만 — 차단 CDN이면 Failed request 방지 위해 제외)
   // ②주최자가 고른 초대카드 디자인(자체 호스팅) ③기본 og 이미지
   let ogImg=mem?'https://shin-nyum.github.io/ieum/og-memorial3.jpg':'https://shin-nyum.github.io/ieum/og-image3.jpg';
@@ -840,7 +851,7 @@ async function shareEvent(ev){
       let settings=tpl({mobileWebUrl:link,webUrl:link});
       const psize=(t)=>encodeURIComponent(JSON.stringify(t)).length+400; // 인텐트 URI 근사(고정 파라미터 여유 포함)
       if(psize(settings)>9500) settings=tpl({webUrl:link}); // 링크 1회 — 모바일은 webUrl로 열림
-      toast(`카카오 카드 ${(psize(settings)/1024).toFixed(1)}KB · ${APP_BUILD}`); // 지원용 진단(빌드·패킷 크기) — 카톡이 열리기 전 잠깐 표시
+      toast(`카카오 카드 ${(psize(settings)/1024).toFixed(1)}KB · 링크 ${link.length}자 · ${APP_BUILD}`); // 지원용 진단(빌드·패킷 크기) — 카톡이 열리기 전 잠깐 표시
     try{ Kakao.Share.sendDefault(settings);
       // 설치형 PWA/TWA에선 kakaolink 스킴이 조용히 무시될 수 있음(throw 없음) → 이탈 없으면 기본 공유로 폴백
       let left=false; const onLeave=()=>{left=true;};
@@ -3545,9 +3556,8 @@ function clearBootHash(){ // 일부 웹뷰는 문서 파싱 중 replaceState를 
 }catch(e){} })();
 
 /* ======================= 받은 청첩장 링크(#e=) 감지 → 각자 접속 (사용자 분리) ======================= */
-(function(){ try{ const m=(location.hash||'').match(/[#&]e=([^&]+)/);
-  if(m){ const iv=decodeInvite(m[1]);
-    if(iv){ S.ui.entered=true; S.ui.tab='guest';
+function applyIncomingInvite(iv){ // #e=(자체완결)·#i=(릴레이 코드) 공용 — 중복 병합·수락 대기·오픈 핑
+      S.ui.entered=true; S.ui.tab='guest';
       const dup=S.events.find(e=>e.partyA===iv.partyA&&e.partyB===iv.partyB&&e.date===iv.date&&e.venue===iv.venue)
         || S.events.find(e=>e.role!=='host'&&e.invited&&e.partyA===iv.partyA&&e.partyB===iv.partyB&&e.type===iv.type); // 날짜·장소 변경 재공유도 같은 행사로
       if(dup){ let ch=false; // 재공유 링크의 최신 정보로 갱신 (내 응답·송금 기록은 그대로)
@@ -3560,10 +3570,23 @@ function clearBootHash(){ // 일부 웹뷰는 문서 파싱 중 replaceState를 
       save(); clearBootHash();
       if(RELAY.url){ try{ (async()=>{ const k=await relayKey(iv); const fl='ieum_open_'+k;
         if(!localStorage.getItem(fl)){ localStorage.setItem(fl,'1');
-          fetch(RELAY.url+'/open',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({k})}).catch(()=>{}); } })(); }catch(e){} } }
+          fetch(RELAY.url+'/open',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({k})}).catch(()=>{}); } })(); }catch(e){} }
+}
+(function(){ try{ const m=(location.hash||'').match(/[#&]e=([^&]+)/);
+  if(m){ const iv=decodeInvite(m[1]);
+    if(iv){ applyIncomingInvite(iv); }
     else { S.ui.entered=true; S.ui.tab='guest'; S.ui.guestView='import'; save();
       clearBootHash();
       setTimeout(()=>toast('링크가 손상됐어요 — 청첩장 내용을 붙여넣어 주세요'),400); } }
+  else { const mi=(location.hash||'').match(/[#&]i=([a-z0-9]{10,24})/); // 짧은 링크(카카오 카드): 릴레이에서 페이로드 조회
+    if(mi){ if(!RELAY.url){ clearBootHash(); setTimeout(()=>toast('이 링크는 지금 열 수 없어요 — 보낸 분께 다시 요청해 주세요'),400); }
+      else { S.ui.entered=true; S.ui.tab='guest'; setTimeout(()=>toast('초대장을 불러오는 중…'),200);
+        const ctl=new AbortController(); const tm=setTimeout(()=>ctl.abort(),9000);
+        fetch(RELAY.url+'/invite?k='+mi[1],{signal:ctl.signal}).then(r=>{ clearTimeout(tm); return r.ok?r.json():null; })
+          .then(o=>{ const iv=o&&o.code?decodeInvite(o.code):null;
+            if(iv){ applyIncomingInvite(iv); render(); window.scrollTo(0,0); }
+            else { clearBootHash(); toast('초대장을 찾지 못했어요 — 보낸 분께 다시 요청해 주세요'); } })
+          .catch(()=>{ toast('네트워크 오류 — 잠시 후 링크를 다시 눌러주세요'); }); } } }
 }catch(e){} })();
 
 /* ======================= 공유받기 (PWA Share Target) ======================= */
