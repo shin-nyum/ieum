@@ -856,7 +856,7 @@ async function shareEvent(ev){
 /* ---- 하객→호스트 응답 전달 ----
    1순위: 릴레이 직접 전달(RELAY.url 설정 + 이음 링크로 받은 행사) — 공유창 없이 호스트 이음에 자동 반영.
    폴백: #g= 딥링크 공유(서버 불요) — 호스트가 링크를 탭하면 장부 반영. */
-const RELAY={ url:'' }; // relay-worker 배포 후 여기에 워커 주소 한 줄 (예: 'https://ieum-relay.xxx.workers.dev') — 비우면 공유 폴백
+const RELAY={ url:'https://ieum-relay.agosoft-kr.workers.dev' }; // 릴레이 워커(CF Workers, 2026-09-07 배포·전 엔드포인트 실측) — 비우면 공유 폴백
 function encodeGuestReply(ev,name,me,opt){ const o=opt||{}; const incR=o.incR!==false, incP=o.incP!==false;
   const p=me&&me.pay||{}; const r=me&&me.rsvp||{};
   return b64urlEnc(JSON.stringify({k:evKey(ev), n:name, rel:ev.myRelation||'',
