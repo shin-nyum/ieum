@@ -61,11 +61,16 @@ public class IeumNativePlugin extends Plugin {
 
     private boolean captureShare(Intent intent) {
         if (intent == null || !Intent.ACTION_SEND.equals(intent.getAction())) return false;
-        String t = intent.getStringExtra(Intent.EXTRA_TEXT);
+        // EXTRA_TEXT/SUBJECT의 타입은 CharSequence — 서식 있는 텍스트(Spanned)를 보내는 앱이 있고,
+        // getStringExtra는 그 경우 null을 돌려줘 공유가 통째로 무시된다.
+        CharSequence cs = intent.getCharSequenceExtra(Intent.EXTRA_TEXT);
+        String t = cs == null ? null : cs.toString();
         if (t == null || t.trim().isEmpty()) return false;
         pendingShareText = t;
-        pendingShareSubject = intent.getStringExtra(Intent.EXTRA_SUBJECT);
+        CharSequence sub = intent.getCharSequenceExtra(Intent.EXTRA_SUBJECT);
+        pendingShareSubject = sub == null ? null : sub.toString();
         intent.removeExtra(Intent.EXTRA_TEXT); // 회전·재생성 시 재전달 방지
+        intent.removeExtra(Intent.EXTRA_SUBJECT);
         return true;
     }
 
