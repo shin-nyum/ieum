@@ -574,11 +574,12 @@ function migrate(o){ // 어떤 과거 상태가 와도 안전하게 현재 스�
     if(!e.id || seen.has(e.id)) e.id=uid('e'); seen.add(e.id);
     if(typeof e.type!=='string'||!TYPES[e.type]) e.type='wedding';
     ['partyA','partyB','subtitle','date','time','venue','address','message','externalUrl'].forEach(k=>{ if(typeof e[k]!=='string') e[k]=e[k]==null?'':String(e[k]); });
+    e.externalUrl=safeUrl(e.externalUrl);                              // 복원·초대 페이로드의 임의 스킴 차단
     delete e.invitePhoto; // 초대카드 기능 철거(2026-09) — 잔존 사진 데이터 제거
     if(typeof e.thanksPhoto!=='string' || !/^data:image\//.test(e.thanksPhoto)) delete e.thanksPhoto;
     if(!Array.isArray(e.accounts)) e.accounts=[];
     e.accounts=e.accounts.filter(a=>a&&typeof a==='object');
-    e.accounts.forEach(a=>{ ['label','bank','number','holder'].forEach(k=>{ if(typeof a[k]!=='string') a[k]=a[k]==null?'':String(a[k]); }); });
+    e.accounts.forEach(a=>{ ['label','bank','number','holder'].forEach(k=>{ if(typeof a[k]!=='string') a[k]=a[k]==null?'':String(a[k]); }); a.kakaopay=safeUrl(a.kakaopay); });
     if(!Array.isArray(e.guests)) e.guests=[];
     e.guests=e.guests.filter(g=>g&&typeof g==='object');
     e.guests.forEach(g=>{ if(!g.id)g.id=uid('g'); if(typeof g.name!=='string')g.name=String(g.name||'');
@@ -814,7 +815,7 @@ function decodeInvite(code){ try{
   const body=code[0]==='z'?lzwDec(code.slice(1)):code[0]==='p'?b64urlDec(code.slice(1)):b64urlDec(code);
   const o=JSON.parse(body);
   return { id:uid('e'), role:'guest', type:o.t||'wedding', partyA:o.a||'', partyB:o.b||'', subtitle:o.s||'', date:o.d||'', time:o.ti||'12:00', venue:o.v||'', address:o.ad||'', message:o.m||'', externalUrl:o.u||'', invited:true,
-    accounts:(o.ac||[]).map(a=>({label:a.l,bank:a.bk,number:a.n,holder:a.h,kakaopay:a.k||''})), guests:[] }; }catch(e){ return null; } }
+    accounts:(o.ac||[]).map(a=>({label:a.l,bank:a.bk,number:a.n,holder:a.h,kakaopay:safeUrl(a.k)})), guests:[] }; }catch(e){ return null; } }
 function inviteLink(ev){ const base=location.href.split('#')[0].split('?')[0]; const dir=base.replace(/[^/]*$/,'');
   const page = ev.type==='memorial' ? dir+'memorial.html' : base;  /* 부고는 조의용 썸네일 페이지로 */
   return page + '#e=' + encodeInvite(ev); }
@@ -2126,7 +2127,9 @@ function openExternalBrowser(target){ const url=target||location.href; // 해시
     const i=url.indexOf('#'); const b=i<0?url:url.slice(0,i), h=i<0?'':url.slice(i);
     location.href=b+(b.includes('?')?'&':'?')+'openExternalBrowser=1'+h; return; }
   copy(url); toast('링크를 복사했어요 — 오른쪽 위 메뉴(⋯)의 "외부 브라우저로 열기"를 누르거나, Safari 주소창에 붙여넣어 여세요'); }
-function openUrl(u){ let w=null; try{ w=window.open(u,'_blank'); }catch(e){} if(!w) location.href=u; } // 인앱은 window.open 무시 가능
+const safeUrl=u=>(typeof u==='string' && /^https?:\/\//i.test(u.trim())) ? u.trim() : ''; // 초대 페이로드의 URL은 남이 만든 값 — intent:// 등 임의 스킴으로 외부 앱을 열지 못하게
+function openUrl(u){ u=safeUrl(u); if(!u){ toast('열 수 없는 주소예요'); return; }
+  let w=null; try{ w=window.open(u,'_blank'); }catch(e){} if(!w) location.href=u; } // 인앱은 window.open 무시 가능
 function dismissIosHint(){ if(S.meta) S.meta.iosHintOff=true; save(); render(); }
 function iosInstallBanner(){ // '설치하세요'가 아니라 '기록 오래 보관하기' — 무설치가 기본, 백업/홈화면은 대등한 보호 옵션
   if(!isIOS() || isStandalone() || (S.meta&&S.meta.iosHintOff)) return '';
@@ -2183,7 +2186,7 @@ function backupBanner(){ const m=S.meta||{}; const real=S.events.filter(e=>!e.de
   </div>`;
 }
 const DOCS={
-  privacy:{ t:'개인정보 처리방침', b:`이음(마음을 잇다)은 별도의 서버 없이 이용자의 기기에서만 동작하는 앱입니다.
+  privacy:{ t:'개인정보 처리방침', b:`이음(마음을 잇다)은 회원가입·계정이 없는 앱입니다. 기록은 기기 안에 저장되고, '보내기' 기능을 쓸 때만 그 내용이 전달 서버를 잠깐 경유합니다.
 
 1. 수집·저장 항목
    - 이용자가 입력한 경조사 정보, 계좌·금액, 사람(품앗이) 내역, 설정값
@@ -2193,10 +2196,17 @@ const DOCS={
 2. 제3자 서비스
    - 송금은 토스·카카오페이·뱅킹 앱 등 이용자가 직접 실행하며, 이음은 자금·계좌에 접근하거나 중개하지 않습니다.
    - 공유·캘린더 저장 시 카카오·구글 등 해당 서비스의 정책이 적용됩니다.
-   - (선택 기능) '주최자에게 알리기'의 직접 전달을 사용하는 경우에 한해, 응답 내용(성함·참석 여부·금액)이 암호화된 행사 식별자와 함께 임시 전달 서버를 경유합니다. 주최자가 수신하는 즉시 서버에서 삭제되며, 미수신분도 30일 후 자동 삭제됩니다. 이 기능을 쓰지 않으면 어떤 정보도 서버를 거치지 않습니다.
+   - (이용자가 실행할 때만) 아래 내용이 전달 서버(Cloudflare Workers)를 경유합니다. 마케팅·분석에 쓰지 않으며 기간이 지나면 자동 삭제됩니다.
+     · 초대장·부고 링크 보내기 → 초대장 내용(이름·일시·장소·인사말·표시할 계좌) · 최대 400일 · 링크를 아는 사람이 열람
+     · 주최자에게 알리기 → 응답 내용(성함·참석 여부·금액) · 30일 · 주최자가 받으면 즉시 삭제
+     · 링크로 기기 옮기기 → 가계부 전체(압축, 사진 제외) · 7일 · 받으면 즉시 삭제
+     · 초대장 열람 수 → 익명 해시와 숫자만 · 180일
+     · 모바일청첩장 자동 인식 → 붙여넣은 청첩장 주소(URL)가 외부 프록시(corsproxy.io·allorigins.win)를 경유 · 보관 안 함
+   - 초대장·이전 링크는 코드를 아는 사람이면 열 수 있으니 의도한 상대에게만 보내주세요. 즉시 삭제 요청: sfmi1952@gmail.com
 
 3. 보관·파기
    - 데이터는 이용자가 삭제(초기화)하거나 브라우저 저장소를 비우면 즉시 사라집니다.
+   - 단, 위 전달 서버 보관분과 구글 자동 백업본은 기기에서 지워도 함께 지워지지 않습니다(각 기간 경과 후 자동 삭제 / 구글 계정에서 삭제).
    - 하객 등 제3자의 정보를 입력할 경우, 이용자가 해당 정보의 관리 책임을 집니다.
 
 4. 문의: 앱 내 설정 화면` },
@@ -2568,7 +2578,8 @@ function backFromHost(){ pruneDraft(); S.ui.tab='guest'; S.ui.guestView=(S.ui.ev
 function setHostTab(t){ S.ui.hostTab=t; save(); render(); window.scrollTo(0,0); }
 
 /* ======================= 주고받은 사람 (통합·검색 이력) ======================= */
-const jsq=s=>(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;'); // onclick 속성은 엔티티 디코드 후 JS 파싱 → &quot; 안전
+const jsq=s=>(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")   // ① JS 문자열 이스케이프
+  .replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); // ② HTML 엔티티 (&를 안 막으면 &#39;가 디코드되며 ①을 우회)
 function unifiedPeople(){ const map={};
   const push=(name,relation,item)=>{ const k=(name||'').trim(); if(!k)return;
     if(!map[k])map[k]={name:k,relation:relation||'',items:[]}; if(relation&&!map[k].relation)map[k].relation=relation; map[k].items.push(item); };
@@ -3513,10 +3524,8 @@ function nativeStateJSON(){ let j=JSON.stringify(coreData());
   return j; }
 function nativeFlush(){ if(!NATIVE) return; try{ if(typeof TUT!=='undefined'&&TUT.on) return; clearTimeout(_nmT);
   const j=nativeStateJSON(); if(j===_nmLast) return; _nmLast=j;
-  const today=todayStr(); let pre=Promise.resolve();
-  try{ if(localStorage.getItem('ieum_nprev')!==today){ localStorage.setItem('ieum_nprev',today);
-    pre=nP('Filesystem','copy',{from:NFILE,to:NPREV,directory:'DATA',toDirectory:'DATA'}).catch(()=>{}); } }catch(_){}
-  pre.then(()=>nP('Filesystem','writeFile',{path:NFILE,data:j,directory:'DATA',encoding:'utf8',recursive:true})).catch(()=>{}); }catch(e){} }
+  nP('Filesystem','writeFile',{path:NFILE,data:j,directory:'DATA',encoding:'utf8',recursive:true})
+    .catch(()=>{ _nmLast=null; }); }catch(e){} }                       // 실패 시 다음 저장에서 재시도 (하루 1회 prev 스냅샷은 nativeBoot에서)
 function nativeWipe(){ if(!NATIVE) return; [NFILE,NPREV].forEach(f=>nP('Filesystem','deleteFile',{path:f,directory:'DATA'}).catch(()=>{})); _nmLast=null; }
 function adoptRaw(raw,msg){ // 미러(IDB·앱 파일)에서 실데이터 채택 — tryAutoRecover와 공용
   try{ if(typeof TUT!=='undefined' && TUT.on) abortTutorial(); }catch(_){}
@@ -3545,11 +3554,19 @@ async function nativeShareFiles(files,text,title){ const uris=[];
   return nP('Share','share',{title:title||'', text:text||'', files:uris}).catch(()=>{ throw _abortErr(); }); }
 if(NATIVE){
   navigator.share=async(o)=>{ o=o||{}; if(o.files&&o.files.length) return nativeShareFiles(o.files,o.text,o.title);
-    return nP('Share','share',{title:o.title||'', text:o.text||'', url:o.url||'', dialogTitle:o.title||'공유'}).catch(()=>{ throw _abortErr(); }); };
+    const opt={dialogTitle:o.title||'공유'}; if(o.title) opt.title=String(o.title);
+    if(o.text) opt.text=String(o.text);
+    if(o.url){ if(/^https?:\/\//i.test(o.url)) opt.url=String(o.url);          // 플러그인은 http(s)·file 외의 url을 거부(빈 문자열 포함) → 넣지 않는다
+      else opt.text=(opt.text?opt.text+'\n':'')+String(o.url); }
+    if(!opt.text&&!opt.url) throw new Error('nothing to share');
+    return nP('Share','share',opt).catch(e=>{ const m=String(e&&e.message||e);
+      if(/cancel/i.test(m)) throw _abortErr();                                   // 사용자가 공유창을 닫음 = 오류 아님
+      throw e; }); };
   navigator.canShare=()=>true;
   window.dlBlob=(blob,name)=>{ nativeShareFiles([new File([blob],name,{type:blob.type||'application/octet-stream'})],name,name).catch(()=>{}); };
   // 카카오 SDK 등이 window.open으로 여는 intent://·외부 링크 → WebView는 새 창을 못 열므로 현재 창 내비게이션으로(플러그인이 가로채 외부 앱 실행). 같은 URL 연속 호출 1회로 합침
-  let _wo={u:'',t:0}; window.open=(u)=>{ try{ if(u){ const now=Date.now(); if(!(_wo.u===u&&now-_wo.t<800)){ _wo={u:String(u),t:now}; location.href=u; } } }catch(_){} return null; };
+  let _wo={u:'',t:0}; const _woStub={closed:false,focus(){},close(){},postMessage(){}}; // null을 주면 openUrl이 location.href로 한 번 더 열어 두 번 실행됨
+  window.open=(u)=>{ try{ if(u){ const now=Date.now(); if(!(_wo.u===u&&now-_wo.t<800)){ _wo={u:String(u),t:now}; location.href=u; } } }catch(_){} return _woStub; };
   nOn('IeumNative','openFailed',d=>{ const s=d&&d.scheme||''; toast(s==='supertoss'?'토스 앱이 없어요 — 계좌번호를 복사해 보내주세요':s==='kakaolink'||s==='intent'?'카카오톡을 열 수 없어요 — 기본 공유로 보내주세요':'연결된 앱을 열 수 없어요'); });
 }
 
@@ -3596,14 +3613,18 @@ if(NATIVE){
 
 /* ---- ④ 딥링크(App Links)·공유받기(ACTION_SEND): 앱은 https://shin-nyum.github.io/ieum/index.html 을 로컬로 서빙하므로
         들어온 URL의 쿼리·해시만 붙여 다시 열면 기존 부팅 핸들러(#e=/#i=/#g=/#r=/#b=/?shared_text=)가 그대로 처리 ---- */
+let _navN=0;
+function nativeGo(search,hash){ // ⚠️ 해시만 다른 URL로 replace하면 같은 문서라 '재로드가 일어나지 않는다' → 부팅 IIFE(#e=/#i=/#g=/#r=)가 영영 안 돌아 초대가 통째로 무시됨.
+  try{ localStorage.setItem(LS, JSON.stringify(S)); }catch(_){}       // 매번 다른 _n 쿼리를 붙여 실제 내비게이션을 강제 (부팅 후 replaceState로 지워짐)
+  const q=new URLSearchParams(String(search||'').replace(/^\?/,'')); q.set('_n', Date.now().toString(36)+(++_navN));
+  location.replace('/ieum/index.html?'+q.toString()+(hash||'')); }
 function nativeHandleUrl(u){ try{ const x=new URL(u); if(!/(^|\.)shin-nyum\.github\.io$/.test(x.host)) return false;
   let hash=x.hash||'', search=x.search||'';
   const rq=new URLSearchParams(search).get('r'); if(rq&&!hash){ hash='#r='+rq; search=''; } // intent:// 링크는 해시를 못 실어 ?r= 로 옴
   if(!hash&&!search) return false;
-  try{ localStorage.setItem(LS, JSON.stringify(S)); }catch(_){}
-  location.replace('/ieum/index.html'+search+hash); return true; }catch(e){ return false; } }
+  nativeGo(search,hash); return true; }catch(e){ return false; } }
 function nativeHandleShared(text,subject){ try{ const q=new URLSearchParams(); q.set('shared_text',String(text||'')); if(subject) q.set('shared_title',String(subject));
-  try{ localStorage.setItem(LS, JSON.stringify(S)); }catch(_){} location.replace('/ieum/index.html?'+q.toString()); }catch(e){} }
+  nativeGo(q.toString(),''); }catch(e){} }
 if(NATIVE){
   nOn('App','appUrlOpen',d=>{ if(d&&d.url) nativeHandleUrl(d.url); });
   nOn('IeumNative','shareText',d=>{ if(d&&d.text) nativeHandleShared(d.text,d.subject); });
@@ -3622,7 +3643,7 @@ async function checkWebUpdate(force){ if(!NATIVE||!RELAY.url) return 'skip';
   if(!force&&now-last<6*3600e3) return 'throttled';
   try{ localStorage.setItem('ieum_ota_at',String(now)); }catch(_){}
   let man=null; try{ const r=await fetch(RELAY.url+'/web?p=bundle.json&t='+now,{cache:'no-store'}); if(!r.ok) return 'nomanifest'; man=await r.json(); }catch(e){ return 'offline'; }
-  if(!man||!man.build||!Array.isArray(man.files)||!/^[A-Za-z0-9._-]{1,32}$/.test(man.build)) return 'badmanifest';
+  if(!man||!man.build||!Array.isArray(man.files)||!/^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$/.test(man.build)||man.build.includes('..')) return 'badmanifest';
   if(man.build===APP_BUILD) return 'latest';
   let bad=''; try{ bad=localStorage.getItem('ieum_ota_bad')||''; }catch(_){} if(bad===man.build) return 'bad';
   let ready=''; try{ ready=localStorage.getItem('ieum_ota_ready')||''; }catch(_){}
@@ -3652,8 +3673,12 @@ async function nativeBoot(){ if(!NATIVE) return;
   try{ NINFO=await nP('IeumNative','getInfo'); }catch(e){}
   if(NINFO.rolledBack){ try{ const b=localStorage.getItem('ieum_ota_ready')||''; if(b){ localStorage.setItem('ieum_ota_bad',b); localStorage.removeItem('ieum_ota_ready'); } }catch(_){} setTimeout(()=>toast('업데이트에 문제가 있어 기본 버전으로 돌아왔어요'),800); }
   nP('IeumNative','webReady').catch(()=>{});
-  try{ const p=localStorage.getItem('ieum_ota_pending'); if(p&&p!==APP_BUILD&&!otaBusy()){ nativeApplyBundle(p); return; } if(p===APP_BUILD) localStorage.removeItem('ieum_ota_pending'); }catch(_){}
+  try{ const today=todayStr(); if(localStorage.getItem('ieum_nprev')!==today){ localStorage.setItem('ieum_nprev',today);
+    nP('Filesystem','copy',{from:NFILE,to:NPREV,directory:'DATA',toDirectory:'DATA'}).catch(()=>{}); } }catch(_){} // 어제 상태 1세대 보존
   try{ if((localStorage.getItem('ieum_ota_ready')||'')===APP_BUILD) localStorage.removeItem('ieum_ota_ready'); }catch(_){}
+  try{ const p=localStorage.getItem('ieum_ota_pending')||'', rd=localStorage.getItem('ieum_ota_ready')||'', bad=localStorage.getItem('ieum_ota_bad')||'';
+    if(p && p===rd && p!==APP_BUILD && p!==bad) nativeApplyBundle(p);   // 실제로 받아둔 번들일 때만 (return 금지 — 아래 리스너 등록까지 마쳐야 함)
+    else if(p) localStorage.removeItem('ieum_ota_pending'); }catch(_){}
   setTimeout(()=>{ nativeCleanupBundles(); checkWebUpdate(false); },2500);
   nOn('App','appStateChange',s=>{ if(s&&s.isActive){ checkWebUpdate(false); nativeNotiSync(); } else { nativeFlush(); } });
   nOn('App','pause',()=>nativeFlush());

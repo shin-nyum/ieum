@@ -40,11 +40,12 @@ public class IeumNativePlugin extends Plugin {
     private String pendingShareText = null;
     private String pendingShareSubject = null;
 
-    @Override
-    public void load() {
-        try { captureShare(getActivity().getIntent()); } catch (Exception ignored) {}
-    }
-
+    /**
+     * 공유받기(ACTION_SEND)는 여기 한 곳에서만 처리한다.
+     * BridgeActivity.load()가 콜드스타트에도 onNewIntent(getIntent())를 호출하므로 이 경로로 다 들어온다.
+     * (Plugin.load()에서 미리 꺼내면 여기서 빈손이 되어 이벤트가 발생하지 않는다 — 실제로 그 버그가 있었다.)
+     * 이벤트는 retain=true로 보내 JS 리스너가 나중에 등록돼도 전달된다.
+     */
     @Override
     protected void handleOnNewIntent(Intent intent) {
         super.handleOnNewIntent(intent);
@@ -52,6 +53,8 @@ public class IeumNativePlugin extends Plugin {
             JSObject o = new JSObject();
             o.put("text", pendingShareText);
             o.put("subject", pendingShareSubject == null ? "" : pendingShareSubject);
+            pendingShareText = null;   // 리스너가 유일한 소비자 (getShareText는 수동 폴백)
+            pendingShareSubject = null;
             notifyListeners("shareText", o, true);
         }
     }
@@ -119,10 +122,12 @@ public class IeumNativePlugin extends Plugin {
     private void openIntentUri(String raw) {
         try {
             Intent in = Intent.parseUri(raw, Intent.URI_INTENT_SCHEME);
-            // 웹 콘텐츠 유래 인텐트 하드닝: 브라우저블 컴포넌트만, 명시 컴포넌트·셀렉터 금지
+            // 웹 콘텐츠 유래 인텐트 하드닝: 브라우저블 컴포넌트만, 명시 컴포넌트·셀렉터 금지, 우리 파일에 대한 권한 부여 금지
             in.addCategory(Intent.CATEGORY_BROWSABLE);
             in.setComponent(null);
             in.setSelector(null);
+            in.setFlags(in.getFlags() & ~(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION | Intent.FLAG_GRANT_PREFIX_URI_PERMISSION));
             in.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             try {
                 getContext().startActivity(in);
@@ -150,6 +155,7 @@ public class IeumNativePlugin extends Plugin {
     private boolean viewUri(Uri u) {
         try {
             Intent i = new Intent(Intent.ACTION_VIEW, u);
+            i.addCategory(Intent.CATEGORY_BROWSABLE);   // 브라우저처럼 '외부에서 열리도록 만들어진' 액티비티만
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             getContext().startActivity(i);
             return true;

@@ -15,7 +15,7 @@ public class MainActivity extends BridgeActivity {
     /**
      * OTA 웹 번들 부팅 가드.
      * Capacitor는 CapWebViewSettings.serverBasePath 에 저장된 경로(다운로드한 웹 번들)를 자동 적용한다.
-     * 그 번들이 부팅에 실패하면(JS가 IeumNative.webReady()를 못 부름) 두 번째 시작에서 경로를 지워
+     * 그 번들이 부팅에 실패하면(JS가 IeumNative.webReady()를 못 부름) 두 번 연속 실패한 뒤(=세 번째 시작) 경로를 지워
      * APK에 내장된 번들(assets/public)로 되돌린다. 앱 버전이 바뀌면 Capacitor가 스스로 경로를 초기화한다.
      */
     @Override
