@@ -25,3 +25,4 @@ twa/build.log
 twa/.gradle/
 twa/app/build/
 twa/build/
+.claude/
