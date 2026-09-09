@@ -478,7 +478,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v99'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v100'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -1611,7 +1611,7 @@ function guestDetail(){
     ${ev.externalUrl?`<button class="btn btn-line btn-sm" onclick="openExternal(curEvent())">${c.doc} 전체보기</button>`:''}
   </div>
   ${ev.message?`<p class="quote serif" style="margin:2px 6px 14px">${esc(ev.message).replace(/\n/g,'<br/>')}</p>`:''}
-  ${inappBanner()}${reciCard(ev)}
+  ${reciCard(ev)}
   <div class="card">
     <h3>${ev.type==='memorial'?`${RIBBON} 마음 전하기 (${c.money})`:`💸 마음 전하기 (${c.money})`}</h3>
     <p class="sub">${ev.type==='memorial'?'서두르지 않아도 됩니다 — 계좌로 조용히 마음을 전할 수 있어요.':'금액을 입력하면 <b>토스는 자동완성</b> — 3초면 끝나요.'}</p>
@@ -2168,7 +2168,7 @@ function iosInstallBanner(){ // '설치하세요'가 아니라 '기록 오래 �
 }
 function dismissIosNudge(){ if(S.meta) S.meta.iosNudgeAt=Date.now(); save(); render(); }
 function iosNudge(){ // 하객이 첫 기록을 남긴 직후 = 유일하게 보장된 접점. 백업했거나 한 번 닫았으면 다시 안 뜸
-  if(!isIOS()||isStandalone()||isInApp()) return ''; // 인앱은 inappBanner가 커버 — 박스 중첩 방지
+  if(!isIOS()||isStandalone()||isInApp()) return ''; // 인앱 웹뷰에선 표시하지 않음
   if(typeof TUT!=='undefined'&&TUT.on) return ''; // 튜토리얼 연습 송금에 백업 넛지 금지
   const ev=curEvent(); if(ev&&(ev.demo||ev.tut)) return '';
   if(S.meta&&(S.meta.iosNudgeAt||S.meta.lastBackupAt)) return '';
@@ -2176,17 +2176,6 @@ function iosNudge(){ // 하객이 첫 기록을 남긴 직후 = 유일하게 보
     <div class="row" style="margin-top:8px">
       <button class="minibtn" onclick="exportData()">백업 파일 만들기</button>
       <button class="minibtn" style="color:var(--muted)" onclick="dismissIosNudge()">알겠어요</button>
-    </div></div>`; }
-function dismissInapp(){ S.ui.inappOff=true; save(); render(); }
-function inappBanner(){ // 인앱 웹뷰 안내: 기록이 이 웹뷰 저장소에만 남는 사일로 문제 + 기능 제한
-  if(!isInApp()||S.ui.inappOff) return '';
-  const kakao=isKakaoInApp(); const canEscape=kakao||/\bLine\//i.test(navigator.userAgent);
-  const ev=curEvent(); const doc=ev?cfg(ev).doc:'이음'; const bro=isIOS()?'Safari':'Chrome';
-  return `<div class="note" style="margin:0 0 12px">🌐 지금 ${kakao?'카카오톡':'앱'} 안 브라우저로 보는 중 — 그대로 써도 돼요.
-    다만 여기서 남긴 기록은 ${kakao?'카톡':'이 앱'} 브라우저에만 저장돼요. 오래 보관하려면 Safari/Chrome이 안전해요.
-    <div class="row" style="margin-top:8px">
-      <button class="minibtn" onclick="openExternalBrowser(curEvent()&&curEvent().role!=='host'?inviteLink(curEvent()):null)">${canEscape?`🌐 ${bro}에서 이 ${doc} 열기`:`🔗 ${doc} 링크 복사`}</button>
-      <button class="minibtn" style="color:var(--muted)" onclick="dismissInapp()">닫기</button>
     </div></div>`; }
 function snoozeBackup(){ if(S.meta) S.meta.backupSnooze=Date.now()+((isIOS()&&!isStandalone())?2:7)*86400000; save(); render(); } // iOS 웹은 ITP 7일 창보다 짧게
 function backupBanner(){ const m=S.meta||{}; const real=S.events.filter(e=>!e.demo).length+S.people.filter(p=>!p.demo).length;
