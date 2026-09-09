@@ -455,7 +455,7 @@
   <main id="app"></main>
   <div class="footer">
     이음은 자금을 보관·중개하지 않습니다. 송금은 토스/뱅킹 앱에서 직접 이루어집니다.<br/>
-    <span style="opacity:.7">이음 · 마음을 잇다 · v1.1 · 데이터는 내 기기에만</span><br/>
+    <span style="opacity:.7" id="ftver">이음 · 마음을 잇다</span><br/>
     <button class="ftlink" onclick="startTutorial()">📖 사용법 보기</button>
   </div>
   <nav class="bnav" id="bottomnav" style="display:none" aria-label="주 메뉴">
@@ -478,7 +478,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v98'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v99'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -1962,7 +1962,7 @@ function settingsView(){ const st=S.settings||{}; const ago=backupAgo();
   </div>
   <div class="card">
     <div class="secthead"><div class="t">💾 백업 · 기기 이전</div><div class="c">${ago?`마지막 백업 ${ago}`:'아직 백업 없음'}</div></div>
-    ${NATIVE?`<p class="sub"><b>기록은 이음 앱 안에 저장돼요</b> — 크롬 등 브라우저 데이터를 지워도 그대로 남습니다. 휴대폰의 구글 계정 백업이 켜져 있으면 앱을 다시 설치하거나 새 폰을 설정할 때 자동 복원되고, 폰을 바꿀 땐 <b>[🔗 링크로 기기 옮기기]</b>가 가장 확실해요.</p>`:`<p class="sub"><b>앱 업데이트로는 데이터가 지워지지 않고, 앱을 닫을 때마다 이 기기 안에 자동 백업됩니다.</b> 다만 데이터는 이 기기에만 저장되므로, 휴대폰을 바꿀 땐 <b>[🔗 링크로 기기 옮기기]</b>를 카톡 '나에게 보내기'로 보내고, 새 폰에서 <b>[품앗이 가계부 복원하기]</b> 버튼만 누르면 끝 — 파일 백업은 보조 수단이에요.</p>`}
+    ${NATIVE?`<p class="sub"><b>기록은 이음 앱 안에 저장돼요</b> — 크롬 등 브라우저 데이터를 지워도 그대로 남습니다. 휴대폰의 구글 계정 백업이 켜져 있으면 앱을 다시 설치하거나 새 폰을 설정할 때 자동 복원되고, 폰을 바꿀 땐 <b>[🔗 링크로 기기 옮기기]</b>가 가장 확실해요.</p>`:`<p class="sub"><b>앱 업데이트로는 데이터가 지워지지 않고, 앱을 닫을 때마다 이 기기 안에 자동 백업됩니다.</b> 다만 기록은 이 <b>브라우저 저장소</b>에 있어 브라우저의 사이트 데이터를 지우면 함께 지워지고(Play 스토어의 이음 앱 1.3.0+는 앱 안에 저장), 휴대폰을 바꿀 땐 <b>[🔗 링크로 기기 옮기기]</b>를 카톡 '나에게 보내기'로 보내고, 새 폰에서 <b>[품앗이 가계부 복원하기]</b> 버튼만 누르면 끝 — 파일 백업은 보조 수단이에요.</p>`}
     <div class="stack">
       <button class="btn btn-primary" onclick="shareTransferLink()">링크로 기기 옮기기 <span style="font-weight:400;font-size:11.5px;opacity:.85">· 가장 쉬워요</span></button>
       <button class="btn btn-ghost" onclick="exportData()">백업 파일 만들기 <span style="font-weight:400;font-size:11.5px;opacity:.8">· 파일 보관용(보조)</span></button>
@@ -1973,11 +1973,11 @@ function settingsView(){ const st=S.settings||{}; const ago=backupAgo();
   </div>
   <div class="card" style="padding:5px 4px">
     ${moreItem('📖','튜토리얼 다시 보기','기본 기능을 데모로 안내해요','startTutorial()')}
-    ${moreItem('📄','개인정보 처리방침','이음은 정보를 서버로 수집하지 않아요',"openDoc('privacy')")}
+    ${moreItem('📄','개인정보 처리방침','기기 저장 · 초대장 등 전달 기능만 릴레이 경유',"openDoc('privacy')")}
     ${moreItem('📃','이용약관','',"openDoc('terms')")}
     ${moreItem('🗑️','모든 데이터 삭제','이 기기의 이음 데이터를 완전히 삭제','reset()')}
   </div>
-  <p class="land-foot">이음 v1.1 · 데이터는 내 기기에만 저장됩니다</p>`;
+  <p class="land-foot">${NATIVE?`이음 앱 ${esc(NINFO.versionName||'')} · 웹 ${APP_BUILD}<br/>기록은 앱 안에 저장돼요 — 브라우저 데이터를 지워도 남습니다`:`이음 웹 ${APP_BUILD}<br/><b>기록이 이 브라우저 저장소에 있어요</b> — 브라우저의 사이트 데이터를 지우면 함께 지워집니다`}</p>`;
 }
 /* ---- 백업 파일 (기기 이전의 공식 경로) ---- */
 function backupPayload(){ // 데모/튜토리얼 주입분은 백업에 싣지 않음 (다른 기기 복원 오염 방지)
@@ -3534,6 +3534,7 @@ const nP=(p,m,o)=>NATIVE?Capacitor.nativePromise(p,m,o||{}):Promise.reject(new E
 function nOn(p,e,cb){ try{ if(NATIVE) Capacitor.addListener(p,e,cb); }catch(_){} }
 const NFILE='ieum/state.json', NPREV='ieum/prev.json';
 let NINFO={versionName:'',versionCode:0,serverBasePath:'',rolledBack:false};
+function fillFooter(){ const el=document.getElementById('ftver'); if(el) el.textContent='이음 · 마음을 잇다 · '+(NATIVE?'앱 '+(NINFO.versionName||'')+' · 웹 '+APP_BUILD:'웹 '+APP_BUILD); } fillFooter();
 const WEB_STUB='<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>이음</title><style>html,body{margin:0;background:#f3efe8}</style><script>location.replace("/ieum/index.html"+location.search+location.hash)<\/script></head><body></body></html>'; // <\/script>: HTML 파서가 스크립트 블록을 조기 종료하지 않도록
 
 /* ---- ① 앱 내부 파일 미러: save()마다 디바운스 기록, 종료 시 즉시. 부팅 시 비어 있으면 여기서 복구 ---- */
@@ -3690,7 +3691,7 @@ async function nativeCleanupBundles(){ try{ const cur=(NINFO.serverBasePath||'')
   const d=await nP('Filesystem','readdir',{path:'web',directory:'DATA'});
   for(const f of (d&&d.files)||[]){ const n=f.name||f; if(n===keep||n===ready) continue; await nP('Filesystem','rmdir',{path:'web/'+n,directory:'DATA',recursive:true}).catch(()=>{}); } }catch(e){} }
 async function nativeBoot(){ if(!NATIVE) return;
-  try{ NINFO=await nP('IeumNative','getInfo'); }catch(e){}
+  try{ NINFO=await nP('IeumNative','getInfo'); }catch(e){} fillFooter();
   if(NINFO.rolledBack){ try{ const b=localStorage.getItem('ieum_ota_ready')||''; if(b){ localStorage.setItem('ieum_ota_bad',b); localStorage.removeItem('ieum_ota_ready'); } }catch(_){} setTimeout(()=>toast('업데이트에 문제가 있어 기본 버전으로 돌아왔어요'),800); }
   nP('IeumNative','webReady').catch(()=>{});
   try{ const today=todayStr(); if(localStorage.getItem('ieum_nprev')!==today){ localStorage.setItem('ieum_nprev',today);
