@@ -478,7 +478,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v97'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v98'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -974,6 +974,25 @@ function _probeImg(url,ms){ if(url in _probeCache) return Promise.resolve(_probe
   im.onerror=()=>{ if(!done){done=true;clearTimeout(t);res(false);} };
   im.src=url; }catch(e){ res(false); } }); }
 /* 외부 모바일청첩장 링크를 그대로 공유 → 그 청첩장의 썸네일이 카카오톡에 뜸 */
+// 문자로 보내기 — 링크만(이미지 첨부 없음, 2026-09 초대카드 철거). 문자앱이 링크 미리보기(og)를 알아서 붙인다.
+function smsHref(body){ const ios=/iPhone|iPad|iPod/i.test(navigator.userAgent); // iOS는 'sms:&body=', 안드로이드는 'sms:?body=' — 형식이 다르다
+  return (ios?'sms:&body=':'sms:?body=')+encodeURIComponent(body); }
+function inviteSmsBody(ev,link){ const mem=ev.type==='memorial';
+  return `${evNamePlain(ev)} ${ev.subtitle}
+${dateText(ev)} · ${ev.venue}
+${mem?'부고 확인·조의 전하기':'청첩장 확인·캘린더·축의금 보내기'} ▸
+${link}`; }
+async function shareEventSMS(ev){
+  const link=(await shortInviteLink(ev))||inviteLink(ev); const body=inviteSmsBody(ev,link);
+  if(isInApp()&&!isKakaoInApp()){ copy(body); toast('이 브라우저에선 문자앱 연결이 막혀 본문을 복사했어요 — 문자앱에 붙여넣으세요'); return; }
+  if(!/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){ copy(body); toast('문자 본문을 복사했어요 — 폰에서 열면 문자앱으로 바로 보내져요'); return; }
+  // 스킴 대입은 실패해도 throw하지 않음 → 이탈 이력으로 실패 감지 (토스 연결과 동일 패턴). 네이티브 앱은 플러그인이 sms:를 가로채 문자앱으로 넘긴다.
+  let left=false; const onLeave=()=>{left=true;};
+  ['visibilitychange','pagehide','blur'].forEach(t=>addEventListener(t,onLeave,{once:true}));
+  try{ location.href=smsHref(body); }catch(e){}
+  setTimeout(()=>{ ['visibilitychange','pagehide','blur'].forEach(t=>removeEventListener(t,onLeave));
+    if(left||document.hidden||document.visibilityState==='hidden') return;
+    copy(body); toast('문자앱이 열리지 않아 본문을 복사했어요 — 문자앱에 붙여넣으세요'); },1600); }
 function shareExternal(ev){ if(!ev.externalUrl){ toast('연결된 모바일청첩장이 없어요'); return; }
   const text=`${evNamePlain(ev)} ${ev.subtitle}\n${dateText(ev)} · ${ev.venue}`;
   if(navigator.share){ navigator.share({title:`${evNamePlain(ev)} ${ev.subtitle}`,text,url:ev.externalUrl}).catch(()=>{}); return; }
@@ -1226,7 +1245,7 @@ function shareFromHost(kind){ const ev=hostEvent(); if(!ev)return;
   // 대규모 행사(FREE_GUESTS명+) 발송 게이트 — 장부 인원 기준. 오픈 수는 2차 전파로 부풀 수 있어 과금 근거로 쓰지 않음. 부고는 예외(장례 중 결제 UI 금지).
   if(!hasPass(ev) && ev.type!=='memorial' && (ev.guests||[]).length>=FREE_GUESTS){
     passTrack('bigEvent'); passPrompt(()=>shareFromHost(kind),`하객 ${FREE_GUESTS}명 이상의 큰 행사예요. 이미 보낸 초대장과 하객 응답 기록은 그대로 계속 작동하고, 패스는 새 발송에만 필요해요.`); return; }
-  if(kind==='ext') shareExternal(ev); else shareEvent(ev); }
+  if(kind==='ext') shareExternal(ev); else if(kind==='sms') shareEventSMS(ev); else shareEvent(ev); }
 function hostView(){
   const ev=hostEvent(); const c=cfg(ev); const led=ledgerStats(ev);
   const hf=S.ui.hostFold||{};
@@ -1334,6 +1353,7 @@ function hostView(){
     ${ev.externalUrl&&ev.shareImg?`<img src="${esc(ev.shareImg)}" alt="" style="width:76px;height:95px;object-fit:cover;border-radius:10px;border:1px solid var(--line);display:block;margin:4px 0 2px" onerror="this.style.display='none'">`:''}
     <div class="stack" style="margin-top:10px">
       <button class="btn btn-kakao" onclick="shareFromHost('kakao')">카카오톡으로 보내기</button>
+      <button class="btn btn-ghost" onclick="shareFromHost('sms')">문자로 보내기 <span style="font-weight:400;font-size:11.5px;opacity:.75">· 링크만</span></button>
       ${ev.externalUrl?`<button class="btn btn-line btn-sm" onclick="shareFromHost('ext')">청첩장 원본 그대로 보내기</button>`:''}
     </div>
     ${(!hasPass(ev)&&ev.type!=='memorial'&&(ev.guests||[]).length>=Math.ceil(FREE_GUESTS*0.8)&&(ev.guests||[]).length<FREE_GUESTS)?`<div class="note" style="margin-top:10px">장부에 <b>${(ev.guests||[]).length}명</b>이 기록됐어요. ${FREE_GUESTS}명 이상이면 새 발송에는 <b>이음 패스</b>가 필요해요 — 이미 보낸 초대장과 장부는 계속 작동합니다.</div>`:''}
@@ -3567,7 +3587,7 @@ if(NATIVE){
   // 카카오 SDK 등이 window.open으로 여는 intent://·외부 링크 → WebView는 새 창을 못 열므로 현재 창 내비게이션으로(플러그인이 가로채 외부 앱 실행). 같은 URL 연속 호출 1회로 합침
   let _wo={u:'',t:0}; const _woStub={closed:false,focus(){},close(){},postMessage(){}}; // null을 주면 openUrl이 location.href로 한 번 더 열어 두 번 실행됨
   window.open=(u)=>{ try{ if(u){ const now=Date.now(); if(!(_wo.u===u&&now-_wo.t<800)){ _wo={u:String(u),t:now}; location.href=u; } } }catch(_){} return _woStub; };
-  nOn('IeumNative','openFailed',d=>{ const s=d&&d.scheme||''; toast(s==='supertoss'?'토스 앱이 없어요 — 계좌번호를 복사해 보내주세요':s==='kakaolink'||s==='intent'?'카카오톡을 열 수 없어요 — 기본 공유로 보내주세요':'연결된 앱을 열 수 없어요'); });
+  nOn('IeumNative','openFailed',d=>{ const s=d&&d.scheme||''; toast(s==='supertoss'?'토스 앱이 없어요 — 계좌번호를 복사해 보내주세요':s==='kakaolink'||s==='intent'?'카카오톡을 열 수 없어요 — 기본 공유로 보내주세요':s==='sms'?'문자앱을 열 수 없어요':'연결된 앱을 열 수 없어요'); });
 }
 
 /* ---- ③ 알림: AlarmManager 예약(앱을 열지 않아도 도착). SW 사다리와 같은 문구 ---- */
