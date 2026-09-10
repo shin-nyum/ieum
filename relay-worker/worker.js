@@ -92,6 +92,25 @@ export default {
         } catch (e) { return Response.redirect(FALLBACK, 302); }
       }
 
+      // 청첩장 페이지 프록시 — 공개 CORS 프록시(corsproxy.io 등)가 유료화·불통이라 자체 경유. HTML만, 2MB까지, 저장하지 않음.
+      if (req.method === 'GET' && url.pathname === '/page') {
+        const u = String(url.searchParams.get('u') || '');
+        if (!/^https?:\/\/[^\s]{6,600}$/.test(u) || /^https?:\/\/(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|\[|0\.)/i.test(u)) return json({ error: 'BAD_URL' }, 400);
+        try {
+          const r = await fetch(u, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Linux; Android 14; SM-S926N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Mobile Safari/537.36',
+                       'Accept': 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.5', 'Accept-Language': 'ko-KR,ko;q=0.9' },
+            redirect: 'follow', signal: AbortSignal.timeout(10000), cf: { cacheTtl: 300, cacheEverything: true },
+          });
+          const ct = r.headers.get('content-type') || '';
+          if (!r.ok) return json({ error: 'UPSTREAM', status: r.status }, 502);
+          if (!/text\/html|application\/xhtml/i.test(ct)) return json({ error: 'NOT_HTML' }, 415);
+          const buf = await r.arrayBuffer();
+          return new Response(buf.byteLength > 2000000 ? buf.slice(0, 2000000) : buf, {
+            headers: { 'Content-Type': ct, 'Cache-Control': 'no-store', 'X-Final-Url': r.url, 'Access-Control-Expose-Headers': 'X-Final-Url', ...CORS } });
+        } catch (e) { return json({ error: 'FETCH_FAIL', detail: String(e && e.message || e).slice(0, 120) }, 502); }
+      }
+
       // 네이티브 앱 OTA 웹 번들 프록시 — 앱 WebView는 자기 오리진(shin-nyum.github.io) 요청을 로컬 서버가 가로채므로
       // GitHub Pages의 최신 파일은 이 경유로만 받을 수 있다. 경로 화이트리스트 + 짧은 엣지 캐시.
       if (req.method === 'GET' && url.pathname === '/web') {
