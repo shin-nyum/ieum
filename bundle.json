@@ -1,11 +1,11 @@
 {
- "build": "v102",
- "gen": "2026-09-10T07:58:40.712Z",
+ "build": "v103",
+ "gen": "2026-09-10T08:07:59.274Z",
  "files": [
   {
    "p": "index.html",
-   "h": "425a4e3d9c28f140166d3eae38722ca95d3962861a8f6f54d53199adf2ff6c1a",
-   "s": 333468
+   "h": "e2c6608c307037a8ae83da84d7d9ad5f5b194889b0f0f5743fb0b4695cc3757b",
+   "s": 329903
   },
   {
    "p": "memorial.html",
@@ -14,8 +14,8 @@
   },
   {
    "p": "privacy.html",
-   "h": "2875094bda4a5e9f043eefd4eac41c5a5d96f1587e0ae4b43a244999e877b156",
-   "s": 7457
+   "h": "6f903fbdf4988891944cdf20e577336af53a20182f7bd7b8cd475291f61efa08",
+   "s": 7460
   },
   {
    "p": "icon-192.png",
