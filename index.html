@@ -149,6 +149,10 @@
 .hero .hero-msg{font-size:15px;color:var(--muted);line-height:1.85;margin:14px auto 0;max-width:300px} /* 주최자 인사말 — 디데이 뱃지 바로 위 */
 .hero.mem .hero-msg{color:#a99e8e}
   .hero .dday-pill{margin-top:8px} .hero .when{margin-top:12px}
+.kp-step{display:flex;align-items:center;gap:12px;padding:10px 6px;border-bottom:1px solid var(--line)} .kp-step:last-of-type{border-bottom:0}
+.kp-n{flex:none;width:26px;height:26px;border-radius:50%;background:var(--primary);color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center}
+.kp-ic{flex:none;width:44px;height:44px;border-radius:12px;background:var(--tint2);color:var(--primary-d);display:flex;align-items:center;justify-content:center}
+.kp-t{font-size:16px;line-height:1.5;color:var(--ink)}
 .dday-pill{display:inline-block;margin-top:13px;background:var(--ink);color:#fff;
     font-size:13px;font-weight:600;letter-spacing:.08em;padding:6px 14px;border-radius:999px}
   /* 부고 상세: 먹색 히어로 — 기쁜 자리가 아니므로 톤을 낮춘다 (homehero.mem 문법 재사용) */
@@ -477,7 +481,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v104'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v105'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -1423,15 +1427,13 @@ function kpFocus(el){ if(el&&!el.value&&!_kpGuided){ _kpGuided=true; try{ el.blu
 function openKpGuide(){ let bg=document.getElementById('kpguide');
   if(!bg){ bg=document.createElement('div'); bg.id='kpguide'; bg.className='sheet-bg'; bg.onclick=closeKpGuide; document.body.appendChild(bg); }
   bg.innerHTML=`<div class="sheet" onclick="event.stopPropagation()">
-    <div class="secthead" style="margin-bottom:10px"><div class="t" style="font-size:17px">카카오페이 송금링크 가져오기</div></div>
-    <ol style="margin:0 0 6px 20px;padding:0;line-height:1.9;font-size:15.5px">
-      <li>카카오톡 → <b>더보기(⋯)</b> → <b>코드스캔</b> → 아래 <b>송금코드</b></li>
-      <li>QR 아래 <b>다운로드</b>로 이미지 저장</li>
-      <li>갤러리에서 그 QR을 열어 <b>QR 인식</b>(구글 렌즈·삼성 갤러리) → <b>qr.kakaopay.com</b> 링크 <b>복사</b></li>
-      <li>이 칸에 붙여넣기</li>
-    </ol>
-    <div class="note" style="margin:8px 0 12px">링크는 선택이에요. 없어도 하객은 계좌이체·토스로 보낼 수 있어요.</div>
-    <button class="btn btn-primary" onclick="closeKpGuide()">알겠어요</button>
+    <div class="secthead" style="margin-bottom:12px"><div class="t" style="font-size:18px">카카오페이 송금링크 가져오기</div></div>
+    <div class="kp-step"><div class="kp-n">1</div><div class="kp-ic"><span style="font-size:24px;line-height:1">💬</span></div><div class="kp-t"><b>카카오톡</b>을 열고 <b>더보기</b> <span style="font-size:20px;line-height:1;letter-spacing:1px">⋯</span></div></div>
+    <div class="kp-step"><div class="kp-n">2</div><div class="kp-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3M21 14v3M14 21h3M21 21h.01"/></svg></div><div class="kp-t">오른쪽 위 <b>QR 스캔</b> 아이콘</div></div>
+    <div class="kp-step"><div class="kp-n">3</div><div class="kp-ic"><span style="font-size:15px;font-weight:800;border:2px solid currentColor;border-radius:8px;padding:2px 8px">받기</span></div><div class="kp-t"><b>받기</b> 탭</div></div>
+    <div class="kp-step"><div class="kp-n">4</div><div class="kp-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7L12 19"/></svg></div><div class="kp-t"><b>링크</b> 아이콘 → 링크 복사</div></div>
+    <div class="kp-step"><div class="kp-n">5</div><div class="kp-ic"><span style="font-size:24px;line-height:1">📋</span></div><div class="kp-t">이음의 <b>카카오페이 송금링크</b> 칸에 붙여넣기</div></div>
+    <button class="btn btn-primary" style="margin-top:14px" onclick="closeKpGuide()">알겠어요</button>
   </div>`; setTimeout(()=>bg.classList.add('show'),10); }
 function closeKpGuide(){ const bg=document.getElementById('kpguide'); if(!bg) return; bg.classList.remove('show'); setTimeout(()=>{ try{ bg.remove(); }catch(e){} },220);
 }
