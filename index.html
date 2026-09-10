@@ -143,7 +143,7 @@
     radial-gradient(140% 100% at 50% 0%, #fffefb 0%, #f9f4eb 60%, #f4eee2 100%);
     border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:14px}
   .hero .lead{font-size:10.5px;letter-spacing:.3em;font-weight:500;color:var(--gold-text);text-transform:uppercase}
-  .hero .names{font-size:27.5px;margin:12px 0 4px;color:var(--ink);line-height:1.45}
+  .hero .names{font-size:clamp(22px,7.5vw,27.5px);margin:12px 0 4px;color:var(--ink);line-height:1.45} /* 320px→24px: 4자♥4자 한 줄(실측 경계 25.6px) · 367px+ 27.5px */
   .hero .names span{color:var(--rose);margin:0 9px;font-size:18.5px;vertical-align:middle}
   .hero .when{font-size:14.5px;color:var(--muted);margin-top:9px;line-height:1.7}
 .hero .hero-msg{font-size:15px;color:var(--muted);line-height:1.85;margin:14px auto 0;max-width:300px} /* 주최자 인사말 — 디데이 뱃지 바로 위 */
@@ -157,8 +157,7 @@
     font-size:13px;font-weight:600;letter-spacing:.08em;padding:6px 14px;border-radius:999px}
   /* 부고 상세: 먹색 히어로 — 기쁜 자리가 아니므로 톤을 낮춘다 (homehero.mem 문법 재사용) */
   .hero{position:relative}
-      background:rgba(255,255,255,.72);color:var(--primary-d);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
-      .hero.mem{background:linear-gradient(180deg,#3a352f,#2c2823);border-color:#575047}
+  .hero.mem{background:linear-gradient(180deg,#3a352f,#2c2823);border-color:#575047}
   .hero.mem .names{color:#e8e0d2}
   .hero.mem .when{color:#a99e8e}
   .hero.mem .lead{color:#8f857a;letter-spacing:.3em}
@@ -273,10 +272,10 @@
   .minibtn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:7px 9px;
     font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;color:var(--ink)}
   .minibtn.on{background:var(--ok);color:#fff;border-color:var(--ok)}
-  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  .stat{background:var(--tint);border:1px solid var(--line);border-radius:11px;padding:11px 8px;text-align:center}
-  .stat .v{font-size:21px;font-weight:700;color:var(--primary-d)}
-  .stat .v.big{font-size:17.5px}
+  .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .stat{background:var(--tint);border:1px solid var(--line);border-radius:11px;padding:11px 4px;text-align:center}
+  .stat .v{font-size:clamp(14px,4.4vw,21px);font-weight:700;color:var(--primary-d)}
+  .stat .v.big{font-size:clamp(12px,3.7vw,17.5px)}
   .stat .k{font-size:12px;color:var(--muted);margin-top:2px}
   .seg2{display:flex;background:var(--seg-bg);border-radius:9px;padding:3px;margin:2px 0 4px}
   .seg2 button{flex:1;border:0;background:transparent;padding:8px;border-radius:7px;
@@ -481,7 +480,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v106'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v107'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -1424,7 +1423,7 @@ function acctEditor(i,a){
 /* ---- 카카오페이 송금링크 안내: 앱에는 '링크 복사' 버튼이 없고 QR(이미지)만 준다 → QR을 인식해 qr.kakaopay.com 링크를 얻는 실제 경로 (2026-09 확인) ---- */
 let _kpGuided=false;
 function kpFocus(el){ if(el&&!el.value&&!_kpGuided){ _kpGuided=true; try{ el.blur(); }catch(e){} openKpGuide(); } }
-function openKpGuide(){ let bg=document.getElementById('kpguide');
+function openKpGuide(){ _kpGuided=true; let bg=document.getElementById('kpguide');
   if(!bg){ bg=document.createElement('div'); bg.id='kpguide'; bg.className='sheet-bg'; bg.onclick=closeKpGuide; document.body.appendChild(bg); }
   bg.innerHTML=`<div class="sheet" onclick="event.stopPropagation()">
     <div class="secthead" style="margin-bottom:12px"><div class="t" style="font-size:18px">카카오페이 송금링크 가져오기</div></div>
@@ -1547,7 +1546,6 @@ function addEventOnDate(ds,type){ // 달력에서 날짜 탭 → 참석할 경�
 }
 /* ---- 직접 추가: 달력 팝업에서 날짜 선택 → 전체 입력 폼 (본문 상시 달력 진입과 병행) ---- */
 let CALPOP_YM=null, _calpopHideT=null;
-let _calshHideT=null;
 /* 길찾기: 예식장·빈소를 지도앱으로 — 당일 최다 니즈 (100% 클라이언트 URL 스킴) */
 function openMapSheet(){ const ev=curEvent()||hostEvent(); if(!ev||!ev.venue){ toast('장소 정보가 없어요'); return; }
   const q=encodeURIComponent((ev.venue+' '+(ev.address||'')).trim());
@@ -1672,7 +1670,7 @@ function guestDetail(){
     <label>보내는 분 성함</label>
     <input id="gname" placeholder="이름 (주최자가 알아볼 수 있게)" value="${esc(nm)}" onchange="setGuestName(this.value)">
     <label>보낼 금액 <button class="minibtn" style="float:right;padding:4px 9px" onclick="openReco(curEvent().id)">${ev.type==='memorial'?'얼마가 적당할까요':'💡 얼마가 적당할까?'}</button></label>
-    <input id="sendamt" type="number" inputmode="numeric" placeholder="예: 100000" value="${me&&me.pay&&me.pay.amount!=null?me.pay.amount:(S.ui.guestSession.draftAmt||'')}" oninput="amtPreview()">
+    <input id="sendamt" type="number" inputmode="numeric" placeholder="예: 100000" value="${me&&me.pay&&me.pay.amount!=null?me.pay.amount:(S.ui.guestSession.draftAmt||((S.ui.guestSession.pendingPay&&S.ui.guestSession.pendingPay.evId===ev.id)?S.ui.guestSession.pendingPay.amt:'')||'')}" oninput="amtPreview()">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:7px">
       <div class="chips">${[50000,100000,150000,200000].map(a=>`<button class="chip" style="padding:5px 11px;font-size:12px" onclick="setAmt(${a})">${a/10000}만</button>`).join('')}</div>
       <b id="amtPrev" style="font-size:13px;color:var(--primary-d)">${me&&me.pay&&me.pay.amount!=null?won(me.pay.amount):''}</b>
@@ -1718,13 +1716,15 @@ function guestDetail(){
 }
 function notifyCard(ev,me,nm){ // 명부 기록 — 항상 표시 (팝업을 놓쳐도 여기서 기록+전달)
   const mem=ev.type==='memorial'; const c=cfg(ev); const hasPay=!!(me&&me.pay&&me.pay.amount!=null);
+  const pp=S.ui.guestSession.pendingPay; const mine=(!hasPay&&pp&&pp.evId===ev.id)?pp:null; // 송금 앱에 다녀온 뒤 아직 기록 전
   const payTxt=hasPay?`${c.money} ${won(me.pay.amount)}${me.pay.method==='toss'?' (토스)':me.pay.method==='kakao'?' (카카오페이)':me.pay.method==='cash'?' (현금 전달)':''}`:'';
   return `<div class="card" id="notifycard">
     <h3>📒 ${ledgerLabel(ev)}</h3>
     <div class="tienote" style="margin:6px 0 10px">${mem
       ?`🕊️ <b>기록해야 상주가 알 수 있어요.</b> 전한 위로가 이름과 함께 남습니다.`
       :`💞 <b>기록해야 주최자가 알 수 있어요.</b> 보낸 마음이 내 이름과 함께 명부에 남습니다.`}</div>
-    ${hasPay?`<p class="sub" style="margin:0"><b>${esc(nm)}</b> · <b>${esc(payTxt)}</b></p>`:''}
+    ${hasPay?`<p class="sub" style="margin:0"><b>${esc(nm)}</b> · <b>${esc(payTxt)}</b></p>`
+     :mine?`<p class="sub" style="margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span><b>${esc(nm||mine.name)}</b> · <b>${payMethodLabel(mine.method)} ${won(mine.amt)}</b></span><button class="minibtn" onclick="confirmPendingPay(0)">안 보냈어요</button></p>`:''}
     <button class="btn btn-primary" style="margin-top:11px" onclick="recordAndNotify()">${ledgerLabel(ev)}</button>
   </div>`; }
 function recordAndNotify(){ const ev=curEvent(); if(!ev) return; // 기록이 없으면 입력칸(또는 대기 중 송금)의 금액으로 기록한 뒤 전달
@@ -1733,12 +1733,12 @@ function recordAndNotify(){ const ev=curEvent(); if(!ev) return; // 기록이 �
   const me=ev.guests.find(g=>g.name===nm);
   if(me&&me.pay&&me.pay.amount!=null){ S.ui.guestSession.name=nm; notifyHost(); return; }
   const pp=S.ui.guestSession.pendingPay; const mine=pp&&pp.evId===ev.id?pp:null;
-  const amt=Number($('#sendamt')&&$('#sendamt').value)||(mine?mine.amt:0);
+  const typed=Number($('#sendamt')&&$('#sendamt').value)||0; const amt=typed||(mine?mine.amt:0); const fromPending=!typed&&!!mine;
   if(!amt){ toast('보낸 금액을 입력해 주세요'); const el=$('#sendamt'); if(el){ try{ el.focus(); }catch(e){} } return; }
   own(ev); S.ui.guestSession.name=nm;
   let x=ev.guests.find(g=>g.name===nm); if(!x){ x=mkGuest(nm,ev.myRelation||'지인',S.ui.guestSession.acctIdx||0); x.unregistered=true; ev.guests.push(x); }
-  x.pay={amount:amt, source:'app', method:(mine&&mine.method)||'account'}; ev.myGift=amt;
-  if(mine) S.ui.guestSession.pendingPay=null; payWatchStop(); S.ui.guestSession.draftAmt=null; save(); render();
+  x.pay={amount:amt, source:'app', method:(mine&&(fromPending||mine.amt===amt)&&mine.method)||'account'}; ev.myGift=amt;
+  if(mine){ S.ui.guestSession.pendingPay=null; payWatchStop(); } S.ui.guestSession.draftAmt=null; save(); render();
   setTimeout(notifyHost,150); }
 /* ======================= 액션 ======================= */
 function updEv(k,v){const ev=own(hostEvent());ev[k]=v;save();if(k==='date'||k==='time')$('#ddayTop').textContent=dday(ev);}
@@ -3757,7 +3757,7 @@ function backStep(){ // 한 단계 위로 (popstate·네이티브 뒤로가기 �
   try{
     if(document.getElementById('mapsheet')) closeMapSheet();
     else if(document.getElementById('tiepop')) closeTiePop();
-    else if(document.getElementById('paypop')) closePayPop();   // 송금 복귀 확인 시트 — pendingPay는 유지되어 인라인 확인이 폴백
+    else if(document.getElementById('paypop')) closePayPop();   // 송금 복귀 확인 시트 — pendingPay는 유지되어 명부 카드의 [기록하기]가 폴백
     else if(document.getElementById('addpop')) closeAddSheet(); // 경조사 추가 선택 시트
     else if(document.getElementById('kpguide')) closeKpGuide();  // 카카오페이 링크 안내
     else if(document.getElementById('rgsheet')) closeRestoreGuide();
