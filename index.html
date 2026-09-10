@@ -147,6 +147,7 @@
 .hero.mem .hero-msg{color:#a99e8e}
   .hero .dday-pill{margin-top:8px} .hero .when{margin-top:12px}
 .kp-step{display:flex;align-items:center;gap:12px;padding:10px 6px;border-bottom:1px solid var(--line)} .kp-step:last-of-type{border-bottom:0}
+.map-ic{width:24px;height:24px;border-radius:7px;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,.08)} /* 지도앱 미니 아이콘 */
 .kp-n{flex:none;width:26px;height:26px;border-radius:50%;background:var(--primary);color:#fff;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center}
 .kp-ic{flex:none;width:44px;height:44px;border-radius:12px;background:var(--tint2);color:var(--primary-d);display:flex;align-items:center;justify-content:center}
 .kp-t{font-size:16px;line-height:1.5;color:var(--ink)}
@@ -448,7 +449,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v111'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v112'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -1414,9 +1415,12 @@ function addEventOnDate(ds,type){ // 달력에서 날짜 탭 → 참석할 경�
 }
 /* ---- 직접 추가: 달력의 빈 날짜에서 → 입력 폼(날짜 프리필) ---- */
 /* ---- 주소 입력(주최자): 빈 칸을 누르면 직접 입력 / 지도앱에서 장소를 찾아 주소를 복사해 붙여넣기 — 길찾기와 같은 지도 URL ---- */
-const MAPS=[ ['네이버 지도', q=>q?'https://map.naver.com/p/search/'+q:'https://map.naver.com/'],
-             ['카카오맵',   q=>q?'https://map.kakao.com/link/search/'+q:'https://map.kakao.com/'],
-             ['구글 지도',  q=>q?'https://www.google.com/maps/search/?api=1&query='+q:'https://www.google.com/maps'] ];
+const MAPS=[ ['네이버 지도', q=>q?'https://map.naver.com/p/search/'+q:'https://map.naver.com/', 'naver'],
+             ['카카오맵',   q=>q?'https://map.kakao.com/link/search/'+q:'https://map.kakao.com/', 'kakao'],
+             ['구글 지도',  q=>q?'https://www.google.com/maps/search/?api=1&query='+q:'https://www.google.com/maps', 'google'] ];
+// 지도앱 아이콘(각 앱의 공식 스토어 아이콘 56px WebP, 식별 목적의 참조 사용) — 버튼 왼쪽 미니 이미지
+const MAP_ICONS={ naver:'data:image/webp;base64,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', kakao:'data:image/webp;base64,UklGRr4CAABXRUJQVlA4TLICAAAvN8ANANfjoG0kSfIsguVPcBncNztV92NwEEmSItWRf1tnhvlhuhy3bSRJkqtqrudMLJt/ZlvzvweHLCgoIIivFWgwGowW54PUT3IiNAORehCQBufnA1FQbUQpDKoUAqoBNQHV0gSUPOop/zVYqdYElAyiFqKJqlQjCK0gKhUQVLENMa+Raus7LtOrYH0KNO8TJKuAmuepEf7WO4payic0ylcQV9G6GzH3lk8QeYN4jAEhQhRA0AABBf9MsLOwBssg7dr2tG0s2VGWKnI7ZmZm5q0dMzOTZJZd/PvN60jK6KPeiP5PAP//KljsUbjW97S748R1f2J7l8Z9h8LuxefTuiqx8tPPL3VDVwSdzKpUgVjlk1Q4Ea35UEnVWuKH1ZED4X6dqqFR7wutxXunpTIocW9sSawopTIqq+XCDnmXKsP4nliJL2hlXJ+NbdDvslWCreR3aoEd0aplWbx6U5QtvD7CzNG7GSTLKx3iO5dLCWX3qDkyJyG9gXJEpOs1JOeJsd7SRoHFFOUD6VQB+GZZz5TYo6F6vDfIj9eQ3i1MsYMVIL8GHPTfJFAdZMYOaGiBtFiA9AFjYm0N+HqlGCRWeQXW64QpjDSU3Q4G+TsZpDvcOH2cAr45H4g+Cn+uUWD6mJpjpyrI1w+3L8FtD2oFVyeZOQx/SMhnuvY6U7D8RbnF6KpuMXR1LbKB9FNiCj9SblVsnjGFm4QdpDe0GY2U2yZPcxP5M8Kt9/yXdDj83PP2UEwkchiJE4K7yDY0w+AGxt0MTzft8EzIXQ3u523yBwF3tj/2U0Ly11jfHYyPNRAejbnL5EU6CF8G3GmxcXoQbhRuIXmULsInhDsutkwvwq3CNSSvE+XxLeHOs+OV8nicuYdRJn0W4QjSm7m/haMgds76XTgKGB4+FPLRZMj/xwI=', google:'data:image/webp;base64,UklGRuYCAABXRUJQVlA4WAoAAAAIAAAANwAANwAAVlA4IJ4CAAAwDwCdASo4ADgAPlEkjkQjoiGXDJVUOAUEtQBlNfG9d4u3i4yh69fyv2m7xt0k/MB0JfQA/YzrG/QA/YDrM/27/ZD2oHj91hLN89E7+79gD4R8vlg8trLIKm2CLCQU+DRnylxtkY/SbuTe9JTHUS22jCYfsskzqZSICTEvbIzBK7uAAP7/diMr4hCXvM0J+Ucnny1aG0w3izGfTDFcBd3ZyB65E2LZTgfD+l/Efa/+zdI7whtzvmW3Y/Ws48I/a7+gChpIRA8UJeud+3DnHCt10+brP9Gab0y1jZftn10E97Jz9Q73yjgNSP2noJ0S/3hiYOjN+61cffNiTEQZCJK3lACZWIK+0yFlbhiqoWXuDQP/LmBvKiim7+BU5+H+GL52g2FbWhp6pnyI6s2WJhfuym6dhggnwzmOxFDkLY/1aNxk33gVUK5wt7EInZ86lakYlJVP59g7jWPXL+3qxlVcbFndEeq6RWVYviN5+LRw71DNJifQhJKB4cQ1mUnO8u+DHGoSnfOK/hxfjHkJvE88t3kQLgM55Up2H0Ap2CXfm62HkCwr06FkrVjYZNlykfUBW4x2BVsAYv7cl945ba2LfWA05Lbng/jJ7c6ITbIoyf59f2jwSipKL/pY/2W1TqZbX+QcXjSOVKPvfJm2IVTV2aP6Hmx+6vNMhcchyzd8Fvknzq0u/gfIfoAz5jgo+VP/qUuhtyHDsIHeiisYUSVWKwxkH0by+q5Bfn/lHxNht5G0sF+Ijj/IjWFjzXiLWZ5f/IOR0fbNumeFnn3mdX6QH6peiS5w843s2BpE8PF3EG7XjlUM5nuUGljbK3Jw5U1RE5nQqxzu21aoMd5dizScsu7AdLnxmCKVPgm77U/ygCy7ssxuSEBoW8FAAAAARVhJRiIAAABJSSoACAAAAAEAMQECAAcAAAAaAAAAAAAAAFBpY2FzYQAA' };
+const mapIc=k=>`<img class="map-ic" src="${MAP_ICONS[k]}" alt="" width="24" height="24">`;
 let _addrSkip=false, _addrReturn=false;
 function addrFocus(el){ if(_addrSkip){ _addrSkip=false; return; } if(el&&!el.value){ try{ el.blur(); }catch(e){} openAddrSheet(); } }
 function addrTypeIn(){ closeAddrSheet(); setTimeout(()=>{ const el=document.getElementById('ev_addr'); if(el){ _addrSkip=true; el.focus(); } },240); }
@@ -1430,7 +1434,7 @@ function openAddrSheet(){ const ev=hostEvent(); if(!ev) return;
     <div class="secthead" style="margin-bottom:12px"><div class="t" style="font-size:18px">주소 입력</div></div>
     <div class="stack">
       <button class="btn btn-primary" onclick="addrTypeIn()">✏️ 직접 입력</button>
-      ${MAPS.map((m,i)=>`<button class="btn btn-ghost" onclick="addrViaMap(${i})">📍 ${m[0]}에서 찾기</button>`).join('')}
+      ${MAPS.map((m,i)=>`<button class="btn btn-ghost" onclick="addrViaMap(${i})">${mapIc(m[2])}${m[0]}에서 찾기</button>`).join('')}
     </div>
     <button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="closeAddrSheet()">닫기</button>
   </div>`;
@@ -1444,9 +1448,9 @@ function openMapSheet(){ const ev=curEvent()||hostEvent(); if(!ev||!ev.venue){ t
     <div style="font-weight:700;font-size:16px;margin-bottom:4px">길찾기</div>
     <p class="sub" style="margin:0 0 10px">${esc(ev.venue)}${ev.address?` · ${esc(ev.address)}`:''}</p>
     <div class="stack">
-      <button class="btn btn-ghost" onclick="openUrl('https://map.kakao.com/link/search/${q}')">카카오맵으로 찾기</button>
-      <button class="btn btn-ghost" onclick="openUrl('https://map.naver.com/p/search/${q}')">네이버지도로 찾기</button>
-      <button class="btn btn-ghost" onclick="openUrl('https://www.google.com/maps/search/?api=1&query=${q}')">구글 지도로 찾기</button>
+      <button class="btn btn-ghost" onclick="openUrl('https://map.kakao.com/link/search/${q}')">${mapIc('kakao')}카카오맵으로 찾기</button>
+      <button class="btn btn-ghost" onclick="openUrl('https://map.naver.com/p/search/${q}')">${mapIc('naver')}네이버 지도로 찾기</button>
+      <button class="btn btn-ghost" onclick="openUrl('https://www.google.com/maps/search/?api=1&query=${q}')">${mapIc('google')}구글 지도로 찾기</button>
     </div>
     <button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="closeMapSheet()">닫기</button>
   </div>`;
