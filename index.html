@@ -71,9 +71,6 @@
   html[data-theme="dark"] .btn-line,html[data-theme="dark"] .minibtn,html[data-theme="dark"] .calnav,html[data-theme="dark"] .rrc,html[data-theme="dark"] .chip,html[data-theme="dark"] .rm-noti,html[data-theme="dark"] .seg2 button.on{background:#322d27}
   html[data-theme="dark"] .btn-disabled{background:#302b25;color:#7d746a}
   html[data-theme="dark"] .calday.ev{background:#38312a}
-  html[data-theme="dark"] .relrow .bar{background:#38312a}
-  html[data-theme="dark"] .budget-net{background:#37302a}
-  html[data-theme="dark"] .remind{background:#2f2a24;border-color:#3a342c}
   html[data-theme="dark"] .hero{background:#2a2621}
   html[data-theme="dark"] .dday-pill,html[data-theme="dark"] .toast{background:#e8e1d5;color:#201d19}
   html[data-theme="dark"] .pill-ok,html[data-theme="dark"] .bal.pos{background:#20342a}
@@ -90,7 +87,7 @@
     word-break:keep-all;overflow-wrap:break-word;-webkit-font-smoothing:antialiased}
   .serif{font-family:"Gowun Batang","Nanum Myeongjo","Apple SD Gothic Neo",Georgia,serif;letter-spacing:.02em}
   /* 금액·날짜: 고정폭 숫자 = 정갈한 장부 */
-  .stat .v,.reco-result .rr-v,.budget-net b,.relrow .rv,.calevrow .rv,.grow .amt input,
+  .stat .v,.reco-result .rr-v,.calevrow .rv,.grow .amt input,
   .calday,.hh-dd,.dday-pill,.evcard .dd,.rm-dd{font-variant-numeric:tabular-nums}
   :focus-visible{outline:2px solid var(--primary);outline-offset:2px}
   .phone{max-width:430px;margin:0 auto;min-height:100vh;min-height:100dvh;background:var(--bg);
@@ -368,19 +365,13 @@
   .lc-d{font-size:14px;color:var(--muted);margin-top:5px;line-height:1.6}
   .lc-go{margin-top:13px;font-size:14.5px;font-weight:600;color:var(--primary-d)}
   .land-foot{text-align:center;font-size:11.5px;color:var(--muted);margin-top:18px;line-height:1.6}
-  .budget-net{display:flex;align-items:center;justify-content:space-between;margin-top:12px;
     background:#f3ece0;border-radius:11px;padding:13px 14px;font-weight:700;font-size:15.5px;color:var(--primary-d)}
-  .budget-net b{font-size:21px}
   /* 가계부·관계칩 */
   .chips{display:flex;flex-wrap:wrap;gap:6px}
   .chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 13px;font-size:14px;
     font-weight:600;color:var(--ink);cursor:pointer;font-family:inherit}
   .chip.on{background:var(--primary);color:#fff;border-color:var(--primary)}
-  .relrow{display:flex;align-items:center;gap:9px;margin-bottom:9px}
-  .relrow .rl{width:42px;font-size:13px;font-weight:700;color:var(--ink);flex:none}
-  .relrow .bar{flex:1;height:9px;background:#f0e9dd;border-radius:5px;overflow:hidden}
-  .relrow .bar .fill{height:100%;background:var(--primary);border-radius:5px}
-  .relrow .rv,.calevrow .rv{font-size:14px;font-weight:700;color:var(--primary-d);min-width:62px;text-align:right;flex:none}
+  .calevrow .rv{font-size:14px;font-weight:700;color:var(--primary-d);min-width:62px;text-align:right;flex:none}
   /* 추천기 */
   .reco-cta{display:flex;align-items:center;gap:11px;cursor:pointer;background:var(--tint2);border-color:var(--primary)}
   .reco-cta .rc-ic{font-size:24px;flex:none}
@@ -395,25 +386,12 @@
   .rrc{font-size:13px;font-weight:600;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 11px}
   .rrc.on{background:var(--primary);color:#fff;border-color:var(--primary)}
   /* 리마인더 */
-  .remind{background:linear-gradient(180deg,#fff,#faf4ec);border-color:#e6d9c4}
   .rm-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
   .rm-h{font-size:14.5px;font-weight:600;color:var(--primary-d)}
   .rm-noti{border:1px solid var(--primary);background:var(--card);color:var(--primary-d);border-radius:999px;
     padding:5px 11px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
   .rm-noti.on{background:var(--ok);color:#fff;border-color:var(--ok)}
-  .rm-ev{display:flex;align-items:center;gap:11px;cursor:pointer}
-  .rm-ic{font-size:22px;width:42px;height:42px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--ic-bg);border-radius:11px}
-  .rm-info{flex:1;min-width:0}
-  .rm-nm{font-weight:600;font-size:15.5px}.rm-tag{font-size:10px;color:var(--sage-d);font-weight:700;margin-left:4px}
-  .rm-dt{font-size:12.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .rm-dd{font-size:14.5px;font-weight:700;color:#fff;background:var(--danger);padding:5px 10px;border-radius:999px;flex:none}
-  .rm-more{font-size:12.5px;color:var(--muted);margin-top:9px;text-align:center}
   /* 봉투 */
-  .env-card{background:var(--tint);border:1px solid var(--line);border-radius:13px;padding:26px 18px;text-align:center}
-  .env-front{font-size:30px;font-weight:700;color:var(--ink);letter-spacing:.12em}
-  .env-sub{font-size:14.5px;color:var(--muted);margin-top:6px;letter-spacing:.1em;font-family:"Gowun Batang","Nanum Myeongjo",serif}
-  .env-row{display:flex;gap:11px;align-items:flex-start;font-size:14px;color:var(--ink);line-height:1.6;margin-bottom:10px}
-  .env-k{flex:none;width:40px;font-weight:700;color:var(--primary-d)}
   /* 하단 탭 내비 */
   .bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:40;
     display:flex;background:rgba(255,253,249,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);
@@ -425,10 +403,6 @@
   .bnav button.on .bn-ic{opacity:1}
   .evcard.mg{touch-action:pan-y;user-select:none;-webkit-user-select:none}
   .evcard.ae-drag{opacity:.78;position:relative;z-index:60;box-shadow:0 10px 26px rgba(0,0,0,.2);transition:none}
-  #trashzone{position:fixed;left:50%;transform:translateX(-50%) translateY(16px);bottom:calc(78px + env(safe-area-inset-bottom));width:min(86%,368px);padding:15px 12px;border:1.6px dashed var(--danger);border-radius:14px;background:var(--card);color:var(--danger);text-align:center;font-weight:700;font-size:15.5px;z-index:59;opacity:0;transition:opacity .18s,transform .18s;pointer-events:none}
-  #trashzone.show{opacity:1;transform:translateX(-50%) translateY(0)}
-  #trashzone.hot{background:#f6e7e4;transform:translateX(-50%) scale(1.05)}
-  html[data-theme="dark"] #trashzone.hot{background:#42302c}
   /* 더보기 */
   .more-item{display:flex;align-items:center;gap:13px;width:100%;border:0;background:transparent;
     padding:13px 12px;cursor:pointer;font-family:inherit;text-align:left;border-bottom:1px solid var(--line)}
@@ -451,7 +425,7 @@
 <div class="phone">
   <header>
     <div class="brand">
-      <div class="logo" onclick="goLanding()" style="cursor:pointer"><b class="serif">이음</b><span class="slogan">마음을 잇다</span></div>
+      <div class="logo" onclick="goLanding()" style="cursor:pointer"><b class="serif">이음</b></div>
       <span class="dd" id="ddayTop"></span>
     </div>
   </header>
@@ -480,13 +454,13 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v107'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v108'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
-  wedding :{icon:'💍', label:'결혼', money:'축의금', join:['참석합니다','어려워요'], counts:true,  sep:'♥', nameA:'신랑', nameB:'신부', venueL:'예식장', dateL:'예식 날짜', doc:'청첩장'},
-  hwahon  :{icon:'💐', label:'화혼', money:'축의금', join:['참석합니다','어려워요'], counts:true,  sep:'♥', nameA:'신랑', nameB:'신부', venueL:'예식장', dateL:'예식 날짜', doc:'청첩장'},
-  memorial:{icon:'🕊️', label:'부고', money:'조의금', join:['조문합니다','어려워요'], counts:false, sep:'',  nameA:'고인', nameB:'상주', venueL:'빈소',   dateL:'발인 일자', doc:'부고'}
+  wedding :{icon:'💍', label:'결혼', money:'축의금', counts:true,  sep:'♥', nameA:'신랑', nameB:'신부', venueL:'예식장', dateL:'예식 날짜', doc:'청첩장'},
+  hwahon  :{icon:'💐', label:'화혼', money:'축의금', counts:true,  sep:'♥', nameA:'신랑', nameB:'신부', venueL:'예식장', dateL:'예식 날짜', doc:'청첩장'},
+  memorial:{icon:'🕊️', label:'부고', money:'조의금', counts:false, sep:'',  nameA:'고인', nameB:'상주', venueL:'빈소',   dateL:'발인 일자', doc:'부고'}
 };
 const BANKS=['카카오뱅크','토스뱅크','국민','신한','우리','하나','농협','기업','SC제일','새마을금고'];
 const RELATIONS=['가족','친척','친구','직장','선후배','기타'];
@@ -499,7 +473,7 @@ const SCHEMA_VERSION=3;
 let _id=1; const uid=p=>(p||'x')+Date.now().toString(36)+(_id++);
 // pay: { amount, source:'app'|'manual', method:'toss'|'account'|'cash' }
 function mkGuest(name,relation,side,pay){return {id:uid('g'),name,relation,side:side||0,
-  rsvp:{status:null,count:1,meal:true}, pay:pay||{amount:null,source:null,method:null}, unregistered:false};}
+  pay:pay||{amount:null,source:null,method:null}, unregistered:false};}
 
 function seed(){ // 신규 사용자: 빈 상태로 시작 (샘플은 원할 때만 fillSample)
   return {
@@ -586,7 +560,6 @@ function migrate(o){ // 어떤 과거 상태가 와도 안전하게 현재 스�
     if(!Array.isArray(e.guests)) e.guests=[];
     e.guests=e.guests.filter(g=>g&&typeof g==='object');
     e.guests.forEach(g=>{ if(!g.id)g.id=uid('g'); if(typeof g.name!=='string')g.name=String(g.name||'');
-      g.rsvp={status:null,count:1,meal:true, ...(g.rsvp&&typeof g.rsvp==='object'?g.rsvp:{})};
       g.pay={amount:null,source:null,method:null, ...(g.pay&&typeof g.pay==='object'?g.pay:{})}; });
   });
   const pseen=new Set();
@@ -734,55 +707,12 @@ function allEvBodyHTML(){
 function renderAllEv(){ const el=document.getElementById('allev-body'); if(el) el.innerHTML=allEvBodyHTML(); }
 
 /* ---- 전체보기: 길게 눌러 끌어서 삭제 (휴지통 드롭) ---- */
-let AED=null; // 진행 중인 드래그 {id, el, sx, sy, pid, t(롱프레스 타이머), active}
-function aeDown(e,id,el){ if(e.button&&e.button!==0) return;
-  AED={id, el, sx:e.clientX, sy:e.clientY, pid:e.pointerId, active:false,
-    t:setTimeout(aeActivate, 480)};
-  el.addEventListener('pointermove',aeMove); el.addEventListener('pointerup',aeUp); el.addEventListener('pointercancel',aeCancel); }
-function aeActivate(){ if(!AED) return; AED.active=true;
-  try{ AED.el.setPointerCapture(AED.pid); }catch(e){}
-  try{ navigator.vibrate&&navigator.vibrate(25); }catch(e){}
-  AED.el.classList.add('ae-drag');
-  document.addEventListener('touchmove',aePrevent,{passive:false}); // 드래그 중 화면 스크롤 정지
-  let tz=document.getElementById('trashzone');
-  if(!tz){ tz=document.createElement('div'); tz.id='trashzone'; tz.innerHTML='🗑️ 여기로 끌어오면 삭제돼요'; document.body.appendChild(tz); }
-  requestAnimationFrame(()=>tz.classList.add('show')); }
-function aePrevent(e){ e.preventDefault(); }
-function aeMove(e){ if(!AED) return;
-  const dx=e.clientX-AED.sx, dy=e.clientY-AED.sy;
-  if(!AED.active){ if(Math.hypot(dx,dy)>12) aeCancel(); return; } // 눌러둔 채 움직이면=스크롤 → 취소
-  AED.el.style.transform='translate('+dx+'px,'+dy+'px) scale(.97)';
-  const tz=document.getElementById('trashzone');
-  if(tz){ const r=tz.getBoundingClientRect();
-    tz.classList.toggle('hot', e.clientY>=r.top-8&&e.clientY<=r.bottom+8&&e.clientX>=r.left-8&&e.clientX<=r.right+8); } }
-function aeUp(){ if(!AED) return;
-  const wasActive=AED.active, id=AED.id;
-  const tz=document.getElementById('trashzone'); const hot=wasActive&&tz&&tz.classList.contains('hot');
-  aeCancel();
-  if(wasActive){ window._aeSquelch=Date.now(); } // 드래그 직후 카드 클릭(상세 열림) 방지
-  if(hot) delEventFromAll(id); }
-function aeCancel(){ if(!AED) return; clearTimeout(AED.t);
-  AED.el.classList.remove('ae-drag'); AED.el.style.transform='';
-  AED.el.removeEventListener('pointermove',aeMove); AED.el.removeEventListener('pointerup',aeUp); AED.el.removeEventListener('pointercancel',aeCancel);
-  document.removeEventListener('touchmove',aePrevent);
-  const tz=document.getElementById('trashzone'); if(tz){ tz.classList.remove('show','hot'); setTimeout(()=>{ try{tz.remove();}catch(e){} },200); }
-  AED=null; }
-function delEventFromAll(id){ const ev=S.events.find(e=>e.id===id); if(!ev)return;
-  if(!confirm(`'${evNamePlain(ev)||'이 경조사'}'를 삭제할까요?\n장부·기록도 함께 삭제됩니다.`))return;
-  S.events=S.events.filter(e=>e.id!==id);
-  if(S.ui.hostEventId===id)S.ui.hostEventId=null;
-  if(S.ui.currentEventId===id)S.ui.currentEventId=null;
-  save(); renderAllEv();
-  const c=document.querySelector('.listhead .c');
-  if(c)c.textContent=S.events.filter(e=>!(e.draft&&!evHasContent(e))).length+'건';
-  toast('경조사를 삭제했어요'); }
 function allEventsView(){
   const all=S.events.filter(e=>!(e.draft&&!evHasContent(e)));
   return `
   <button class="backbtn" onclick="setGuestTab('list')">‹ 내 경조사</button>
   <div class="listhead"><div class="t serif">전체 경조사</div><div class="c">${all.length}건</div></div>
   <input placeholder="🔍 이름·장소·관계로 찾기" value="${esc(AEQ)}" oninput="AEQ=this.value;renderAllEv()" style="margin-bottom:11px">
-  <p class="lblnote" style="margin:-4px 2px 9px">항목을 누르면 상세로 · <b>길게 눌러 끌면</b> 아래 휴지통으로 삭제할 수 있어요</p>
   <div id="allev-body">${allEvBodyHTML()}</div>`;
 }
 
@@ -852,7 +782,6 @@ async function shareEvent(ev){
       let settings=tpl({mobileWebUrl:link,webUrl:link});
       const psize=(t)=>encodeURIComponent(JSON.stringify(t)).length+400; // 인텐트 URI 근사(고정 파라미터 여유 포함)
       if(psize(settings)>9500) settings=tpl({webUrl:link}); // 링크 1회 — 모바일은 webUrl로 열림
-      toast(`카카오 카드 ${(psize(settings)/1024).toFixed(1)}KB · 링크 ${link.length}자 · ${APP_BUILD}`); // 지원용 진단(빌드·패킷 크기) — 카톡이 열리기 전 잠깐 표시
     try{ Kakao.Share.sendDefault(settings);
       // 설치형 PWA/TWA에선 kakaolink 스킴이 조용히 무시될 수 있음(throw 없음) → 이탈 없으면 기본 공유로 폴백
       let left=false; const onLeave=()=>{left=true;};
@@ -872,11 +801,8 @@ async function shareEvent(ev){
    1순위: 릴레이 직접 전달(RELAY.url 설정 + 이음 링크로 받은 행사) — 공유창 없이 호스트 이음에 자동 반영.
    폴백: #g= 딥링크 공유(서버 불요) — 호스트가 링크를 탭하면 장부 반영. */
 const RELAY={ url:'https://ieum-relay.agosoft-kr.workers.dev' }; // 릴레이 워커(CF Workers, 2026-09-07 배포·전 엔드포인트 실측) — 비우면 공유 폴백
-function encodeGuestReply(ev,name,me,opt){ const o=opt||{}; const incR=o.incR!==false, incP=o.incP!==false;
-  const p=me&&me.pay||{}; const r=me&&me.rsvp||{};
-  return b64urlEnc(JSON.stringify({k:evKey(ev), n:name, rel:ev.myRelation||'',
-    s:incR?(r.status||null):null, c:incR?(r.count||1):1,
-    a:(incP&&p.amount!=null)?p.amount:null, m:incP?(p.method||null):null})); }
+function encodeGuestReply(ev,name,me){ const p=me&&me.pay||{}; // 송금 기록만 전달 (v103에서 참석 여부 제거)
+  return b64urlEnc(JSON.stringify({k:evKey(ev), n:name, rel:ev.myRelation||'', a:p.amount!=null?p.amount:null, m:p.method||null})); }
 function ledgerName(ev){ return (ev&&ev.type==='memorial')?'부의금 명부':'축의금 명부'; } // 하객이 놓치면 안 되는 한 단계의 이름
 function ledgerLabel(ev){ return ledgerName(ev)+'에 기록하기'; }
 function tiePop(ev){ // 기록 절차 안내: 송금 직후 반드시 명부 기록으로 이어지게 하는 모달
@@ -886,9 +812,7 @@ function tiePop(ev){ // 기록 절차 안내: 송금 직후 반드시 명부 기
     if(!bg){ bg=document.createElement('div'); bg.id='tiepop'; bg.className='sheet-bg'; document.body.appendChild(bg); }
     bg.innerHTML=`<div class="sheet" onclick="event.stopPropagation()">
       <div class="secthead" style="margin-bottom:2px"><div class="t" style="font-size:16px">${ledgerLabel(cur)}</div></div>
-      <div class="tienote" style="margin:8px 0 12px">${mem
-        ?`🕊️ <b>기록해야 상주가 알 수 있어요.</b> 전한 위로가 이름과 함께 명부에 남습니다.`
-        :`💞 <b>기록해야 주최자가 알 수 있어요.</b> 보낸 마음이 내 이름과 함께 명부에 남습니다.`}</div>
+      <div class="tienote" style="margin:8px 0 12px">${mem?'🕊️ <b>기록해야 상주가 알 수 있어요.</b>':'💞 <b>기록해야 주최자가 알 수 있어요.</b>'}</div>
       <button class="btn btn-primary" onclick="closeTiePop();notifyHost()">${ledgerLabel(cur)}</button>
       <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="closeTiePop()">나중에</button>
     </div>`;
@@ -903,28 +827,23 @@ function notifyHost(){ const ev=curEvent(); if(!ev) return;
   if(!nm){ toast('성함을 먼저 입력해 주세요'); focusGname(); return; }
   const me=ev.guests.find(g=>g.name===nm);
   if(!(me&&me.pay&&me.pay.amount!=null)){ toast('먼저 보낸 금액을 기록해 주세요'); return; }
-  const incR=false, incP=true; // 참석 여부 기능 제거(v103) — 송금 기록만 전달
-  const code=encodeGuestReply(ev,nm,me,{incR,incP});
-  if(RELAY.url && ev.invited){ relaySend(ev,code,nm,me,{incR,incP}); return; } // 이음 링크로 받은 행사만 사서함 키가 주최자와 일치 — 붙여넣기·직접 입력 행사는 공유로(서버 200이 도달을 보장하지 않음)
-  shareReply(ev,code,nm,me,{incR,incP}); }
-function shareReply(ev,code,nm,me,opt){ const o=opt||{incR:true,incP:true};
+  const code=encodeGuestReply(ev,nm,me);
+  if(RELAY.url && ev.invited){ relaySend(ev,code,nm,me); return; } // 이음 링크로 받은 행사만 사서함 키가 주최자와 일치 — 붙여넣기·직접 입력 행사는 공유로(서버 200이 도달을 보장하지 않음)
+  shareReply(ev,code,nm,me); }
+function shareReply(ev,code,nm,me){
   const base=location.href.split('#')[0].split('?')[0];
   const link=base+'#g='+code;
-  const c=cfg(ev); const p=me&&me.pay||{}; const st=o.incR&&me&&me.rsvp&&me.rsvp.status;
+  const c=cfg(ev); const p=me&&me.pay||{};
   const mem=ev.type==='memorial';
   const lines=[`[이음] ${nm}입니다.`];
   if(mem){
     lines.push('삼가 고인의 명복을 빕니다.');
-    if(st==='yes') lines.push('조문으로 마음을 함께하겠습니다.');
-    else if(st==='no') lines.push('부득이하게 조문이 어렵지만, 깊은 조의를 표합니다.');
-    if(o.incP&&p.amount!=null) lines.push(p.method==='cash'
+    if(p.amount!=null) lines.push(p.method==='cash'
       ? `조의금 ${won(p.amount)} 조문 시 전달드리겠습니다.`
       : `조의금 ${won(p.amount)} 송금해 드렸습니다${p.method==='toss'?' (토스)':p.method==='kakao'?' (카카오페이)':''}.`);
   } else {
-    if(st==='yes') lines.push(`진심으로 축하드립니다. ${(me.rsvp.count||1)>1?`${me.rsvp.count}명이 함께 `:''}참석하겠습니다.`);
-    else if(st==='no') lines.push('부득이하게 참석이 어렵지만, 축하하는 마음을 담아 보냅니다.');
-    else if(o.incP&&p.amount!=null) lines.push('진심으로 축하드립니다.');
-    if(o.incP&&p.amount!=null) lines.push(p.method==='cash'
+    if(p.amount!=null) lines.push('진심으로 축하드립니다.');
+    if(p.amount!=null) lines.push(p.method==='cash'
       ? `${c.money} ${won(p.amount)} 현금으로 전달드렸습니다.`
       : `${c.money} ${won(p.amount)} 송금했습니다${p.method==='toss'?' (토스)':p.method==='kakao'?' (카카오페이)':''}.`);
   }
@@ -939,7 +858,7 @@ function shareReply(ev,code,nm,me,opt){ const o=opt||{incR:true,incP:true};
 /* 릴레이: 사서함 주소는 행사 키의 해시(서버에 이름·행사 원문 비노출), 응답은 호스트 수신 시 서버에서 삭제 */
 async function relayKey(ev){ const buf=await crypto.subtle.digest('SHA-256', new TextEncoder().encode('ieum1|'+evKey(ev)));
   return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,32); }
-async function relaySend(ev,code,nm,me,opt){ const mem=ev.type==='memorial';
+async function relaySend(ev,code,nm,me){ const mem=ev.type==='memorial';
   toast('이음으로 전달하는 중…');
   try{ const k=await relayKey(ev);
     const ctl=new AbortController(); const tm=setTimeout(()=>ctl.abort(),8000);
@@ -947,25 +866,22 @@ async function relaySend(ev,code,nm,me,opt){ const mem=ev.type==='memorial';
       body:JSON.stringify({k,code}),signal:ctl.signal}); clearTimeout(tm);
     if(!r.ok) throw 0;
     toast(`${ledgerName(ev)}에 기록했어요 ✓ — ${mem?'상주':'주최자'}가 이음을 열면 바로 보여요`);
-  }catch(e){ toast('직접 전달이 안 돼 공유로 전환할게요'); setTimeout(()=>shareReply(ev,code,nm,me,opt),600); } }
+  }catch(e){ toast('직접 전달이 안 돼 공유로 전환할게요'); setTimeout(()=>shareReply(ev,code,nm,me),600); } }
 function mergeGuestReply(ev,o){ // #g= 딥링크·릴레이 공용 병합 (같은 값 재적용은 무해=멱등)
   if(!o||!o.n) return false;
   if(!(typeof TUT!=='undefined'&&TUT.on)) own(ev);
   let g=ev.guests.find(x=>x.name===o.n);
   if(!g){ g=mkGuest(o.n, o.rel||'지인', 0); ev.guests.push(g); } else if(g.unregistered) g.unregistered=false; // 이름을 밝힌 응답은 명단에 바로
-  if(o.s){ g.rsvp.status=o.s; if(o.c) g.rsvp.count=Math.max(1,Number(o.c)||1); }
   if(o.a!=null){ g.pay={amount:Number(o.a)||0, source:o.m==='cash'?'manual':'app', method:o.m||'toss'}; }
   return true; }
 let _relayPullAt=0, _relayPullP=null, _relayForce=false;
 function relayPull(force){ if(!RELAY.url) return; // 호스트: 내 행사 사서함 확인 (20초 스로틀, force=수동)
-  if(_relayPullP){ if(force){ _relayForce=true; toast('응답을 확인하는 중이에요…'); } return _relayPullP; } // 진행 중이면 합류 — 사서함(읽기 1회 삭제)을 두 요청이 나눠 받지 않게
+  if(_relayPullP){ if(force){ _relayForce=true; toast('확인하는 중이에요…'); } return _relayPullP; } // 진행 중이면 합류 — 사서함(읽기 1회 삭제)을 두 요청이 나눠 받지 않게
   if(!force && Date.now()-_relayPullAt<20000) return; _relayPullAt=Date.now(); _relayForce=!!force;
   _relayPullP=(async()=>{ let total=0, failed=0;
     const hosts=S.events.filter(e=>e.role==='host'&&evHasContent(e)); const multi=hosts.length>1;
     for(const ev of hosts){
       try{ const k=await relayKey(ev);
-        try{ const ro=await fetch(RELAY.url+'/open?k='+k); if(ro.ok){ const o=await ro.json();
-          if(!S.meta.openCnt)S.meta.openCnt={}; if(o.n>(S.meta.openCnt[ev.id]||0)){ S.meta.openCnt[ev.id]=o.n; save(); } } }catch(e){}
         const r=await fetch(RELAY.url+'/replies?k='+k); if(!r.ok){ failed++; continue; }
         const arr=await r.json(); if(!Array.isArray(arr)||!arr.length) continue;
         let n=0;
@@ -975,9 +891,9 @@ function relayPull(force){ if(!RELAY.url) return; // 호스트: 내 행사 사�
           const a=document.activeElement, typing=!!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)); // 장부 입력 중이면 DOM 교체로 입력값·키보드를 날리지 않는다
           if(typing){ try{ if(S.ui.tab==='host'&&(S.ui.hostTab||'setup')==='ledger'&&hostEvent()&&hostEvent().id===ev.id) updateHostLedgerUI(ev); }catch(e){} } else render();
           const who=multi?`「${evNamePlain(ev)||ev.date||'이름 없는 행사'}」 `:'';
-          setTimeout(()=>toast(typing?`${who}하객 응답 ${n}건을 저장했어요 — 입력을 마치면 명단에 보여요`:`${who}하객 응답 ${n}건이 장부에 자동 반영됐어요 ✓`),300); }
+          setTimeout(()=>toast(typing?`${who}명부 기록 ${n}건을 받았어요 — 입력을 마치면 명단에 보여요`:`${who}명부 기록 ${n}건이 장부에 반영됐어요 ✓`),300); }
       }catch(e){ failed++; } }
-    if(_relayForce&&!total) toast(failed?'응답을 확인하지 못했어요 — 네트워크를 확인해 주세요':'새 응답이 없어요');
+    if(_relayForce&&!total) toast(failed?'확인하지 못했어요 — 네트워크를 확인해 주세요':'새 기록이 없어요');
   })().finally(()=>{ _relayPullP=null; _relayForce=false; });
   return _relayPullP; }
 /* ---- 청첩장 썸네일 실측(카카오 렌더 비율 힌트) ---- */
@@ -1008,10 +924,6 @@ async function shareEventSMS(ev){
   setTimeout(()=>{ ['visibilitychange','pagehide','blur'].forEach(t=>removeEventListener(t,onLeave));
     if(left||document.hidden||document.visibilityState==='hidden') return;
     copy(body); toast('문자앱이 열리지 않아 본문을 복사했어요 — 문자앱에 붙여넣으세요'); },1600); }
-function shareExternal(ev){ if(!ev.externalUrl){ toast('연결된 모바일청첩장이 없어요'); return; }
-  const text=`${evNamePlain(ev)} ${ev.subtitle}\n${dateText(ev)} · ${ev.venue}`;
-  if(navigator.share){ navigator.share({title:`${evNamePlain(ev)} ${ev.subtitle}`,text,url:ev.externalUrl}).catch(()=>{}); return; }
-  copy(ev.externalUrl); toast('청첩장 링크를 복사했어요'); }
 function openExternal(ev){
   if(ev.externalUrl){ openUrl(ev.externalUrl); }
   else toast('주최자가 외부 청첩장 링크를 입력하면 여기서 열립니다');
@@ -1055,16 +967,6 @@ function inviteView(){ const iv=S.ui.pendingInvite; if(!iv){ S.ui.guestView='lis
 }
 
 /* ======================= 캘린더 ======================= */
-function icsStamp(d,t){const dt=new Date(d+'T'+(t||'00:00')+':00+09:00');return dt.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');}
-function vevent(ev,hours){
-  const start=icsStamp(ev.date,ev.time);
-  const e=new Date(ev.date+'T'+(ev.time||'00:00')+':00+09:00');e.setHours(e.getHours()+(hours||2));
-  const end=e.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
-  return ['BEGIN:VEVENT','UID:'+uid('ics')+'@ieum','DTSTAMP:'+start,'DTSTART:'+start,'DTEND:'+end,
-    'SUMMARY:'+evNamePlain(ev)+' '+cfg(ev).money.replace('금',''),'LOCATION:'+(ev.venue+' '+ev.address),
-    'DESCRIPTION:'+(ev.message||'').replace(/\n/g,' '),
-    'BEGIN:VALARM','TRIGGER:-P1D','ACTION:DISPLAY','DESCRIPTION:'+evNamePlain(ev),'END:VALARM','END:VEVENT'].join('\r\n');
-}
 /* 파일 내보내기 공용: 공유시트 우선(iOS 설치형에서 a[download]는 무동작) → 다운로드 폴백. 성공했을 때만 성공 토스트 */
 function exportFile(blob, fname, shareText, okMsg){
   const file=new File([blob],fname,{type:blob.type||'application/octet-stream'});
@@ -1077,24 +979,6 @@ function exportFile(blob, fname, shareText, okMsg){
   }
   dl();
 }
-function saveICS(ev){
-  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//ieum//ko','CALSCALE:GREGORIAN',vevent(ev,3),'END:VCALENDAR'].join('\r\n');
-  exportFile(new Blob([ics],{type:'text/calendar;charset=utf-8'}),'ieum-event.ics',evNamePlain(ev)+' 일정','.ics 파일을 보냈어요 — 파일을 열면 캘린더에 추가돼요');
-}
-function saveAllICS(){
-  const body=S.events.map(e=>vevent(e,3)).join('\r\n');
-  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//ieum//ko','CALSCALE:GREGORIAN',body,'END:VCALENDAR'].join('\r\n');
-  exportFile(new Blob([ics],{type:'text/calendar;charset=utf-8'}),'ieum-all.ics','이음 전체 일정',`경조사 ${S.events.length}건을 캘린더로 내보냈어요`);
-}
-function googleCal(ev){
-  const start=icsStamp(ev.date,ev.time);const e=new Date(ev.date+'T'+(ev.time||'00:00')+':00+09:00');e.setHours(e.getHours()+3);
-  const end=e.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
-  const u='https://calendar.google.com/calendar/render?action=TEMPLATE'
-    +'&text='+encodeURIComponent(evNamePlain(ev)+' '+cfg(ev).money.replace('금',''))
-    +'&dates='+start+'/'+end+'&location='+encodeURIComponent(ev.venue+' '+ev.address)
-    +'&details='+encodeURIComponent((ev.message||'').replace(/\n/g,' '));
-  openUrl(u);
-}
 
 /* ======================= 송금 ======================= */
 function tossLink(acc,amount){const num=(acc.number||'').replace(/[^0-9]/g,'');return `supertoss://send?bank=${encodeURIComponent(acc.bank)}&accountNo=${num}`+(amount?`&amount=${amount}`:'');}
@@ -1102,7 +986,6 @@ function copyAcct(acc){copy(`${acc.bank} ${acc.number} ${acc.holder}`);toast('�
 function curAcct(){ const ev=curEvent(); if(!ev)return null; // 번호 있는 계좌만 — 상세 화면 필터와 동일 기준
   const a=(ev.accounts||[]).filter(x=>x&&x.number);
   return a[Math.min(S.ui.guestSession.acctIdx||0, Math.max(0,a.length-1))]||null; }
-function copyCurAcct(){ const a=curAcct(); if(a) copyAcct(a); }
 /* 하객이 받을 계좌를 직접 입력 (직접 추가한 행사 등 계좌가 비어있을 때) */
 function openGuestAcct(){ captureAmt(); S.ui.gacctOpen=true; render();
   setTimeout(()=>{ const el=$('#ga_num'); if(el){ try{ el.scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){} setTimeout(()=>el.focus(),300); } },60); }
@@ -1183,14 +1066,12 @@ function pendingPayPop(){ const pp=S.ui.guestSession.pendingPay; if(!pp) return;
   if(!bg){ bg=document.createElement('div'); bg.id='paypop'; bg.className='sheet-bg'; document.body.appendChild(bg); }
   bg.innerHTML=`<div class="sheet" onclick="event.stopPropagation()">
     <div class="secthead" style="margin-bottom:2px"><div class="t" style="font-size:15px">${payMethodLabel(pp.method)}에서 ${won(pp.amt)} 보내셨나요?</div></div>
-    <div class="tienote" style="margin:8px 0 12px"><b>보냈다면 ${ledgerName(ev)}에 기록해 주세요.</b> 기록하지 않으면 ${mem?'상주':'주최자'}는 알 수 없어요.</div>
+    <div class="tienote" style="margin:8px 0 12px"><b>보냈다면 ${ledgerName(ev)}에 기록해 주세요.</b></div>
     <button class="btn btn-primary" onclick="closePayPop();confirmPendingPay(1,true)">${ledgerLabel(ev)}</button>
     <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="closePayPop();payWatchReturn()">아직 안 보냈어요</button>
   </div>`;
   setTimeout(()=>bg.classList.add('show'),10); }
 function closePayPop(){ const bg=document.getElementById('paypop'); if(!bg) return; bg.classList.remove('show'); setTimeout(()=>{ try{ bg.remove(); }catch(e){} },220); }
-
-function soon(name){toast(`「${name}」 — 곧 추가될 기능이에요`);}
 
 /* ======================= 렌더 ======================= */
 function render(){
@@ -1215,9 +1096,7 @@ function render(){
     : v==='ledger' ? ledgerView()
     : v==='add' ? addView()
     : v==='reco' ? recoView()
-    : v==='envelope' ? envelopeView()
     : v==='more' ? moreView()
-    : v==='group' ? groupView()
     : v==='people' ? peopleView()
     : v==='person' ? personView()
     : v==='personadd' ? personAddView()
@@ -1236,22 +1115,22 @@ function landingView(){
     <div class="land-hero">
       <div class="land-logo serif">이음</div>
       <div class="land-slogan">마음을 잇다</div>
-      <p class="land-desc">경조사를 한곳에서.<br/>받은 청첩장·부고 관리부터 축의금 송금까지.</p>
+      <p class="land-desc">경조사를 한곳에서.</p>
     </div>
     <div class="land-choice">
       <button class="land-card primary" onclick="enterAs('guest')">
         <div class="lc-ic">🎁</div>
         <div class="lc-t">내 경조사</div>
-        <div class="lc-d">받은 청첩장·부고를 한곳에서 관리하고, 축의금 송금까지 한 번에</div>
+        <div class="lc-d">받은 청첩장·부고 관리, 축의금 송금</div>
         <div class="lc-go">시작하기 ›</div>
       </button>
       <button class="land-card" onclick="enterAs('host')">
         <div class="lc-ic">✍️</div>
         <div class="lc-t">내 행사 만들기</div>
-        <div class="lc-d">내 결혼식·행사를 만들어 하객에게 보내고, 참석·축의금을 정리</div>
+        <div class="lc-d">청첩장 보내기, 축의금 장부</div>
       </button>
     </div>
-    <p class="land-foot">대부분은 ‘내 경조사’로 시작하세요 · 언제든 상단에서 전환할 수 있어요<br/>
+    <p class="land-foot">
     </p>
   </div>`;
 }
@@ -1271,7 +1150,7 @@ function tutAutoOk(){ // 첫 설치 판정: 빈 초안(draft)은 제외, 자동�
     && !S.events.filter(e=>!(e.draft&&!evHasContent(e))).length; }
 function enterAs(mode){ S.ui.tab=mode; if(mode==='guest'){ S.ui.guestView='list'; } else { ensureHostEvent(); S.ui.hostTab='setup'; } S.ui.entered=true; save(); render(); window.scrollTo(0,0);
   // 첫 설치(빈 데이터) 유저: 튜토리얼 자동 시작 (X로 닫으면 다시 안 뜸)
-  if(mode==='guest' && tutAutoOk()){ setTimeout(()=>{ if(!TUT.on && tutAutoOk()) startTutorial(); },400); } }
+  }
 function goLanding(){ try{ abortTutorial(); }catch(e){} try{ pruneDraft(); }catch(e){}
   S.ui.entered=false; save(); render(); window.scrollTo(0,0); }
 
@@ -1282,7 +1161,7 @@ function hostSwitcher(ev){ const hosts=S.events.filter(e=>e.role==='host'&&(e.id
   return `<div class="row" style="align-items:center;margin:0 0 10px">
     <div style="flex:1;font-weight:700;font-size:14px">${hosts.length>1?`내 행사 ${hosts.length}건`:'내 행사'}</div>
     <button class="minibtn" style="color:var(--primary);font-weight:700" onclick="newHostEvent()">＋ 새 행사 만들기</button></div>
-  ${others.length?`<details class="fold hostsw" style="margin-bottom:10px"><summary>다른 행사 ${others.length}건 <span style="font-weight:400;color:var(--muted);font-size:12px">· 눌러서 전환</span></summary>
+  ${others.length?`<details class="fold hostsw" style="margin-bottom:10px"><summary>다른 행사 ${others.length}건 </summary>
     <div class="fold-body">${others.map(e=>`<button class="backbtn" style="display:block;width:100%;text-align:left;margin:4px 0" onclick="switchHostEvent('${e.id}')">${cfg(e).icon} ${esc(evNamePlain(e)||'(이름 없음)')} <span style="color:var(--muted);font-size:12px">· ${e.date||'날짜 미정'} · 하객 ${(e.guests||[]).length}명</span></button>`).join('')}</div></details>`:''}`; }
 function newHostEvent(){ const cur=hostEvent(); if(cur&&!evHasContent(cur)){ toast('먼저 이 행사의 정보를 입력해 주세요'); hostFoldSet('info',true); render(); return; }
   pruneDraft(); const ev={ id:uid('e'), draft:true, role:'host', type:'wedding', partyA:'', partyB:'', subtitle:'저희 결혼합니다', date:'', time:'13:00', venue:'', address:'', message:'', externalUrl:'',
@@ -1295,8 +1174,8 @@ function shareFromHost(kind){ const ev=hostEvent(); if(!ev)return;
     hostFoldSet('info',true); render(); window.scrollTo(0,0); return; }
   // 대규모 행사(FREE_GUESTS명+) 발송 게이트 — 장부 인원 기준. 오픈 수는 2차 전파로 부풀 수 있어 과금 근거로 쓰지 않음. 부고는 예외(장례 중 결제 UI 금지).
   if(!hasPass(ev) && ev.type!=='memorial' && (ev.guests||[]).length>=FREE_GUESTS){
-    passTrack('bigEvent'); passPrompt(()=>shareFromHost(kind),`하객 ${FREE_GUESTS}명 이상의 큰 행사예요. 이미 보낸 초대장과 하객 응답 기록은 그대로 계속 작동하고, 패스는 새 발송에만 필요해요.`); return; }
-  if(kind==='ext') shareExternal(ev); else if(kind==='sms') shareEventSMS(ev); else shareEvent(ev); }
+    passTrack('bigEvent'); passPrompt(()=>shareFromHost(kind),`하객 ${FREE_GUESTS}명 이상의 큰 행사예요. 새 발송에만 패스가 필요해요.`); return; }
+  if(kind==='sms') shareEventSMS(ev); else shareEvent(ev); }
 function hostView(){
   const ev=hostEvent(); const c=cfg(ev); const led=ledgerStats(ev);
   const hf=S.ui.hostFold||{};
@@ -1310,8 +1189,7 @@ function hostView(){
 
   if(ht==='ledger') return back+`
   <div class="card">
-    <div class="secthead"><div class="t">📒 장부 정리</div><div class="c">하객 ${ev.guests.length}명 <button class="minibtn" style="margin-left:6px" onclick="relayPull(true)">↻ 응답 확인</button></div></div>
-    <p class="sub">이음으로 받은 금액은 자동 표시되고, <b>현금·계좌 수령분</b>은 각 하객 칸에 직접 입력·정리하세요.</p>
+    <div class="secthead"><div class="t">📒 장부 정리</div><div class="c">하객 ${ev.guests.length}명 <button class="minibtn" style="margin-left:6px" onclick="relayPull(true)">↻ 새로고침</button></div></div>
     <div class="stats">
       <div class="stat"><div class="v" id="hl-paid">${led.paid}</div><div class="k">마음 전한 분</div></div>
       <div class="stat"><div class="v big" id="hl-total">${won(led.total)}</div><div class="k">총 ${c.money}</div></div>
@@ -1323,7 +1201,7 @@ function hostView(){
       ${hostGuestsHTML(ev)}
     </div>
     <div class="row" style="margin-top:10px;align-items:stretch">
-      <input id="hg_name" placeholder="하객 이름 (현금·수기 포함)" style="flex:2">
+      <input id="hg_name" placeholder="하객 이름" style="flex:2">
       ${ev.accounts.length>1?`<select id="hg_side" style="flex:1;max-width:34%">${ev.accounts.map((a,i)=>`<option value="${i}">${esc(a.label)}</option>`).join('')}</select>`:''}
     </div>
     <button class="badge-add" style="margin-top:8px" onclick="addGuestInline()">＋ 하객 추가</button>
@@ -1333,14 +1211,9 @@ function hostView(){
   </div>`;
 
   if(ht==='more') return back+`
-  <details class="fold" ${budOpen?'open':''} ontoggle="hostFoldSet('bud',this.open)">
-    <summary>📈 예상 하객·예산 계산기</summary>
-    <div class="fold-body">${budgetCard(ev)}</div>
-  </details>
 
   <div class="card">
-    <h3>부가 기능</h3>
-    <p class="sub">${ev.type==='memorial'?'장부 정리가 끝나면 엑셀로 내보내고, 조문해 주신 분들께 답례 인사를 준비하세요.':'장부 정리가 끝나면 엑셀로 내보내고, 참석·축의한 분들께 감사 인사를 준비하세요.'}</p>
+    <h3>행사 마무리</h3>
     <div class="stack">
       <button class="btn btn-ghost" onclick="exportXlsxGate()">장부 엑셀 내보내기 · 서식 포함 ${ev.type==='memorial'?'':passChip(ev)}</button>
       <button class="btn btn-ghost" onclick="openThanks()">${ev.type==='memorial'?'답례 인사 준비하기':'감사 인사 준비하기'}</button>
@@ -1379,7 +1252,7 @@ function hostView(){
     <summary>🏦 ${c.money} 받을 계좌 ${acctDone?`<span style="font-weight:400;color:var(--ok);font-size:12px">· 등록됨</span>`:`<span style="font-weight:400;color:var(--muted);font-size:12px">· 미입력</span>`}</summary>
     <div class="fold-body">
     ${ev.accounts.map((a,i)=>acctEditor(i,a)).join('')}
-    ${(ev.accounts||[]).length<6?`<button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="addHostAcct()">＋ 계좌 추가 <span style="font-weight:400;font-size:11px;color:var(--muted)">· 혼주(부모님) 계좌 등 최대 6개</span></button>`:''}
+    ${(ev.accounts||[]).length<6?`<button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="addHostAcct()">＋ 계좌 추가</button>`:''}
     </div>
   </details>
 
@@ -1392,9 +1265,9 @@ function hostView(){
     ${ev.externalUrl&&ev.shareImg?`<img src="${esc(ev.shareImg)}" alt="" style="width:76px;height:95px;object-fit:cover;border-radius:10px;border:1px solid var(--line);display:block;margin:4px 0 2px" onerror="this.style.display='none'">`:''}
     <div class="stack" style="margin-top:10px">
       <button class="btn btn-kakao" onclick="shareFromHost('kakao')">카카오톡으로 보내기</button>
-      <button class="btn btn-ghost" onclick="shareFromHost('sms')">문자로 보내기 <span style="font-weight:400;font-size:11.5px;opacity:.75">· 링크만</span></button>
+      <button class="btn btn-ghost" onclick="shareFromHost('sms')">문자로 보내기</button>
     </div>
-    ${(!hasPass(ev)&&ev.type!=='memorial'&&(ev.guests||[]).length>=Math.ceil(FREE_GUESTS*0.8)&&(ev.guests||[]).length<FREE_GUESTS)?`<div class="note" style="margin-top:10px">장부에 <b>${(ev.guests||[]).length}명</b>이 기록됐어요. ${FREE_GUESTS}명 이상이면 새 발송에는 <b>이음 패스</b>가 필요해요 — 이미 보낸 초대장과 장부는 계속 작동합니다.</div>`:''}
+    ${(!hasPass(ev)&&ev.type!=='memorial'&&(ev.guests||[]).length>=Math.ceil(FREE_GUESTS*0.8)&&(ev.guests||[]).length<FREE_GUESTS)?`<div class="note" style="margin-top:10px">장부에 <b>${(ev.guests||[]).length}명</b>이 기록됐어요. ${FREE_GUESTS}명 이상이면 새 발송에는 <b>이음 패스</b>가 필요해요.</div>`:''}
   </div>`;
 }
 function exportXlsxGate(){ const ev=hostEvent(); if(ev&&ev.type==='memorial'){ exportLedgerXLSX(); return; } withPass('xlsx',exportLedgerXLSX); } // 부고는 결제 UI 금지 — 게이트 없이 바로
@@ -1447,14 +1320,14 @@ function rowHost(ev,x){
       ${x.unregistered?`<button class="minibtn" onclick="promote('${x.id}')">명단으로</button>`:`<button class="minibtn" onclick="delGuest('${x.id}')" style="color:var(--danger)">삭제</button>`}
     </div>
     <div class="amt">
-      <input type="number" inputmode="numeric" placeholder="금액 (현금·계좌 직접입력)" value="${p.amount??''}" onchange="hostSetPay('${x.id}',this.value)">
+      <input type="number" inputmode="numeric" placeholder="금액" value="${p.amount??''}" onchange="hostSetPay('${x.id}',this.value)">
       <button class="minibtn ${p.method==='cash'?'on':''}" id="cash-${x.id}" onclick="toggleCash('${x.id}')">현금</button>
     </div></div>`;
 }
 
 /* ---------- 하객: 경조사 목록(앱 내 캘린더) ---------- */
 function evcardHTML(ev,slim,mg){ const c=cfg(ev); return `
-    <div class="evcard${slim?' slim':''}${mg?' mg':''}"${mg?` onpointerdown="aeDown(event,'${ev.id}',this)" oncontextmenu="return false"`:''} onclick="${mg?`if(window._aeSquelch&&Date.now()-window._aeSquelch<400)return;`:''}openEvent('${ev.id}')">
+    <div class="evcard${slim?' slim':''}${mg?' mg':''}" onclick="${mg?`if(window._aeSquelch&&Date.now()-window._aeSquelch<400)return;`:''}openEvent('${ev.id}')">
       <div class="ic">${c.icon}</div>
       <div class="info">
         <div class="nm">${esc(evNamePlain(ev))||'(이름 미입력)'}<span class="typ">${c.label}${ev.role==='host'?' · 내 행사':''}</span></div>
@@ -1479,11 +1352,11 @@ function guestList(){
   <div class="card" style="text-align:center;padding:30px 18px">
     <div style="font-size:36px">🎁</div>
     <div style="font-weight:700;font-size:16px;margin-top:8px">아직 등록된 경조사가 없어요</div>
-    <p class="sub" style="margin-top:6px;margin-bottom:0">카톡으로 받은 청첩장을 붙여넣으면<br/>날짜·장소·계좌까지 자동으로 채워져요.</p>
+    <p class="sub" style="margin-top:6px;margin-bottom:0">청첩장을 붙여넣어 시작하세요.</p>
     <div class="stack" style="margin-top:16px">
       <button class="btn btn-primary" onclick="openImport()">＋ 청첩장 추가</button>
     </div>
-    <button class="backbtn" style="margin-top:10px" onclick="openCalPopup()">직접 입력하기</button>
+    <button class="backbtn" style="margin-top:10px" onclick="openAdd()">직접 입력하기</button>
   </div>`; }
   const now=new Date(new Date().toDateString());
   const up=all.slice().sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).filter(e=>e.date&&new Date(e.date+'T'+(e.time||'00:00'))>=now);
@@ -1514,14 +1387,14 @@ function evBodyHTML(){
   ${calendarHTML()}
   ${past.length?`<details class="fold" ${S.ui.pastOpen?'open':''} ontoggle="S.ui.pastOpen=this.open">
     <summary>🕰️ 지난 경조사 ${past.length}건</summary><div class="fold-body">${past.map(e=>evcardHTML(e)).join('')}</div></details>`:''}
-  <button class="badge-add" style="margin-bottom:13px" onclick="openAddSheet()">＋ 경조사 추가 <span style="font-weight:400;font-size:12px">· 청첩장 붙여넣기 또는 직접 입력</span></button>`;
+  <button class="badge-add" style="margin-bottom:13px" onclick="openAddSheet()">＋ 경조사 추가</button>`;
 }
 function openAddSheet(){ let bg=document.getElementById('addpop');
   if(!bg){ bg=document.createElement('div'); bg.id='addpop'; bg.className='sheet-bg'; bg.onclick=closeAddSheet; document.body.appendChild(bg); }
   bg.innerHTML=`<div class="sheet" onclick="event.stopPropagation()">
     <div class="secthead" style="margin-bottom:8px"><div class="t" style="font-size:15px">경조사 추가</div></div>
-    <button class="btn btn-primary" onclick="closeAddSheet();openImport()">📋 카톡 청첩장 붙여넣기 <span style="font-weight:400;font-size:12px;opacity:.85">· 자동 인식</span></button>
-    <button class="btn btn-ghost" style="margin-top:8px" onclick="closeAddSheet();openCalPopup()">✏️ 직접 입력 <span style="font-weight:400;font-size:12px;color:var(--muted)">· 달력에서 날짜 선택</span></button>
+    <button class="btn btn-primary" onclick="closeAddSheet();openImport()">📋 카톡 청첩장 붙여넣기</button>
+    <button class="btn btn-ghost" style="margin-top:8px" onclick="closeAddSheet();openAdd()">✏️ 직접 입력</button>
   </div>`; setTimeout(()=>bg.classList.add('show'),10); }
 function closeAddSheet(){ const bg=document.getElementById('addpop'); if(!bg) return; bg.classList.remove('show'); setTimeout(()=>{ try{ bg.remove(); }catch(e){} },220);
 }
@@ -1545,7 +1418,6 @@ function addEventOnDate(ds,type){ // 달력에서 날짜 탭 → 참석할 경�
   toast(selDateLabel(ds)+'로 채워뒀어요 — 정보를 입력하세요');
 }
 /* ---- 직접 추가: 달력 팝업에서 날짜 선택 → 전체 입력 폼 (본문 상시 달력 진입과 병행) ---- */
-let CALPOP_YM=null, _calpopHideT=null;
 /* 길찾기: 예식장·빈소를 지도앱으로 — 당일 최다 니즈 (100% 클라이언트 URL 스킴) */
 function openMapSheet(){ const ev=curEvent()||hostEvent(); if(!ev||!ev.venue){ toast('장소 정보가 없어요'); return; }
   const q=encodeURIComponent((ev.venue+' '+(ev.address||'')).trim());
@@ -1561,38 +1433,6 @@ function openMapSheet(){ const ev=curEvent()||hostEvent(); if(!ev||!ev.venue){ t
   </div>`;
   bg.onclick=closeMapSheet; setTimeout(()=>bg.classList.add('show'),10); }
 function closeMapSheet(){ const bg=document.getElementById('mapsheet'); if(!bg)return; bg.classList.remove('show'); setTimeout(()=>{ try{bg.remove();}catch(e){} },220); }
-function openCalPopup(){ CALPOP_YM=CALPOP_YM||ymToday(); clearTimeout(_calpopHideT);
-  renderCalPopup(); const bg=document.getElementById('calpop');
-  setTimeout(()=>bg.classList.add('show'),10);
-  try{ histGuard(); }catch(e){} } // 안드로이드 백버튼으로 닫히도록
-function renderCalPopup(){ let bg=document.getElementById('calpop');
-  if(!bg){ bg=document.createElement('div'); bg.id='calpop'; bg.className='sheet-bg';
-    bg.addEventListener('click',e=>{ if(e.target===bg) closeCalPopup(); });
-    document.body.appendChild(bg); }
-  const [y,m]=CALPOP_YM.split('-').map(Number);
-  bg.innerHTML=`<div class="sheet" style="padding-bottom:calc(16px + env(safe-area-inset-bottom))">
-    <div class="secthead"><div class="t" style="font-size:15px">참석할 날짜를 선택하세요</div>
-      <button class="minibtn" onclick="closeCalPopup()">닫기</button></div>
-    <p class="sub" style="margin:2px 0 10px">날짜를 고르면 경조사 정보 입력으로 이어져요.</p>
-    <div class="calhead"><button class="calnav" onclick="calpopNav(-1)">‹</button>
-      <div class="caltitle">${y}년 ${m}월</div>
-      <button class="calnav" onclick="calpopNav(1)">›</button></div>
-    <div class="calgrid">${['일','월','화','수','목','금','토'].map((w,i)=>`<div class="caldow ${i===0?'sun':''}">${w}</div>`).join('')}${calpopGrid(y,m)}</div>
-  </div>`; }
-function calpopGrid(y,m){ const first=new Date(y,m-1,1).getDay(); const days=new Date(y,m,0).getDate();
-  const evDates=new Set(S.events.filter(e=>!(e.draft&&!evHasContent(e))&&e.date).map(e=>e.date));
-  const t=todayStr(); let cells='';
-  for(let i=0;i<first;i++) cells+='<button class="calday empty"></button>';
-  for(let d=1;d<=days;d++){ const ds=y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-    cells+=`<button class="calday ${evDates.has(ds)?'ev':''}${ds===t?' today':''}" onclick="calpopPick('${ds}')">${d}${evDates.has(ds)?'<span class="cdot"></span>':''}</button>`; }
-  return cells; }
-function calpopNav(d){ let [y,m]=CALPOP_YM.split('-').map(Number); const i=y*12+(m-1)+d;
-  y=Math.floor(i/12); m=i%12+1; CALPOP_YM=y+'-'+String(m).padStart(2,'0'); renderCalPopup();
-  document.getElementById('calpop').classList.add('show'); }
-function calpopPick(ds){ closeCalPopup(); addEventOnDate(ds,'wedding'); } // 유형은 폼에서 변경 가능
-function closeCalPopup(){ const bg=document.getElementById('calpop'); if(!bg) return;
-  bg.classList.remove('show'); clearTimeout(_calpopHideT);
-  _calpopHideT=setTimeout(()=>{ try{ bg.remove(); }catch(e){} },220); }
 function calendarHTML(){
   ensureCalYM();
   const [y,m]=S.ui.calYM.split('-').map(Number);
@@ -1617,8 +1457,7 @@ function calendarHTML(){
           <span class="cic">${c.icon}</span><span class="cnm">${esc(evNamePlain(ev))||'(이름 미입력)'}</span>
           <span class="ctag">${c.label}</span><span class="cchev">›</span></div>`;}).join('')}</div>`;
     } else {
-      below=`<div class="calsel"><div class="calseltt">${selDateLabel(sel)} · 경조사 없음</div>
-        <div class="caladd">이 날짜에 추가 ${['wedding','hwahon','memorial'].map(tp=>`<button class="addtype" onclick="addEventOnDate('${sel}','${tp}')">${TYPES[tp].icon} ${TYPES[tp].label}</button>`).join('')}</div></div>`;
+      below=`<div class="calsel"><div class="calseltt">${selDateLabel(sel)} · 경조사 없음</div></div>`;
     }
   }
   return `<div class="card">
@@ -1627,7 +1466,6 @@ function calendarHTML(){
       <button class="calnav" onclick="calNav(1)">›</button></div>
     <div class="calgrid">${dows.map((w,i)=>`<div class="caldow${i===0?' sun':''}">${w}</div>`).join('')}${cells}</div>
     ${below}
-    <div class="note">💡 이음 달력 — 날짜를 누르면 그 날의 경조사를 선택하거나, 빈 날짜엔 새 경조사를 추가할 수 있어요.</div>
   </div>`;
 }
 
@@ -1642,7 +1480,6 @@ function guestDetail(){
   return `
   <button class="backbtn" onclick="backToList()">‹ 내 경조사</button>
   <div class="hero${ev.type==='memorial'?' mem':''}">
-    <div class="lead">${ev.type==='memorial'?'In memoriam':"You're invited"}</div>
     <div class="names serif">${evName(ev)}</div>
     <div class="dday-pill">${dday(ev)}</div>
     <div class="when">${dateText(ev)}<br/>${esc(ev.venue)}</div>
@@ -1668,7 +1505,7 @@ function guestDetail(){
       <button class="btn btn-sage btn-sm" style="margin-top:8px" onclick="saveGuestAcct()">계좌 저장</button>
     </details>`}
     <label>보내는 분 성함</label>
-    <input id="gname" placeholder="이름 (주최자가 알아볼 수 있게)" value="${esc(nm)}" onchange="setGuestName(this.value)">
+    <input id="gname" placeholder="이름" value="${esc(nm)}" onchange="setGuestName(this.value)">
     <label>보낼 금액 <button class="minibtn" style="float:right;padding:4px 9px" onclick="openReco(curEvent().id)">${ev.type==='memorial'?'얼마가 적당할까요':'💡 얼마가 적당할까?'}</button></label>
     <input id="sendamt" type="number" inputmode="numeric" placeholder="예: 100000" value="${me&&me.pay&&me.pay.amount!=null?me.pay.amount:(S.ui.guestSession.draftAmt||((S.ui.guestSession.pendingPay&&S.ui.guestSession.pendingPay.evId===ev.id)?S.ui.guestSession.pendingPay.amt:'')||'')}" oninput="amtPreview()">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:7px">
@@ -1684,29 +1521,28 @@ function guestDetail(){
       </div>
     </details>
     <details class="paycat" ${S.ui.payCat==='easy'?'open':''} ontoggle="if(this.open)S.ui.payCat='easy'">
-      <summary><span class="pc-t"><b>${ev.type==='memorial'?'간편송금':'⚡ 간편송금'}</b><small>토스 · 카카오페이 — 앱에서 바로</small></span><span class="pc-ar">▾</span></summary>
+      <summary><span class="pc-t"><b>${ev.type==='memorial'?'간편송금':'⚡ 간편송금'}</b><small>토스 · 카카오페이</small></span><span class="pc-ar">▾</span></summary>
       <div class="pc-body">
-        <button class="btn btn-toss" onclick="payViaApp('toss')">토스로 보내기 · 금액 자동완성</button>
+        <button class="btn btn-toss" onclick="payViaApp('toss')">토스로 보내기</button>
         ${acc.kakaopay?`<button class="btn btn-kakao" style="margin-top:8px" onclick="payViaApp('kakao')">카카오페이로 보내기</button>`:''}
       </div>
     </details>`:`
     <details class="paycat" ${(S.ui.payCat||'bank')==='bank'?'open':''} ontoggle="if(this.open)S.ui.payCat='bank'">
-      <summary><span class="pc-t"><b>${ev.type==='memorial'?'계좌이체':'🏦 계좌이체'}</b><small>모든 은행 · 증권 앱</small></span><span class="pc-ar">▾</span></summary>
+      <summary><span class="pc-t"><b>${ev.type==='memorial'?'계좌이체':'🏦 계좌이체'}</b></span><span class="pc-ar">▾</span></summary>
       <div class="pc-body">
         <button class="btn btn-primary" onclick="openGuestAcct()">계좌 입력하고 복사하기</button>
       </div>
     </details>
     <details class="paycat" ${S.ui.payCat==='easy'?'open':''} ontoggle="if(this.open)S.ui.payCat='easy'">
-      <summary><span class="pc-t"><b>${ev.type==='memorial'?'간편송금':'⚡ 간편송금'}</b><small>토스 · 카카오페이 — 앱에서 바로</small></span><span class="pc-ar">▾</span></summary>
+      <summary><span class="pc-t"><b>${ev.type==='memorial'?'간편송금':'⚡ 간편송금'}</b><small>토스 · 카카오페이</small></span><span class="pc-ar">▾</span></summary>
       <div class="pc-body">
         <button class="btn btn-toss" onclick="openGuestAcct()">계좌 입력하고 토스로 보내기</button>
       </div>
     </details>`}
     <details class="paycat" ${S.ui.payCat==='cash'?'open':''} ontoggle="if(this.open)S.ui.payCat='cash'">
-      <summary><span class="pc-t"><b>${ev.type==='memorial'?'✉️ 현금 · 부의 봉투':'🧧 현금 · 봉투'}</b><small>${ev.type==='memorial'?'조문 시':'식장에서'} 직접 전달</small></span><span class="pc-ar">▾</span></summary>
+      <summary><span class="pc-t"><b>${ev.type==='memorial'?'✉️ 현금 · 부의 봉투':'🧧 현금 · 봉투'}</b></span><span class="pc-ar">▾</span></summary>
       <div class="pc-body">
-        <button class="btn btn-ghost btn-sm" onclick="payViaApp('cash')">현금으로 전달했어요 · 기록만</button>
-        <button class="btn btn-line btn-sm" style="margin-top:8px" onclick="openEnvelope(curEvent().id)">봉투 쓰는 법 보기</button>
+        <button class="btn btn-ghost btn-sm" onclick="payViaApp('cash')">현금으로 전달했어요</button>
       </div>
     </details>
   </div>
@@ -1720,9 +1556,7 @@ function notifyCard(ev,me,nm){ // 명부 기록 — 항상 표시 (팝업을 놓
   const payTxt=hasPay?`${c.money} ${won(me.pay.amount)}${me.pay.method==='toss'?' (토스)':me.pay.method==='kakao'?' (카카오페이)':me.pay.method==='cash'?' (현금 전달)':''}`:'';
   return `<div class="card" id="notifycard">
     <h3>📒 ${ledgerLabel(ev)}</h3>
-    <div class="tienote" style="margin:6px 0 10px">${mem
-      ?`🕊️ <b>기록해야 상주가 알 수 있어요.</b> 전한 위로가 이름과 함께 남습니다.`
-      :`💞 <b>기록해야 주최자가 알 수 있어요.</b> 보낸 마음이 내 이름과 함께 명부에 남습니다.`}</div>
+    <div class="tienote" style="margin:6px 0 10px">${mem?'🕊️ <b>기록해야 상주가 알 수 있어요.</b>':'💞 <b>기록해야 주최자가 알 수 있어요.</b>'}</div>
     ${hasPay?`<p class="sub" style="margin:0"><b>${esc(nm)}</b> · <b>${esc(payTxt)}</b></p>`
      :mine?`<p class="sub" style="margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span><b>${esc(nm||mine.name)}</b> · <b>${payMethodLabel(mine.method)} ${won(mine.amt)}</b></span><button class="minibtn" onclick="confirmPendingPay(0)">안 보냈어요</button></p>`:''}
     <button class="btn btn-primary" style="margin-top:11px" onclick="recordAndNotify()">${ledgerLabel(ev)}</button>
@@ -1802,18 +1636,12 @@ function setAmt(v){ const el=$('#sendamt'); if(el){ el.value=v; amtPreview(); } 
 function amtPreview(){ const el=$('#sendamt'), p=$('#amtPrev'); if(!el||!p) return;
   S.ui.guestSession.draftAmt=el.value;
   const n=Number(el.value); p.textContent = n>0 ? won(n) : ''; }
-function clearMyPay(){ const ev=curEvent(); if(!ev)return;
-  const nm=(S.ui.guestSession.name||(S.settings&&S.settings.name)||'').trim();
-  const me=ev.guests.find(g=>g.name===nm);
-  if(me) me.pay={amount:null,source:null,method:null};
-  ev.myGift=null; S.ui.guestSession.draftAmt=null; save(); render(); toast('보냄 기록을 지웠어요'); }
 function setAcct(i){captureAmt();S.ui.guestSession.acctIdx=i;save();render();}
 
 /* ======================= 집계 ======================= */
-function ledgerStats(ev){let attend=0,heads=0,total=0,appSum=0,manualSum=0,paid=0;
-  ev.guests.forEach(x=>{if(x.rsvp.status==='yes'){attend++;heads+=x.rsvp.count||1;}
-    const p=x.pay||{}; if(p.amount>0){total+=p.amount;paid++; if(p.source==='app')appSum+=p.amount; else manualSum+=p.amount;}});
-  return {attend,heads,total,appSum,manualSum,paid};}
+function ledgerStats(ev){let total=0,appSum=0,manualSum=0,paid=0;
+  ev.guests.forEach(x=>{ const p=x.pay||{}; if(p.amount>0){total+=p.amount;paid++; if(p.source==='app')appSum+=p.amount; else manualSum+=p.amount;}});
+  return {total,appSum,manualSum,paid};}
 
 /* ======================= 내 경조사비 가계부 (품앗이) ======================= */
 function myStats(){ let given=0,gaveCount=0,received=0,recvCount=0; const byRel={};
@@ -1828,24 +1656,13 @@ function myStats(){ let given=0,gaveCount=0,received=0,recvCount=0; const byRel=
   }));
   return {given,gaveCount,received,recvCount,net:received-given,byRel}; }
 function openLedger(){ S.ui.guestView='ledger'; save(); render(); window.scrollTo(0,0); }
-function setMyRelation(r){ const ev=curEvent(); if(ev){ own(ev).myRelation=r; save(); render(); } }
-function ledgerSummaryCard(){ const s=myStats(); const nc=s.net>=0?'var(--ok)':'var(--danger)';
-  return `<div class="card" style="cursor:pointer" onclick="openLedger()">
-    <div class="secthead"><div class="t">💰 내 경조사비 가계부</div><div class="c">자세히 ›</div></div>
-    <div class="stats">
-      <div class="stat"><div class="v">${won(s.given)}</div><div class="k">보낸 경조사비 (${s.gaveCount})</div></div>
-      <div class="stat"><div class="v">${won(s.received)}</div><div class="k">받은 경조사비 (${s.recvCount})</div></div>
-      <div class="stat"><div class="v big" style="color:${nc}">${(s.net>=0?'+':'−')+won(Math.abs(s.net))}</div><div class="k">합계(받은−보낸)</div></div>
-    </div>
-  </div>`; }
 function ledgerView(){ const s=myStats();
-  const rel=Object.entries(s.byRel).sort((a,b)=>b[1]-a[1]); const mx=Math.max(1,...rel.map(x=>x[1]));
   const all=txAll();
   return `
   <div class="listhead"><div class="t serif">품앗이 가계부</div></div>
   <div class="card reco-cta" onclick="openPeople()" style="border-color:var(--sage)">
     <div class="rc-ic">🔎</div>
-    <div class="rc-tx"><div class="rc-t" style="color:var(--sage-d)">주고받은 사람</div><div class="rc-d">이름 검색 · 지난 주고받은 금액 참고</div></div>
+    <div class="rc-tx"><div class="rc-t" style="color:var(--sage-d)">주고받은 사람</div></div>
     <div class="rc-go" style="color:var(--sage-d)">›</div>
   </div>
   <div class="card">
@@ -1854,16 +1671,12 @@ function ledgerView(){ const s=myStats();
       <div class="stat" style="cursor:pointer" onclick="openTx('received')"><div class="v">${won(s.received)}</div><div class="k">받은 경조사비 (${s.recvCount}) ›</div></div>
       <div class="stat" style="cursor:pointer" onclick="openTx('all')"><div class="v big" style="color:${s.net>=0?'var(--ok)':'var(--danger)'}">${(s.net>=0?'+':'−')+won(Math.abs(s.net))}</div><div class="k">합계 ›</div></div>
     </div>
-    <div class="note">'품앗이'는 주고받는 마음입니다. 항목을 누르면 전체 내역을 은행 앱처럼 볼 수 있어요.</div>
   </div>
   <div class="card"><div class="secthead"><div class="t">최근 내역</div><div class="c">${all.length}건</div></div>
     <div class="glist">${all.slice(0,3).map(txRow).join('')||'<div class="empty">아직 주고받은 내역이 없어요.</div>'}</div>
     ${all.length>=4?`<button class="backbtn" style="margin:8px 0 0" onclick="openTx('all')">＋ 더보기 · ${all.length}건 전체 ›</button>`:''}
   </div>
-  ${monthlyChart()}
-  ${rel.length?`<div class="card"><div class="secthead"><div class="t">관계별 보낸 경조사비</div></div>
-    ${rel.map(([r,v])=>`<div class="relrow"><span class="rl">${esc(r)}</span><div class="bar"><div class="fill" style="width:${Math.round(v/mx*100)}%"></div></div><span class="rv">${won(v)}</span></div>`).join('')}
-  </div>`:''}`;
+  `;
 }
 /* ---- 주고받은 내역 (은행 앱 컨셉: 기간·방향 필터) ---- */
 function txAll(){ const arr=[];
@@ -1927,7 +1740,7 @@ function personAddView(){ const d=S.ui.paDraft||{};
       <select id="pa_type" style="max-width:36%">${['결혼식','화혼','부고','돌잔치','집들이','생일','기타'].map(t=>`<option ${d.type===t?'selected':''}>${t}</option>`).join('')}</select>
       <input id="pa_date" type="date" value="${d.date||todayStr()}">
     </div>
-    <div class="row" style="margin-top:8px"><input id="pa_label" placeholder="설명 (선택 — 비우면 유형)" value="${esc(d.label||'')}"><input id="pa_amt" type="number" inputmode="numeric" placeholder="금액" value="${d.amt||''}"></div>
+    <div class="row" style="margin-top:8px"><input id="pa_label" placeholder="설명 (선택)" value="${esc(d.label||'')}"><input id="pa_amt" type="number" inputmode="numeric" placeholder="금액" value="${d.amt||''}"></div>
     <div class="row" style="margin-top:11px">
       <button class="btn btn-line" onclick="savePersonAdd('gave')">보냄으로 저장 ↗</button>
       <button class="btn btn-sage" onclick="savePersonAdd('received')">받음으로 저장 ↙</button>
@@ -1958,33 +1771,24 @@ function settingsView(){ const st=S.settings||{}; const ago=backupAgo();
       <button class="${S.ui.noti?'on':''}" onclick="if(!S.ui.noti)toggleNoti()">켜기</button>
       <button class="${!S.ui.noti?'on':''}" onclick="if(S.ui.noti)toggleNoti()">끄기</button>
     </div>
-    <p class="lblnote" style="margin-top:6px">${BG_NOTI?'일주일 전·전날·당일에 알려드려요 — 앱을 열지 않아도 도착합니다.':(isIOS()?'앱을 열 때 다가온 경조사를 알려드려요. (아이폰은 백그라운드 알림을 지원하지 않아요)':'앱을 열 때 다가온 경조사를 알려드려요.')}</p>
-    <label style="margin-top:12px">🌱 품앗이 알림</label>
-    <div class="seg2">
-      <button class="${reciOn()?'on':''}" onclick="if(!reciOn())toggleRecipro()">켜기</button>
-      <button class="${!reciOn()?'on':''}" onclick="if(reciOn())toggleRecipro()">끄기</button>
-    </div>
-    <p class="lblnote" style="margin-top:6px">주고받은 기록이 있는 분의 경조사가 등록되면 보답을 챙겨드려요.</p>
     <p class="lblnote" style="margin-top:14px;text-align:right;opacity:.7">${NATIVE?`이음 앱 ${esc(NINFO.versionName||'')} · 웹 ${APP_BUILD} <button class="minibtn" style="margin-left:6px" onclick="manualWebUpdate()">업데이트 확인</button>`:`이음 ${APP_BUILD}`}</p>
   </div>
   <div class="card">
     <div class="secthead"><div class="t">💾 백업 · 기기 이전</div><div class="c">${ago?`마지막 백업 ${ago}`:'아직 백업 없음'}</div></div>
-    ${NATIVE?`<p class="sub"><b>기록은 이음 앱 안에 저장돼요</b> — 브라우저 데이터를 지워도 남고, 구글 계정 백업이 켜져 있으면 새 폰에서 자동 복원돼요. 폰을 바꿀 땐 <b>[링크로 기기 옮기기]</b>.</p>`:`<p class="sub"><b>앱 업데이트로는 데이터가 지워지지 않고, 앱을 닫을 때마다 이 기기 안에 자동 백업됩니다.</b> 다만 기록은 이 <b>브라우저 저장소</b>에 있어 브라우저의 사이트 데이터를 지우면 함께 지워지고(Play 스토어의 이음 앱 1.3.0+는 앱 안에 저장), 휴대폰을 바꿀 땐 <b>[🔗 링크로 기기 옮기기]</b>를 카톡 '나에게 보내기'로 보내고, 새 폰에서 <b>[품앗이 가계부 복원하기]</b> 버튼만 누르면 끝 — 파일 백업은 보조 수단이에요.</p>`}
+    <p class="sub">${NATIVE?'기록은 이음 앱 안에 저장돼요.':'기록은 이 브라우저에 저장돼요.'}</p>
     <div class="stack">
-      <button class="btn btn-primary" onclick="shareTransferLink()">링크로 기기 옮기기 <span style="font-weight:400;font-size:11.5px;opacity:.85">· 가장 쉬워요</span></button>
-      <button class="btn btn-ghost" onclick="exportData()">백업 파일 만들기 <span style="font-weight:400;font-size:11.5px;opacity:.8">· 파일 보관용(보조)</span></button>
-      <button class="btn btn-ghost" onclick="importData()">백업에서 복원 <span style="font-weight:400;font-size:11.5px;opacity:.8">· 따라하기 가이드</span></button>
+      <button class="btn btn-primary" onclick="shareTransferLink()">링크로 기기 옮기기</button>
+      <button class="btn btn-ghost" onclick="exportData()">백업 파일 만들기</button>
+      <button class="btn btn-ghost" onclick="importData()">백업에서 복원</button>
     </div>
-    ${NATIVE?`<button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="nativeRestoreByCode()">코드로 가져오기 <span style="font-weight:400;font-size:11.5px;opacity:.8">· 이전 폰 크롬 화면의 8자리</span></button>`:''}
+    ${NATIVE?`<button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="nativeRestoreByCode()">코드로 가져오기</button>`:''}
   </div>
   <div class="card" style="padding:5px 4px">
-    ${moreItem('📖','튜토리얼 다시 보기','기본 기능을 데모로 안내해요','startTutorial()')}
-    ${moreItem('📆','전체 일정 캘린더로 내보내기','모든 경조사를 .ics 파일로','saveAllICSSafe()')}
-    ${moreItem('📄','개인정보 처리방침','기기 저장 · 초대장 등 전달 기능만 릴레이 경유',"openDoc('privacy')")}
+    ${moreItem('📄','개인정보 처리방침','',"openDoc('privacy')")}
     ${moreItem('📃','이용약관','',"openDoc('terms')")}
     ${moreItem('🗑️','모든 데이터 삭제','이 기기의 이음 데이터를 완전히 삭제','reset()')}
   </div>
-  <p class="land-foot">${NATIVE?`이음 앱 ${esc(NINFO.versionName||'')} · 웹 ${APP_BUILD}<br/>기록은 앱 안에 저장돼요 — 브라우저 데이터를 지워도 남습니다`:`이음 웹 ${APP_BUILD}<br/><b>기록이 이 브라우저 저장소에 있어요</b> — 브라우저의 사이트 데이터를 지우면 함께 지워집니다`}</p>`;
+  `;
 }
 /* ---- 백업 파일 (기기 이전의 공식 경로) ---- */
 function backupPayload(){ // 데모/튜토리얼 주입분은 백업에 싣지 않음 (다른 기기 복원 오염 방지)
@@ -2022,8 +1826,8 @@ function parseBackup(text){ // 신 포맷(payload) + 구 포맷(S 통짜) 모두
   return null;
 }
 let PENDING_RESTORE=null; // 메모리 전용 — LS에 싣지 않음(용량 2배·잔존 방지)
-function importData(){ openRestoreGuide(); } // 복원 진입점: 가이드/바로선택 선택지
-function pickRestoreFile(){ closeRestoreGuide();
+function importData(){ pickRestoreFile(); } // 복원 진입점: 바로 파일 선택 (v108: 3단계 안내 시트 제거)
+function pickRestoreFile(){
   const inp=document.createElement('input'); inp.type='file'; inp.accept='application/json,.json,text/plain,.txt';
   inp.style.cssText='position:fixed;left:-9999px;opacity:0'; document.body.appendChild(inp); // iOS: detached input GC 방지
   const cleanup=()=>{ try{ inp.remove(); }catch(e){} };
@@ -2035,32 +1839,6 @@ function pickRestoreFile(){ closeRestoreGuide();
     r.onerror=()=>{ cleanup(); toast('파일을 읽지 못했어요'); };
     r.readAsText(f); };
   inp.click(); }
-/* ---- 복원 동적 가이드 (바텀시트) ---- */
-let RG_I=0, _rgHideT=null;
-const RG_STEPS=[
- {t:'1. 이전 폰에서 옮기기 링크 만들기', x:"이전 폰의 이음에서 <b>설정 → [🔗 링크로 기기 옮기기]</b>를 누르고, <b>카카오톡 '나에게 보내기'</b>로 보내두세요.<br><span style='color:var(--muted)'>파일이 편하면 [⬇️ 백업 파일 만들기]도 똑같이 쓸 수 있어요.</span>"},
- {t:'2. 새 폰에서 링크 열기', x:"새 폰의 카카오톡 <b>나와의 채팅</b>에서 방금 보낸 <b>링크를 탭</b>하세요. 이음이 열리면서 기록이 <b>자동으로 옮겨집니다</b>.<br><span style='color:var(--muted)'>파일로 보냈다면 파일을 저장한 뒤 3단계로.</span>"},
- {t:'3. (파일일 때) 여기서 파일 선택', x:"아래 <b>[파일 선택하기]</b>를 누르고 <b>ieum-backup-날짜.json.txt</b> 파일을 고르면 끝. 기존 기록과 <b>병합</b>할지 <b>교체</b>할지 물어봅니다."},
-];
-function openRestoreGuide(){ RG_I=0; renderRestoreGuide(); const bg=document.getElementById('rgsheet');
-  setTimeout(()=>bg.classList.add('show'),10); try{ histGuard(); }catch(e){} }
-function renderRestoreGuide(){ let bg=document.getElementById('rgsheet');
-  if(!bg){ bg=document.createElement('div'); bg.id='rgsheet'; bg.className='sheet-bg';
-    bg.addEventListener('click',e=>{ if(e.target===bg) closeRestoreGuide(); }); document.body.appendChild(bg); }
-  const st=RG_STEPS[RG_I];
-  bg.innerHTML=`<div class="sheet" style="padding-bottom:calc(16px + env(safe-area-inset-bottom))">
-    <div class="secthead"><div class="t" style="font-size:15px">백업 복원</div>
-      <button class="minibtn" onclick="closeRestoreGuide()">닫기</button></div>
-    <div class="note" style="margin:4px 0 12px"><b>${st.t}</b><br>${st.x}</div>
-    <div class="tutdots" style="margin:0 0 12px">${RG_STEPS.map((_,i)=>`<i class="${i===RG_I?'on':''}"></i>`).join('')}</div>
-    <div class="row">
-      ${RG_I>0?`<button class="btn btn-ghost btn-sm" onclick="RG_I--;renderRestoreGuide();document.getElementById('rgsheet').classList.add('show')">‹ 이전</button>`:''}
-      ${RG_I<RG_STEPS.length-1?`<button class="btn btn-primary btn-sm" onclick="RG_I++;renderRestoreGuide();document.getElementById('rgsheet').classList.add('show')">다음 ›</button>`:''}
-    </div>
-    <button class="btn btn-sage" style="margin-top:9px" onclick="pickRestoreFile()">파일 선택하기 — 백업 파일이 있어요</button>
-  </div>`; }
-function closeRestoreGuide(){ const bg=document.getElementById('rgsheet'); if(!bg) return;
-  bg.classList.remove('show'); clearTimeout(_rgHideT); _rgHideT=setTimeout(()=>{ try{ bg.remove(); }catch(e){} },220); }
 /* ---- 기기 이전 링크: 백업을 압축해 링크에 담아 카톡으로 — 새 기기에서 탭하면 자동 적용 ---- */
 async function shareTransferLink(){ try{
   const pl=backupPayload(); // 감사 인사 사진(dataURL 수십만 자)은 링크에 못 실림 — 링크 이전에서만 제외(파일 백업은 포함)
@@ -2134,7 +1912,6 @@ function restoreView(){ const p=PENDING_RESTORE; if(!p){ S.ui.guestView='list'; 
       :`<button class="btn btn-primary" onclick="applyRestore('replace')">복원하기</button>`}
       <button class="btn btn-ghost btn-sm" onclick="cancelRestore()">취소</button>
     </div>
-    ${mine?`<div class="note">💡 대부분은 <b>병합</b>이 안전해요. <b>전체 교체</b>는 현재 기기 데이터가 삭제돼요.</div>`:''}
   </div>`;
 }
 /* ---- 백업 리마인더: 실데이터가 쌓였는데 백업이 오래됐으면 안내 ---- */
@@ -2167,38 +1944,8 @@ function iosInstallBanner(){ // '설치하세요'가 아니라 '기록 오래 �
   return `<div class="card" style="border-color:var(--primary)">
     <div class="rm-top" style="margin-bottom:6px"><span class="rm-h">💾 내 기록, 오래 보관하기</span>
       <button class="rm-noti" onclick="dismissIosHint()" style="border-color:var(--line);color:var(--muted)">닫기</button></div>
-    <p class="sub" style="margin:0"><b>설치 없이 지금처럼 쓰셔도 돼요.</b> 다만 사파리에서 이음을 오래(사파리 사용일 기준 7일) 열지 않으면 iOS가 저장 데이터를 정리할 수 있어요 —
-    ${inapp?`<b>파일 백업</b> 하나면 언제든 그대로 복원됩니다.`
-      :`<b>파일 백업</b>을 해두거나 <b>홈 화면에 추가</b>(공유 □↑ → 홈 화면에 추가)하면 안전해요.`}</p>
+    <p class="sub" style="margin:0">사파리는 7일 넘게 열지 않으면 기록이 지워질 수 있어요 — 백업해 두세요.</p>
     <div class="row" style="margin-top:9px"><button class="rm-noti" onclick="exportData()">지금 백업</button></div>
-  </div>`;
-}
-function dismissIosNudge(){ if(S.meta) S.meta.iosNudgeAt=Date.now(); save(); render(); }
-function iosNudge(){ // 하객이 첫 기록을 남긴 직후 = 유일하게 보장된 접점. 백업했거나 한 번 닫았으면 다시 안 뜸
-  if(!isIOS()||isStandalone()||isInApp()) return ''; // 인앱 웹뷰에선 표시하지 않음
-  if(typeof TUT!=='undefined'&&TUT.on) return ''; // 튜토리얼 연습 송금에 백업 넛지 금지
-  const ev=curEvent(); if(ev&&(ev.demo||ev.tut)) return '';
-  if(S.meta&&(S.meta.iosNudgeAt||S.meta.lastBackupAt)) return '';
-  return `<div class="note" style="margin-top:8px">📌 아이폰 사파리는 이음을 오래(사파리 사용일 기준 7일) 열지 않으면 저장 데이터를 정리할 수 있어요. 백업 파일 하나면 언제든 그대로 복원돼요.
-    <div class="row" style="margin-top:8px">
-      <button class="minibtn" onclick="exportData()">백업 파일 만들기</button>
-      <button class="minibtn" style="color:var(--muted)" onclick="dismissIosNudge()">알겠어요</button>
-    </div></div>`; }
-function snoozeBackup(){ if(S.meta) S.meta.backupSnooze=Date.now()+((isIOS()&&!isStandalone())?2:7)*86400000; save(); render(); } // iOS 웹은 ITP 7일 창보다 짧게
-function backupBanner(){ const m=S.meta||{}; const real=S.events.filter(e=>!e.demo).length+S.people.filter(p=>!p.demo).length;
-  if(!real) return '';
-  if(m.backupSnooze && Date.now()<m.backupSnooze) return '';
-  const iosWeb=isIOS()&&!isStandalone(); // 무설치 iOS: ITP 7일 삭제가 리마인더 주기보다 빠르므로 크게 앞당김
-  const stale = iosWeb ? ((m.dirty||0)>0 && (!m.lastBackupAt || Date.now()-m.lastBackupAt>3*86400000))
-    : (m.lastBackupAt ? (Date.now()-m.lastBackupAt>7*86400000 && (m.dirty||0)>0) : (m.dirty||0)>=8);
-  if(!stale) return '';
-  return `<div class="card" style="border-color:var(--warn);background:var(--tint2)">
-    <div class="rm-top" style="margin-bottom:6px"><span class="rm-h" style="color:var(--warn)">💾 백업할 때가 됐어요</span>
-      <span><button class="rm-noti" onclick="snoozeBackup()" style="border-color:var(--line);color:var(--muted)">나중에</button>
-      <button class="rm-noti" onclick="exportData()">지금 백업</button></span></div>
-    <p class="sub" style="margin:0">${iosWeb
-      ?`아이폰 사파리는 이음을 한동안(사파리 사용일 기준 7일) 열지 않으면 저장 데이터를 지울 수 있어요. 백업 파일 하나면 언제든 그대로 복원됩니다.${isInApp()?'':' 홈 화면에 추가(공유 □↑)해도 안전해요.'}`
-      :`데이터는 이 기기에만 저장돼요. 파일로 백업해 두면 휴대폰을 바꿔도 그대로 복원됩니다.`}</p>
   </div>`;
 }
 const DOCS={
@@ -2211,12 +1958,11 @@ const DOCS={
 
 2. 제3자 서비스
    - 송금은 토스·카카오페이·뱅킹 앱 등 이용자가 직접 실행하며, 이음은 자금·계좌에 접근하거나 중개하지 않습니다.
-   - 공유·캘린더 저장 시 카카오·구글 등 해당 서비스의 정책이 적용됩니다.
+   - 공유 시 카카오 등 해당 서비스의 정책이 적용됩니다.
    - (이용자가 실행할 때만) 아래 내용이 전달 서버(Cloudflare Workers)를 경유합니다. 마케팅·분석에 쓰지 않으며 기간이 지나면 자동 삭제됩니다.
      · 초대장·부고 링크 보내기 → 초대장 내용(이름·일시·장소·인사말·표시할 계좌) · 최대 400일 · 링크를 아는 사람이 열람
      · 축의금 명부에 기록하기 → 기록 내용(성함·금액) · 30일 · 주최자가 받으면 즉시 삭제
      · 링크로 기기 옮기기 → 가계부 전체(압축, 사진 제외) · 7일 · 받으면 즉시 삭제
-     · 초대장 열람 수 → 익명 해시와 숫자만 · 180일
      · 모바일청첩장 자동 인식 → 붙여넣은 청첩장 주소(URL)가 외부 프록시(corsproxy.io·allorigins.win)를 경유 · 보관 안 함
    - 초대장·이전 링크는 코드를 아는 사람이면 열 수 있으니 의도한 상대에게만 보내주세요. 즉시 삭제 요청: sfmi1952@gmail.com
 
@@ -2230,7 +1976,7 @@ const DOCS={
 
 제2조(자금 비취급) 이음은 자금을 보관·예치·중개·이체하지 않습니다. 모든 송금은 이용자가 토스·뱅킹 등 외부 앱에서 직접 수행하며, 이음은 계좌정보를 화면에 표시하거나 송금 화면으로 연결하는 역할만 합니다.
 
-제3조(정보의 정확성) 축의금·조의금 추천 금액, 식대·예산 계산 등은 공개된 통념·설문을 참고한 '참고용' 정보이며, 실제 금액은 이용자가 관계·상황에 따라 판단합니다.
+제3조(정보의 정확성) 축의금·조의금 추천 금액은 공개된 통념·설문을 참고한 '참고용' 정보이며, 실제 금액은 이용자가 관계·상황에 따라 판단합니다.
 
 제4조(책임의 한계) 이음은 이용자가 입력·표시한 계좌·금액·연락처의 정확성 및 이를 통한 송금 결과에 대해 책임지지 않습니다.
 
@@ -2303,9 +2049,6 @@ function payRecoverBoot(){ // 부팅 복구: 승인 응답 유실·iOS 설치앱
       /* 일시 오류면 pending 유지 — 다음 실행에서 재시도 */
     }).catch(()=>{});
 }
-function useCreditPass(){ const ev=hostEvent(); if(!ev||!S.meta||!(S.meta.passCredits>0))return;
-  S.meta.passCredits--; own(ev); ev.pass=true; grantPremium(); ev.passPaid={credit:true, amount:PASS_AMOUNT, at:Date.now()};
-  save(); render(); toast('보유 크레딧으로 패스를 열었어요'); }
 function loadToss(cb){ if(window.TossPayments){ cb(); return; }
   const s=document.createElement('script'); s.src='https://js.tosspayments.com/v1/payment';
   s.onload=cb; s.onerror=()=>toast('결제 모듈을 불러오지 못했어요 — 네트워크 확인');
@@ -2414,7 +2157,6 @@ function acceptPass(){
   const ev=hostEvent(); ev.pass=true; grantPremium(); passTrack('accepted');
   save(); const cont=_passCont; _passCont=null; _payPick=null; hidePassSheet();
   toast('이음 패스가 열렸어요 — 테스터 기간 무료'); render(); cont&&cont(); }
-function activatePass(){ passPrompt(); }
 function withPass(key,fn){ const ev=hostEvent(); passTrack(key);
   if(hasPass(ev)){ fn(); return; } passPrompt(fn); }
 function passChip(ev){ return hasPass(ev)?'':`<span class="pchip">PASS</span>`; }
@@ -2533,21 +2275,20 @@ function setThanksPhoto(){ const inp=document.createElement('input'); inp.type='
       img.src=r.result; }; r.readAsDataURL(f); }; inp.click(); }
 function clearThanksPhoto(){ const ev=hostEvent(); if(!ev)return; own(ev); delete ev.thanksPhoto; save(); render(); }
 function thanksView(){ const ev=hostEvent(); const c=cardState(ev); const samples=thankSamples(ev);
-  const recip=ev.guests.filter(g=>g.rsvp.status==='yes'||(g.pay&&g.pay.amount!=null));
+  const recip=ev.guests.filter(g=>g.pay&&g.pay.amount!=null);
   const previewName=(recip[0]||{}).name||'○○'; const mem=ev.type==='memorial';
   return `<button class="backbtn" onclick="backFromHost2()">‹ 내 행사</button>
   <div class="listhead"><div class="t serif">감사 인사 보내기</div></div>
-  <p class="sub" style="margin:0 2px 12px">인사말에 내 카드 사진을 곁들여 <b>내 문자·카톡</b>으로 직접 전송해요.</p>
   <div class="card">
-    <label>${mem?'답례 카드 사진':'감사카드 사진'} <span style="font-weight:400;color:var(--muted)">(선택 — 스튜디오 카드·${mem?'추모':'본식'} 사진 등)</span></label>
+    <label>${mem?'답례 카드 사진':'감사카드 사진'} <span style="font-weight:400;color:var(--muted)">(선택)</span></label>
     <div class="row" style="margin-top:6px">
       <button class="btn btn-ghost btn-sm" onclick="setThanksPhoto()">${mem?'':'📷 '}사진 ${ev.thanksPhoto?'변경':'추가'}</button>
       ${ev.thanksPhoto?`<button class="btn btn-ghost btn-sm" onclick="clearThanksPhoto()">사진 제거</button>`:''}
     </div>
     ${ev.thanksPhoto
       ?`<img src="${esc(ev.thanksPhoto)}" alt="" style="max-width:220px;width:100%;border-radius:12px;border:1px solid var(--line);display:block;margin:8px 0 0" onerror="this.style.display='none'">`
-      :`<p class="lblnote" style="margin-top:6px">사진이 없으면 인사말 문구만 보내드려요.</p>`}
-    <label style="margin-top:13px">인사말 <span style="font-weight:600;color:var(--muted);font-size:11px">· {이름}은 받는 분 이름으로 바뀜</span></label>
+      :''}
+    <label style="margin-top:13px">인사말 <span style="font-weight:400;color:var(--muted)">· {이름} 자동 치환</span></label>
     <div class="chips" style="margin-bottom:8px">${samples.map((s,i)=>`<button class="chip" onclick="useSample(${i})">샘플 ${i+1}</button>`).join('')}</div>
     <textarea rows="4" oninput="setCardMsg(this.value)" placeholder="직접 입력하거나 위 샘플을 골라보세요">${esc(c.msg)}</textarea>
     <button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="sendCard('${jsq(previewName)}')">먼저 나에게 테스트 전송</button>
@@ -2556,8 +2297,7 @@ function thanksView(){ const ev=hostEvent(); const c=cardState(ev); const sample
     <div class="glist">${recip.map(g=>`<div class="calevrow">
       <span class="cnm">${esc(g.name)}<span style="color:var(--muted);font-weight:400;font-size:11px"> · ${esc(g.relation)}</span>${g.thanked?' <span class="pill pill-ok" style="font-size:10px">✓ 보냄</span>':''}</span>
       <button class="btn ${g.thanked?'btn-ghost':'btn-sage'} btn-sm" style="max-width:120px" onclick="sendCard('${jsq(g.name)}',1)">${g.thanked?'다시 보내기':'보내기'}</button>
-    </div>`).join('')||`<div class="empty">${mem?'조문해 주신 분이 아직 없어요':'참석·축의한 분이 아직 없어요'}</div>`}</div>
-    <div class="note">문구·사진만 준비하고 발송은 주최자 본인이 하므로 대량문자 규제를 받지 않아요.</div>
+    </div>`).join('')||`<div class="empty">${mem?'조문해 주신 분이 아직 없어요':'축의한 분이 아직 없어요'}</div>`}</div>
   </div>`;
 }
 function markThanked(name){ const ev=hostEvent(); if(!ev)return;
@@ -2586,7 +2326,7 @@ function sendCard(name,mark){ const ev=hostEvent(); const mem=ev.type==='memoria
 function backFromHost2(){ S.ui.hostSub=null; save(); render(); window.scrollTo(0,0); }
 
 /* ======================= 하단 탭 내비 ======================= */
-function navGroup(v){ if(['ledger','people','person','personadd','tx'].includes(v))return 'ledger'; if(v==='reco')return 'more'; if(['more','group','envelope','settings','doc'].includes(v))return 'more'; return 'home'; }
+function navGroup(v){ if(['ledger','people','person','personadd','tx'].includes(v))return 'ledger'; if(v==='reco')return 'more'; if(['more','settings','doc'].includes(v))return 'more'; return 'home'; }
 function setGuestTab(v){ S.ui.tab='guest'; S.ui.guestView=v; if(v==='reco'&&S.ui.reco)S.ui.reco.ctxEventId=null; save(); render(); window.scrollTo(0,0); }
 function updateBottomNav(){ const g=navGroup(S.ui.guestView); document.querySelectorAll('#bottomnav button').forEach(b=>b.classList.toggle('on', b.getAttribute('data-g')===g)); }
 function backFromHost(){ pruneDraft(); S.ui.tab='guest'; S.ui.guestView=(S.ui.evFrom==='allev')?'allev':'list'; S.ui.evFrom=null; S.ui.hostSub=null; save(); render(); window.scrollTo(0,0); }
@@ -2601,7 +2341,7 @@ function unifiedPeople(){ const map={};
   (S.people||[]).forEach(p=>{ const k=(p.name||'').trim(); if(k&&!map[k]) map[k]={name:k,relation:p.relation||'',items:[]}; // 이력 0건도 목록·상세에 노출
     (p.items||[]).forEach(it=>push(p.name,p.relation,{dir:it.dir,amount:it.amount,label:it.label,date:it.date,src:'manual',auto:false,pid:p.id,iid:it.id})); });
   S.events.filter(e=>e.role==='host').forEach(e=>{ (e.guests||[]).forEach(g=>{ const p=g.pay||{}; if(p.amount>0) push(g.name,g.relation,{dir:'received',amount:p.amount,label:evNamePlain(e)+' '+cfg(e).label,date:e.date,src:p.source==='app'?'app':(p.method==='cash'?'cash':'manual'),auto:true}); }); });
-  S.events.filter(e=>e.role!=='host'&&e.myGift>0).forEach(e=>{ push(evNamePlain(e), e.myRelation, {dir:'gave',amount:e.myGift,label:cfg(e).label+' 참석',date:e.date,src:'app',auto:true}); });
+  S.events.filter(e=>e.role!=='host'&&e.myGift>0).forEach(e=>{ push(evNamePlain(e), e.myRelation, {dir:'gave',amount:e.myGift,label:cfg(e).label+' '+cfg(e).money,date:e.date,src:'app',auto:true}); });
   return Object.values(map).sort((a,b)=>{ const la=a.items.reduce((m,i)=>(i.date||'')>m?i.date:m,''), lb=b.items.reduce((m,i)=>(i.date||'')>m?i.date:m,''); return lb.localeCompare(la); }); }
 function pStats2(p){ let gave=0,recv=0; p.items.forEach(it=>{ if(it.dir==='gave')gave+=it.amount; else recv+=it.amount; }); return {gave,recv,net:gave-recv}; }
 function balHint(net){ if(net>0) return `<span class="bal pos">더 보냄</span>`;
@@ -2610,9 +2350,7 @@ function balHint(net){ if(net>0) return `<span class="bal pos">더 보냄</span>
 /* ======================= 품앗이 상호 알림: 주고받은 기록이 있는 분의 경조사를 놓치지 않게 =======================
    서버 없이 가능한 방식: 경조사의 주인공 이름을 내 '주고받은 사람' 기록과 매칭.
    ①상세 화면 품앗이 카드(받은 만큼 보답 원터치) ②추가 직후 토스트 ③임박 알림에 보답 문구. */
-function reciOn(){ return !(S.settings&&S.settings.recipro===false); } // 기본 켜짐 — 설정에서 끌 수 있음
-function toggleRecipro(){ S.settings=S.settings||{}; S.settings.recipro=!reciOn(); save(); render();
-  toast(reciOn()?'품앗이 알림을 켰어요 — 주고받은 분의 경조사를 챙겨드릴게요':'품앗이 알림을 껐어요'); }
+function reciOn(){ return true; } // v108: 품앗이 보답 안내 항상 켜짐(설정 토글 제거)
 function reciFor(ev){ if(!reciOn()||!ev||ev.role==='host') return null;
   const names=[evNamePlain(ev),ev.partyA,ev.partyB].map(s=>(s||'').trim()).filter(s=>s.length>=2);
   if(!names.length) return null;
@@ -2651,15 +2389,10 @@ function peopleListHTML(){ const q=(S.ui.pplSearch||'').trim(); const all=unifie
 function peopleView(){
   return `<button class="backbtn" onclick="setGuestTab('ledger')">‹ 가계부</button>
   <div class="listhead"><div class="t serif">주고받은 사람</div></div>
-  <p class="sub" style="margin:0 2px 12px">이음 송금·현금·수기 기록을 사람별로 모았어요. 이름으로 검색해 <b>지난 주고받은 금액</b>을 확인하세요.</p>
   <input id="ppl-search" placeholder="🔍 이름·경조사 검색" value="${esc(S.ui.pplSearch||'')}" oninput="pplSearchSet(this.value)" style="margin-bottom:12px">
   <div id="ppl-list">${peopleListHTML()}</div>
-  <button class="badge-add" style="margin-top:12px" onclick="openPersonAdd()">＋ 직접 추가하기 <span style="font-weight:400;font-size:12px;color:var(--muted)">· 이름·관계·주고받은 내역</span></button>`;
+  <button class="badge-add" style="margin-top:12px" onclick="openPersonAdd()">＋ 직접 추가하기</button>`;
 }
-function addPersonInline(){ const n=gv('np_name').trim(); if(!n){toast('이름을 입력하세요');return;}
-  const r=gv('np_rel').trim();
-  let p=(S.people||[]).find(x=>x.name===n); if(!p){ p={id:uid('p'),name:n,relation:r,items:[]}; if(!S.people)S.people=[]; S.people.push(p); }
-  S.ui.personName=p.name; S.ui.guestView='person'; save(); render(); window.scrollTo(0,0); }
 function addManualItem(dir){ const nm=S.ui.personName; const amt=Number(gv('pi_amt')); if(!amt){toast('금액을 입력하세요');return;}
   let p=(S.people||[]).find(x=>x.name===nm); if(!p){ p={id:uid('p'),name:nm,relation:'',items:[]}; if(!S.people)S.people=[]; S.people.push(p); }
   if(!(typeof TUT!=='undefined'&&TUT.on)&&(p.demo||p.tut)){ delete p.demo; delete p.tut; } // 손댄 순간 승격(튜토리얼 밖)
@@ -2678,7 +2411,7 @@ function personView(){ const p=unifiedPeople().find(x=>x.name===S.ui.personName)
     <div class="stat"><div class="v">${won(s.recv)}</div><div class="k">받은</div></div>
     <div class="stat"><div class="v big" style="color:${s.net>0?'var(--ok)':s.net<0?'var(--danger)':'var(--muted)'}">${(s.net>0?'+':s.net<0?'−':'')+won(Math.abs(s.net))}</div><div class="k">${s.net>0?'더 보냄':s.net<0?'더 받음':'균형'}</div></div>
   </div>
-  <div class="note">이 사람의 경조사에 참석할 때 <b>지난 주고받은 금액</b>을 참고하세요.</div></div>
+  </div>
   <div class="card"><div class="secthead"><div class="t">주고받은 이력</div></div>
     <div class="glist">${items.map(it=>`<div class="calevrow">
       <span class="cic">${it.dir==='gave'?'↗':'↙'}</span>
@@ -2692,83 +2425,40 @@ function personView(){ const p=unifiedPeople().find(x=>x.name===S.ui.personName)
       <select id="pi_type" style="max-width:36%">${['결혼식','화혼','부고','돌잔치','집들이','생일','기타'].map(t=>`<option>${t}</option>`).join('')}</select>
       <input id="pi_date" type="date" value="${todayStr()}">
     </div>
-    <div class="row" style="margin-top:8px"><input id="pi_label" placeholder="설명 (선택 — 비우면 유형)"><input id="pi_amt" type="number" inputmode="numeric" placeholder="금액"></div>
+    <div class="row" style="margin-top:8px"><input id="pi_label" placeholder="설명 (선택)"><input id="pi_amt" type="number" inputmode="numeric" placeholder="금액"></div>
     <div class="row" style="margin-top:9px"><button class="btn btn-line btn-sm" onclick="addManualItem('gave')">보냄 ↗</button><button class="btn btn-sage btn-sm" onclick="addManualItem('received')">받음 ↙</button></div>
   </div>`;
 }
 
-/* ======================= 그룹 합산 축의 (N분의1) ======================= */
-function groupState(){ if(!S.ui.group) S.ui.group={mode:'total', total:300000, n:5, per:50000}; return S.ui.group; }
-function openGroup(){ groupState(); S.ui.guestView='group'; save(); render(); window.scrollTo(0,0); }
-function groupSet(k,v){ const g=groupState(); if(k==='mode'){g.mode=v;save();render();return;} g[k]=v===''?0:(Number(v)||0); save(); recalcGroup(); }
-function groupCalc(){ const g=groupState(); const n=Math.max(1,+g.n||1);
-  if(g.mode==='total'){ const per=Math.round((+g.total||0)/n/1000)*1000; return {n, per, total:+g.total||0}; }
-  const per=+g.per||0; return {n, per, total:per*n}; }
-function recalcGroup(){ const r=groupCalc(); const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
-  set('g-per',won(r.per)); set('g-total',won(r.total)); set('g-n',r.n+'명'); }
-function groupView(){ const g=groupState(); const r=groupCalc();
-  return `<button class="backbtn" onclick="setGuestTab('more')">‹ 더보기</button>
-  <div class="listhead"><div class="t serif">그룹 합산 축의</div></div>
-  <p class="sub" style="margin:0 2px 12px">직장팀·동호회가 함께 축의할 때 <b>1/N 분담액</b>을 계산해요. 각자 토스/계좌로 <b>개별 송금</b>합니다(이음은 돈을 모으지 않아요).</p>
-  <div class="card">
-    <div class="seg2"><button class="${g.mode==='total'?'on':''}" onclick="groupSet('mode','total')">총액 → 1인당</button><button class="${g.mode==='per'?'on':''}" onclick="groupSet('mode','per')">1인당 → 총액</button></div>
-    <div class="row" style="margin-top:11px">
-      ${g.mode==='total'?`<div><label>총 축의금</label><input type="number" inputmode="numeric" value="${g.total}" oninput="groupSet('total',this.value)"></div>`:`<div><label>1인당</label><input type="number" inputmode="numeric" value="${g.per}" oninput="groupSet('per',this.value)"></div>`}
-      <div><label>인원</label><input type="number" inputmode="numeric" value="${g.n}" oninput="groupSet('n',this.value)"></div>
-    </div>
-    <div class="stats" style="margin-top:13px">
-      <div class="stat"><div class="v big" id="g-per">${won(r.per)}</div><div class="k">1인당</div></div>
-      <div class="stat"><div class="v" id="g-n">${r.n}명</div><div class="k">인원</div></div>
-      <div class="stat"><div class="v big" id="g-total">${won(r.total)}</div><div class="k">총액</div></div>
-    </div>
-    <div class="note">각자 1인당 금액을 <b>본인 토스/계좌</b>로 직접 보내면 됩니다. 대표 1인이 모아 보내면 송금 한도·정산 부담이 생길 수 있어요.</div>
-  </div>`;
-}
-
-/* ======================= 더보기 ======================= */
-function moreItem(ic,t,d,fn){ return `<button class="more-item" onclick="${fn}"><span class="mi-ic">${ic}</span><span class="mi-tx"><span class="mi-t">${t}</span><span class="mi-d">${d}</span></span><span class="mi-go">›</span></button>`; }
+function moreItem(ic,t,d,fn){ return `<button class="more-item" onclick="${fn}"><span class="mi-ic">${ic}</span><span class="mi-tx"><span class="mi-t">${t}</span>${d?`<span class="mi-d">${d}</span>`:''}</span><span class="mi-go">›</span></button>`; }
 function openThanksSafe(){ const cur=hostEvent(); const he=(cur&&cur.role==='host'&&evHasContent(cur))?cur:S.events.find(e=>e.role==='host'&&evHasContent(e)); // 행사가 여러 개면 지금 보고 있던 행사
   if(he){ S.ui.hostEventId=he.id; openThanks(); }
   else { toast('먼저 내 행사를 만들어 주세요'); setTab('host'); } }
-function saveAllICSSafe(){ if(!S.events.filter(e=>!(e.draft&&!evHasContent(e))).length){ toast('내보낼 경조사가 없어요'); return; } saveAllICS(); }
 function moreView(){ return `
   <div class="listhead"><div class="t serif">전체 기능</div></div>
 
   <div class="card" style="padding:0 4px 5px">
     <div class="mi-sec">자주 쓰는 도구</div>
-    ${moreItem('🧮','축의금·조의금 추천','관계·참석만 고르면 시세 기준 금액','openReco()')}
-    ${moreItem('🧧','봉투 쓰는 법','유형별 문구·지폐 방향·금액 예절',"openEnvelope('')")}
-    ${moreItem('🔍','주고받은 사람','이름 검색 · 지난 주고받은 금액','openPeople()')}
+    ${moreItem('🧮','축의금·조의금 추천','','openReco()')}
+    ${moreItem('🔍','주고받은 사람','','openPeople()')}
   </div>
   <div class="card" style="padding:0 4px 5px">
     <div class="mi-sec">행사 · 기록</div>
-    ${moreItem('✍️','내 행사 만들기 · 주최자','청첩장 보내기 · 장부 정리 · 하객 관리',"setTab('host')")}
-    ${moreItem('✉️','감사 인사 보내기','내 카드 사진과 인사말을 카톡으로','openThanksSafe()')}
+    ${moreItem('✍️','내 행사 만들기','',"setTab('host')")}
+    ${moreItem('✉️','감사 인사 보내기','','openThanksSafe()')}
   </div>
   <div class="card" style="padding:0 4px 5px">
     <div class="mi-sec">설정 · 도움말</div>
-    ${moreItem('🔔', S.ui.noti?'알림 켜짐 ✓':'알림 받기','다가오는 경조사 미리 알림','toggleNoti()')}
-    ${moreItem('⚙️','설정','내 이름 · 테마 · 백업/복원 · 약관','openSettings()')}
+    ${moreItem('🔔', S.ui.noti?'알림 켜짐 ✓':'알림 받기','','toggleNoti()')}
+    ${moreItem('⚙️','설정','','openSettings()')}
   </div>
-  <p class="land-foot" style="margin-top:6px">이음 · 마음을 잇다</p>`;
+  `;
 }
 
 /* ======================= 리마인더 · 알림 ======================= */
 function upcomingSoon(){ const t=new Date(); t.setHours(0,0,0,0);
   return S.events.filter(e=>{ if(!e.date)return false; const d=new Date(e.date+'T00:00'); const days=Math.round((d-t)/86400000); return days>=0&&days<=7; })
     .sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)); }
-function reminderBanner(){ const soon=upcomingSoon(); if(!soon.length) return '';
-  const ev=soon[0]; const c=cfg(ev);
-  return `<div class="card remind">
-    <div class="rm-top"><span class="rm-h">🔔 곧 다가와요</span>
-      <button class="rm-noti ${S.ui.noti?'on':''}" onclick="toggleNoti()">${S.ui.noti?'✓ 알림 켜짐':'알림 받기'}</button></div>
-    <div class="rm-ev" onclick="openEvent('${ev.id}')">
-      <span class="rm-ic">${c.icon}</span>
-      <div class="rm-info"><div class="rm-nm">${esc(evNamePlain(ev))} <span class="rm-tag">${c.label}</span></div>
-        <div class="rm-dt">${dateText(ev)}</div></div>
-      <span class="rm-dd">${dday(ev)}</span></div>
-    ${soon.length>1?`<div class="rm-more">외 ${soon.length-1}건이 일주일 내에 있어요</div>`:''}
-  </div>`; }
 function notiShow(title,opts){ // Android(설치형/TWA)는 페이지 컨텍스트 new Notification이 막혀 있어 SW 경유가 정석 — 데스크톱은 폴백
   try{
     if('serviceWorker' in navigator && navigator.serviceWorker.ready){
@@ -2812,48 +2502,6 @@ async function fireDueNotis(){ if(!S.ui.noti||!('Notification' in window)||Notif
   if(dirty){ try{ idbSet('notified', JSON.stringify(done)); }catch(e){} } }
 
 /* ======================= 연간 경조사비 리포트 (공유) ======================= */
-function monthlyChart(){ // 최근 6개월 보냄/받음 막대 — 자랑용 공유 없이 나를 위한 요약
-  const now=new Date(); const months=[];
-  for(let i=5;i>=0;i--){ const d=new Date(now.getFullYear(),now.getMonth()-i,1);
-    months.push({ym:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), label:(d.getMonth()+1)+'월', sent:0, recv:0}); }
-  const idx={}; months.forEach(m=>idx[m.ym]=m);
-  S.events.forEach(e=>{ if(e.demo||e.tut) return; const m=idx[(e.date||'').slice(0,7)]; if(!m) return;
-    if(e.role==='host'){ m.recv+=ledgerStats(e).total; } else if(e.myGift>0){ m.sent+=e.myGift; } });
-  (S.people||[]).forEach(p=>{ if(p.demo||p.tut) return; (p.items||[]).forEach(it=>{ const m=idx[(it.date||'').slice(0,7)];
-    if(!m||!(it.amount>0)) return; if(it.dir==='gave') m.sent+=it.amount; else m.recv+=it.amount; }); });
-  if(!months.some(m=>m.sent||m.recv)) return '';
-  const max=Math.max(1,...months.map(m=>Math.max(m.sent,m.recv)));
-  return `<div class="card"><div class="secthead"><div class="t">월별 경조사비 · 최근 6개월</div>
-      <div class="c"><span style="color:var(--primary)">■</span> 보냄 <span style="color:var(--sage)">■</span> 받음</div></div>
-    <div style="display:flex;gap:6px;align-items:flex-end;height:112px;margin-top:12px">
-      ${months.map(m=>`<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;height:100%">
-        <div style="display:flex;gap:2px;align-items:flex-end;justify-content:center;width:100%;height:90px">
-          <div style="width:38%;max-width:14px;height:${Math.round(m.sent/max*100)}%;min-height:${m.sent?3:0}px;background:var(--primary);border-radius:3px 3px 0 0"></div>
-          <div style="width:38%;max-width:14px;height:${Math.round(m.recv/max*100)}%;min-height:${m.recv?3:0}px;background:var(--sage);border-radius:3px 3px 0 0"></div>
-        </div>
-        <div style="font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums">${m.label}</div></div>`).join('')}
-    </div></div>`; }
-
-/* ======================= 봉투 문구 ======================= */
-const ENV={ wedding:{front:['祝 結婚','축 결혼'], alts:['祝 華婚 (축 화혼)']},
-  hwahon:{front:['祝 華婚','축 화혼'], alts:['祝 結婚 (축 결혼)']},
-  memorial:{front:['賻 儀','부의'], alts:['謹 弔 (근조)','弔 意 (조의)']} };
-function openEnvelope(id){ const ev=id?S.events.find(e=>e.id===id):null; S.ui.envEventId=id||''; S.ui.envType=ev?ev.type:(S.ui.envType||'wedding'); S.ui.guestView='envelope'; save(); render(); window.scrollTo(0,0); }
-function envSetType(t){ S.ui.envType=t; render(); }
-function envelopeView(){ const type=S.ui.envType||'wedding'; const e=ENV[type]||ENV.wedding; const isMem=type==='memorial'; const eid=S.ui.envEventId;
-  return `<button class="backbtn" onclick="${eid?`openEvent('${eid}')`:`setGuestTab('more')`}">‹ ${eid?'돌아가기':'더보기'}</button>
-  <div class="listhead"><div class="t serif">봉투 쓰는 법</div></div>
-  <div class="card">
-    <div class="seg2" style="margin-bottom:14px">${['wedding','hwahon','memorial'].map(t=>`<button class="${type===t?'on':''}" onclick="envSetType('${t}')">${TYPES[t].icon} ${TYPES[t].label}</button>`).join('')}</div>
-    <div class="env-card"><div class="env-front serif">${e.front[0]}</div><div class="env-sub">${e.front[1]}</div></div>
-    <p class="sub" style="text-align:center;margin-top:11px">봉투 <b>앞면 중앙</b>에 세로로 적습니다${e.alts.length?`<br/>(또는 ${e.alts.join(', ')})`:''}.</p>
-    <div class="divider"></div>
-    <div class="env-row"><span class="env-k">뒷면</span><span>왼쪽 아래에 <b>이름</b>을 세로로, 옆에 <b>소속·관계</b>(예: ○○회사, 친구 일동)</span></div>
-    <div class="env-row"><span class="env-k">지폐</span><span>인물(세종대왕)이 <b>봉투 앞면</b>을 향하고, 머리가 <b>위로</b> 가게 넣어요</span></div>
-    <div class="env-row"><span class="env-k">금액</span><span>${isMem?'3·5·10만 등':'3·5·7·10·15·20만 등'} 홀수 단위 · <b>4만원</b>은 피해요(死 연상)</span></div>
-    <button class="btn btn-line" style="margin-top:14px" onclick="openReco(${eid?`'${eid}'`:''})">💰 적정 금액 추천받기</button>
-  </div>`; }
-
 /* ======================= 경조사 직접 추가 ======================= */
 function gv(id){return (($('#'+id)||{}).value||'');}
 function openAdd(){ S.ui.guestView='add'; S.ui.addType='wedding'; S.ui.addRelation=''; S.ui.addDraft=null; save(); render(); window.scrollTo(0,0); }
@@ -2884,12 +2532,11 @@ function addView(){ const type=S.ui.addType||'wedding'; const c=TYPES[type]; con
     <div class="row"><div><label>${c.dateL}</label><input id="nd" type="date" value="${dr.nd||''}"></div>
       <div><label>시간</label><input id="nt" type="time" value="${dr.nt||'12:00'}"></div></div>
     <label>${c.venueL}</label><input id="nv" value="${esc(dr.nv||'')}" placeholder="${c.venueL}">
-    <label>나와의 관계 <span style="font-weight:600;color:var(--muted)">(가계부용)</span></label>
+    <label>나와의 관계</label>
     <div class="chips">${['가족','친척','친구','직장','지인'].map(r=>`<button class="chip ${S.ui.addRelation===r?'on':''}" onclick="setAddRel('${r}')">${r}</button>`).join('')}</div>
     <details style="margin-top:14px" ${dr.an0||dr.an1?'open':''}>
-      <summary style="cursor:pointer;font-size:12.5px;font-weight:600;color:var(--primary-d)">💳 받을 계좌 입력 (선택) — 넣어두면 나중에 송금이 3초</summary>
+      <summary style="cursor:pointer;font-size:12.5px;font-weight:600;color:var(--primary-d)">💳 받을 계좌 입력 (선택)</summary>
       ${(isMem?['상주측']:['신랑측','신부측']).map((lb,i)=>addAcctRow(i,lb,dr)).join('')}
-      <p class="lblnote" style="margin-top:6px">청첩장·부고 문자에 있는 계좌를 옮겨 적어두면, 이 화면에서 바로 토스 송금·계좌 복사가 돼요.</p>
     </details>
     <button class="btn btn-sage" style="margin-top:14px" onclick="saveNewEvent()">＋ 추가</button>
   </div>`;
@@ -2950,15 +2597,9 @@ function recoApply(){ const r=recoState(); const {amount}=recommend();
       S.ui.guestView='detail'; S.ui.currentEventId=ev.id; save(); render(); window.scrollTo(0,0);
       toast(won(amount)+'을 보낼 금액에 채워뒀어요 — 아래에서 보내세요'); return; } }
   copy(won(amount)); toast(won(amount)+' 복사 — 추천 금액'); }
-function recoShare(){ const r=recoState(); const {amount,label}=recommend(); const kindL=r.kind==='memorial'?'조의금':r.kind==='bday'?'축하금':'축의금';
-  const att=r.kind==='memorial'?'':((r.attending?'참석':'불참')+' · ');
-  const text=`${label} · ${att}${kindL} ${won(amount)} 추천\n— 이음(마음을 잇다)에서 계산했어요`;
-  const url=location.href.split('?')[0].split('#')[0];
-  if(navigator.share){ navigator.share({title:'이음 경조사비 추천',text,url}).catch(()=>{}); }
-  else { copy(text+'\n'+url); toast('추천 결과를 복사했어요 — 친구에게 붙여넣기'); } }
 function recoView(){ const r=recoState(); const rows=RECO_TABLE[r.kind]; const res=recommend();
   const kindL=r.kind==='memorial'?'조의금':r.kind==='bday'?'축하금':'축의금';
-  const tabs=[['wedding','💍 결혼'],['memorial','🕊️ 부고'],['bday','🎂 돌잔치']];
+  const tabs=[['wedding','💍 결혼'],['memorial','🕊️ 부고']];
   return `${r.ctxEventId?`<button class="backbtn" onclick="openEvent('${r.ctxEventId}')">‹ 돌아가기</button>`:`<button class="backbtn" onclick="setGuestTab('more')">‹ 더보기</button>`}
   <div class="listhead"><div class="t serif">경조사비 얼마?</div></div>
   <div class="card">
@@ -2978,9 +2619,7 @@ function recoView(){ const r=recoState(); const rows=RECO_TABLE[r.kind]; const r
     ${res.low?`<div class="note">⚠️ 친척·가족 금액은 정해진 기준이 없어요. <b>권장 범위</b>이니 가족과 상의해 정하세요.</div>`:`<div class="note">💡 ${r.kind==='memorial'?'조의금은 <b>5만원</b>이 가장 보편적이에요(김영란법 경조사비 한도와도 일치).':'<b>5만·10만</b>이 가장 보편적이에요. 4·6·8만은 피하는 게 관례예요(홀수 선호).'}</div>`}
     <div class="stack" style="margin-top:12px">
       <button class="btn btn-primary" onclick="recoApply()">${r.ctxEventId?'이 금액으로 기록':'금액 복사'}</button>
-      <button class="btn btn-kakao" onclick="recoShare()">💬 결과 공유 (친구에게도 추천)</button>
     </div>
-    <div class="note" style="background:none;border:none;text-align:center;padding:6px 0 0">관계·참석·식장 기준 2024~2026 통념 · 참고용</div>
   </div>`;
 }
 
@@ -3125,7 +2764,7 @@ function hostUrlChanged(v){ const ev=own(hostEvent()); if(!ev) return;
   const prev=(ev.externalUrl||'').trim(); ev.externalUrl=(v||'').trim(); save();
   const url=(ev.externalUrl.match(/https?:\/\/[^\s]+/)||[])[0];
   if(!url || url===prev){ render(); return; } // 링크 제거·동일 링크 재입력은 조용히 저장만
-  if(confirm(`모바일 ${cfg(ev).doc}에서 정보를 가져와 빈칸을 채울까요?\n(이름·날짜·장소·계좌 초벌 입력 — 이미 입력한 값은 그대로 둡니다)`)){
+  if(confirm(`모바일 ${cfg(ev).doc}에서 정보를 가져와 빈칸을 채울까요?`)){
     hostFetchFromUrl(url);
   } else { render(); } }
 async function hostFetchFromUrl(url){ if(_hostFetching) return; _hostFetching=true;
@@ -3255,10 +2894,8 @@ function importView(){
   return `<button class="backbtn" onclick="closeImport()">‹ 내 경조사</button>
   <div class="card">
     <h3>청첩장 가져오기</h3>
-    <p class="sub">청첩장 메시지나 <b>링크만</b> 붙여넣어도 돼요 — 이음이 페이지에 접속해 이름·날짜·장소·계좌를 자동으로 찾아드립니다.</p>
     <textarea id="impText" rows="5" placeholder="카톡 청첩장 메시지 또는 링크(https://...)만 붙여넣기&#10;예) https://mcard.example.com/abc123">${esc(t)}</textarea>
     <button class="btn btn-primary" style="margin-top:10px" onclick="analyzeImport()" ${S.ui.importFetching?'disabled':''}>${S.ui.importFetching?'🔗 청첩장 페이지 분석 중…':'🔍 분석하기'}</button>
-    <div class="note" style="margin-top:8px">💡 카톡 청첩장 메시지나 링크를 붙여넣기만 하면 돼요. 안드로이드는 청첩장 링크를 <b>공유 → 이음</b>으로 보내도 됩니다.</div>
     <button class="backbtn" style="margin-top:8px" onclick="openAdd()">✏️ 청첩장 없이 직접 입력하기</button>
   </div>
   ${S.ui.importFetching?`<div class="card" style="text-align:center;padding:22px">
@@ -3268,7 +2905,6 @@ function importView(){
   </div>`:''}
   ${p&&!S.ui.importFetching?`<div class="card" id="imp-result">
     <h3>찾은 정보 · 확인 후 추가</h3>
-    <p class="sub">자동으로 채운 값입니다. 틀린 곳은 직접 고쳐주세요.</p>
     <label>경조사 유형</label>
     <div class="seg2">
       ${['wedding','hwahon','memorial'].map(tp=>`<button class="${(p.type||'wedding')===tp?'on':''}" onclick="setImportType('${tp}')">${TYPES[tp].icon} ${TYPES[tp].label}</button>`).join('')}
@@ -3280,43 +2916,11 @@ function importView(){
     <label>${p.type==='memorial'?'부고장':'청첩장'} 링크</label><input id="ip_url" value="${esc(p.url)}" placeholder="https://...">
     ${p.type==='memorial'?importAcctRow(0,accs[0],p.type)
       :Array.from({length:Math.max(2,Math.min(4,accs.length))},(_,i)=>importAcctRow(i,accs[i],p.type)).join('')}
-    ${p.img?`<div class="note" style="margin-top:10px">🖼️ ${p.type==='memorial'?'부고장':'청첩장'} 대표 사진도 함께 저장돼요 — 카톡 공유 시 썸네일로 쓰입니다.</div>`:''}
     <button class="btn btn-sage" style="margin-top:13px" onclick="addImported()">＋ 내 경조사에 추가</button>
   </div>`:''}`;
 }
 function setImportType(t){ if(!S.ui.importParsed) return; S.ui.importParsed.type=t; save(); render();
   setTimeout(()=>{ const el=document.getElementById('imp-result'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); },60); }
-
-/* ======================= 예상 하객·예산 계산기 ======================= */
-function planVals(ev){ const pl=ev.plan||{};
-  return { sent:+pl.sent||0, rate:pl.rate!=null?+pl.rate:60, meal:pl.meal!=null?+pl.meal:60000, gift:pl.gift!=null?+pl.gift:80000 }; }
-function planInput(k,v){ const ev=hostEvent(); if(!ev.plan)ev.plan={}; ev.plan[k]=v===''?null:Number(v); save(); recalcBudget(); }
-function recalcBudget(){ const ev=hostEvent(); if(!ev)return; const {sent,rate,meal,gift}=planVals(ev);
-  const g=Math.round(sent*rate/100), income=g*gift, mc=g*meal, net=income-mc;
-  const set=(id,val)=>{const el=document.getElementById(id); if(el)el.textContent=val;};
-  set('bd-guests',g); set('bd-income',won(income)); set('bd-meal',won(mc)); set('bd-net',won(net)); }
-function budgetCard(ev){ const c=cfg(ev), pl=ev.plan||{}, {sent,rate,meal,gift}=planVals(ev), led=ledgerStats(ev);
-  const g=Math.round(sent*rate/100), income=g*gift, mc=g*meal, net=income-mc;
-  return `<div class="card">
-    <div class="secthead"><div class="t">④ 예상 ${c.counts?'하객':'조문'}·예산 계산기</div></div>
-    <p class="sub">보낸 ${c.doc} 수와 참석률로 예상 인원·예산을 시뮬레이션합니다.</p>
-    <div class="row">
-      <div><label>보낸 ${c.doc} 수</label><input type="number" inputmode="numeric" value="${pl.sent??''}" placeholder="예: 200" oninput="planInput('sent',this.value)"></div>
-      <div><label>예상 참석률(%)</label><input type="number" inputmode="numeric" value="${pl.rate??60}" oninput="planInput('rate',this.value)"></div>
-    </div>
-    <div class="row">
-      <div><label>1인 식대(원)</label><input type="number" inputmode="numeric" value="${pl.meal??60000}" oninput="planInput('meal',this.value)"></div>
-      <div><label>1인 예상 ${c.money}(원)</label><input type="number" inputmode="numeric" value="${pl.gift??80000}" oninput="planInput('gift',this.value)"></div>
-    </div>
-    <div class="stats" style="margin-top:12px">
-      <div class="stat"><div class="v" id="bd-guests">${g}</div><div class="k">예상 ${c.counts?'참석':'조문'} 인원</div></div>
-      <div class="stat"><div class="v big" id="bd-income">${won(income)}</div><div class="k">예상 ${c.money}</div></div>
-      <div class="stat"><div class="v big" id="bd-meal">${won(mc)}</div><div class="k">예상 식대</div></div>
-    </div>
-    <div class="budget-net">예상 합계(순) <b id="bd-net">${won(net)}</b></div>
-    <div class="note">현재 실수령 <b>${won(led.total)}</b> · 마음 전한 분 <b>${led.paid}명</b></div>
-  </div>`;
-}
 
 /* ======================= 결제 복귀 처리 (토스 successUrl/failUrl) ======================= */
 (function(){ try{
@@ -3349,11 +2953,11 @@ function clearBootHash(){ // 일부 웹뷰는 문서 파싱 중 replaceState를 
   if(!o||!o.n){ setTimeout(()=>toast('응답 링크가 손상됐어요'),400); return; }
   const ev=S.events.find(e=>e.role==='host' && evKey(e)===o.k);
   if(!ev){ // 이 기기의 행사가 아님(하객끼리 공유 등) — 수기 입력을 돕는다
-    const info=`${o.n}${o.a!=null?(' · '+won(o.a)):''}${o.s?(' · '+(o.s==='yes'?'참석':'불참')):''}`;
+    const info=`${o.n}${o.a!=null?(' · '+won(o.a)):''}`;
     copy(info); setTimeout(()=>toast(`내 행사가 아니에요 — 주최자 폰에서 열어주세요 (${info} 복사됨)`),400); return; }
   mergeGuestReply(ev,o);
   S.ui.entered=true; S.ui.tab='host'; S.ui.hostEventId=ev.id; S.ui.hostSub=null; S.ui.hostTab='setup'; save();
-  setTimeout(()=>toast(`『${o.n}』님의 응답을 장부에 반영했어요 ✓`),400);
+  setTimeout(()=>toast(`『${o.n}』님의 기록을 장부에 반영했어요 ✓`),400);
 }catch(e){} })();
 
 /* ======================= 기기 이전 링크(#b= 데이터 / #r= 릴레이) ======================= */
@@ -3391,9 +2995,6 @@ function applyIncomingInvite(iv){ // #e=(자체완결)·#i=(릴레이 코드) �
         if(ch) setTimeout(()=>toast('청첩장이 새 정보로 업데이트됐어요'),400); }
       else { S.ui.pendingInvite=iv; S.ui.guestView='invite'; }
       save(); clearBootHash();
-      if(RELAY.url){ try{ (async()=>{ const k=await relayKey(iv); const fl='ieum_open_'+k;
-        if(!localStorage.getItem(fl)){ localStorage.setItem(fl,'1');
-          fetch(RELAY.url+'/open',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({k})}).catch(()=>{}); } })(); }catch(e){} }
 }
 (function(){ try{ const m=(location.hash||'').match(/[#&]e=([^&]+)/);
   if(m){ const iv=decodeInvite(m[1]);
@@ -3426,19 +3027,19 @@ function applyIncomingInvite(iv){ // #e=(자체완결)·#i=(릴레이 코드) �
 var TUT={on:false,i:0,last:-1}; // var: 부트 핸들러(#e=/#g=)가 선언 이전에 typeof TUT를 참조 — const면 TDZ로 ReferenceError
 const TUT_STEPS=[
  {at:'list', v:()=>{S.ui.tab='guest';S.ui.guestView='list';}, sel:'.homehero',
-  t:'다음 경조사가 맨 위에', x:'가장 가까운 일정이 크게 떠요. 카드를 누르면 상세로, 아래엔 나머지 일정이 모여요. (지금 보이는 건 연습용 데모 — 끝나면 지워져요)'},
+  t:'다음 경조사가 맨 위에', x:'가장 가까운 일정이 크게 떠요. 카드를 누르면 상세로 가요.'},
  {at:'list', v:()=>{S.ui.tab='guest';S.ui.guestView='list';}, sel:'.calgrid',
-  t:'이음 달력', x:'경조사가 있는 날엔 점이 콕 찍혀요. 한 달 일정이 한눈에 — 날짜를 누르면 그날 일정으로 바로 가요.'},
+  t:'이음 달력', x:'날짜를 누르면 그날 일정으로 가요.'},
  {at:'list', v:()=>{S.ui.tab='guest';S.ui.guestView='list';}, sel:'.badge-add',
   t:'청첩장 가져오기', x:'카톡으로 받은 청첩장 링크를 붙여넣으면 이름·날짜·계좌까지 자동으로 채워져요.'},
  {at:'detail', ev:'e2', v:()=>{S.ui.tab='guest';S.ui.guestView='detail';S.ui.currentEventId='e2';}, sel:'.hero',
   t:'청첩장 상세', x:'날짜·장소 확인, 길찾기, 축의금 보내기까지 여기서 끝나요.'},
  {at:'detail', ev:'e2', v:()=>{S.ui.tab='guest';S.ui.guestView='detail';S.ui.currentEventId='e2';S.ui.payCat='bank';}, sel:'.paycat .btn-primary',
-  t:'계좌 복사 → 뱅킹앱 → 명부 기록', x:'계좌번호를 복사해 뱅킹앱에서 보내고 돌아오면 [축의금 명부에 기록하기]로 주최자에게 알릴 수 있어요. 토스·카카오페이는 아래 간편송금에서. (연습이니 눌러봐도 기록은 남지 않아요)'},
+  t:'보내고 → 명부에 기록', x:'뱅킹앱에서 보내고 돌아와 [축의금 명부에 기록하기]를 누르면 끝이에요.'},
  {at:'ledger', v:()=>{S.ui.tab='guest';S.ui.guestView='ledger';}, sel:'.stats',
-  t:'품앗이 가계부', x:'보낸 돈·받은 돈·합계가 자동으로 정리돼요. 항목을 누르면 전체 내역을 은행 앱처럼 관리할 수 있어요.'},
+  t:'품앗이 가계부', x:'보낸 돈·받은 돈·합계가 자동으로 정리돼요.'},
  {at:'ledger', v:()=>{S.ui.tab='guest';S.ui.guestView='ledger';}, sel:'.reco-cta',
-  t:'주고받은 사람', x:'사람 이름으로 검색하면 그동안 주고받은 금액이 한눈에 — 이번엔 얼마를 보낼지 참고하기 좋아요.'},
+  t:'주고받은 사람', x:'이름으로 검색하면 그동안 주고받은 금액이 한눈에 보여요.'},
  {host:true, ht:'setup', at:'host', v:()=>{S.ui.tab='host'; ensureHostEvent(); S.ui.hostSub=null; S.ui.hostTab='setup';}, sel:'.fold:not(.hostsw)',
   t:'내 행사 만들기 (주최자)', x:'내 결혼식·행사는 여기서. 위에서 아래로 행사 정보 → 계좌 → 보내기만 채우면 준비 끝이에요.'},
  {host:true, ht:'ledger', at:'host', v:()=>{S.ui.tab='host'; ensureHostEvent(); S.ui.hostSub=null; S.ui.hostTab='ledger';}, sel:'.stats',
@@ -3490,14 +3091,14 @@ function endTutorial(done){ if(!TUT.on) return; TUT.on=false;
   cleanupDemo();
   try{ pruneDraft(); }catch(e){} // 튜토리얼 중 만들어진 빈 주최자 초안 정리
   S.ui.tab='guest'; S.ui.guestView='list'; save(); render(); window.scrollTo(0,0);
-  toast(done?'준비 끝! 이제 진짜 경조사를 담아보세요 🎉':'튜토리얼을 닫았어요 — 더보기에서 언제든 다시 볼 수 있어요'); }
+  toast(done?'준비 끝! 이제 진짜 경조사를 담아보세요 🎉':'튜토리얼을 닫았어요 — 화면 맨 아래 [사용법 보기]에서 다시 볼 수 있어요'); }
 /* ---- 데모 정리 ----
    tut(이번 튜토리얼 주입분) → 무조건 삭제(연습 조작 포함 — "끝나면 지워져요" 약속).
    demo(레거시 v1.0 소급 태깅분) → 이름 1필드가 아니라 '전체 내용 시그니처'가 순정 샘플과
    완전히 일치할 때만 삭제. 장부·하객·금액·날짜 등 어떤 흔적이라도 있으면 실데이터로 승격 보호. */
 function _evSig(e){ return JSON.stringify({a:e.partyA,b:e.partyB,d:e.date,t:e.time,v:e.venue,ad:e.address,m:e.message,u:e.externalUrl||'',g:e.myGift||0,r:e.myRelation||'',
   ac:(e.accounts||[]).map(x=>[x.label,x.bank,x.number,x.holder,x.kakaopay||'']),
-  gs:(e.guests||[]).map(x=>[x.name,x.relation,x.side||0,(x.rsvp||{}).status||null,(x.rsvp||{}).count||1,(x.pay||{}).amount==null?null:x.pay.amount,(x.pay||{}).method||null])
+  gs:(e.guests||[]).map(x=>[x.name,x.relation,x.side||0,(x.pay||{}).amount==null?null:x.pay.amount,(x.pay||{}).method||null])
      .sort((p,q)=>String(p[0]).localeCompare(String(q[0])))}); }
 function _ppSig(p){ return JSON.stringify({n:p.name,r:p.relation||'',
   it:(p.items||[]).map(i=>[i.dir,i.amount,i.label,i.date]).sort((a,b)=>String(a).localeCompare(String(b)))}); }
@@ -3705,7 +3306,6 @@ async function manualWebUpdate(){ toast('업데이트 확인 중…'); const r=a
 
 /* ---- ⑦ 이전 버전(TWA) 기록 가져오기: 옛 앱의 기록은 크롬 저장소에 있다 → 크롬 커스텀탭으로 웹 이음(?handoff=1)을 열어
         릴레이에 7일 1회용 백업을 올리고, 앱을 여는 intent 링크(?r=코드)로 되돌아오면 기존 #r= 복원 흐름이 받는다 ---- */
-function nativeHandoff(){ if(!NATIVE) return; nP('Browser','open',{url:'https://shin-nyum.github.io/ieum/index.html?handoff=1',presentationStyle:'popover'}).catch(()=>toast('브라우저를 열 수 없어요')); }
 function nativeRestoreByCode(){ const k=(prompt('이전 폰/크롬 화면에 표시된 8자리 코드를 입력하세요')||'').trim().toLowerCase();
   if(!/^[a-z0-9]{8,24}$/.test(k)){ if(k) toast('코드 형식이 올바르지 않아요'); return; }
   if(!RELAY.url){ toast('지금은 코드로 가져올 수 없어요'); return; } toast('가져오는 중…');
@@ -3760,8 +3360,6 @@ function backStep(){ // 한 단계 위로 (popstate·네이티브 뒤로가기 �
     else if(document.getElementById('paypop')) closePayPop();   // 송금 복귀 확인 시트 — pendingPay는 유지되어 명부 카드의 [기록하기]가 폴백
     else if(document.getElementById('addpop')) closeAddSheet(); // 경조사 추가 선택 시트
     else if(document.getElementById('kpguide')) closeKpGuide();  // 카카오페이 링크 안내
-    else if(document.getElementById('rgsheet')) closeRestoreGuide();
-    else if(document.getElementById('calpop')) closeCalPopup();
     else if(document.getElementById('paysheet')) declinePass();
     else if(typeof TUT!=='undefined'&&TUT.on) endTutorial(false);
     else if(S.ui.tab==='host'){ if(S.ui.hostSub==='thanks'){ backFromHost2(); } else { backFromHost(); } }
@@ -3772,7 +3370,7 @@ function backStep(){ // 한 단계 위로 (popstate·네이티브 뒤로가기 �
       else if(v==='allev') setGuestTab('list');
       else if(v==='people') setGuestTab('ledger');
       else if(v==='reco'){ const cid=S.ui.reco&&S.ui.reco.ctxEventId; if(cid&&S.events.some(e=>e.id===cid)) openEvent(cid); else setGuestTab('more'); } // 추천 탭이 사라져 더보기 하위 화면
-      else if(v==='settings'||v==='doc'||v==='group'||v==='envelope') setGuestTab('more');
+      else if(v==='settings'||v==='doc') setGuestTab('more');
       else if(['list','ledger','more'].includes(v)) goLanding(); // 메인 탭에서 백=랜딩 (바로 종료 방지)
       else backToList(); }
   }catch(e){}
