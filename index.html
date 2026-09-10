@@ -146,6 +146,8 @@
   .hero .names{font-size:25px;margin:12px 0 4px;color:var(--ink);line-height:1.45}
   .hero .names span{color:var(--rose);margin:0 9px;font-size:17px;vertical-align:middle}
   .hero .when{font-size:13px;color:var(--muted);margin-top:9px;line-height:1.7}
+.hero .hero-msg{font-size:13.5px;color:var(--muted);line-height:1.85;margin:14px auto 0;max-width:300px} /* 주최자 인사말 — 디데이 뱃지 바로 위 */
+.hero.mem .hero-msg{color:#a99e8e}
   .dday-pill{display:inline-block;margin-top:13px;background:var(--ink);color:#fff;
     font-size:12px;font-weight:600;letter-spacing:.08em;padding:6px 14px;border-radius:999px}
   /* 부고 상세: 먹색 히어로 — 기쁜 자리가 아니므로 톤을 낮춘다 (homehero.mem 문법 재사용) */
@@ -477,7 +479,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v101'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v102'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -1040,16 +1042,15 @@ function inviteView(){ const iv=S.ui.pendingInvite; if(!iv){ S.ui.guestView='lis
     <div class="lead">${mem?'부고':'청첩장이 도착했어요'}</div>
     <div class="names serif">${evName(iv)}</div>
     <div class="when">${dateText(iv)}<br/>${esc(iv.venue)}</div>
+    <p class="hero-msg serif">${(esc(iv.message||'').replace(/\n/g,'<br/>'))||(mem?'삼가 부고를 전해 드립니다.':'귀한 걸음으로 함께해 주세요.')}</p>
     <div class="dday-pill">${dday(iv)}</div>
   </div>
   <div class="card">
-    <p class="quote serif">${(esc(iv.message||'').replace(/\n/g,'<br/>'))||(mem?'삼가 부고를 전해 드립니다.':'귀한 걸음으로 함께해 주세요.')}</p>
-    <div class="stack" style="margin-top:8px">
+    <div class="stack">
       <button class="btn btn-primary" onclick="acceptInvite()">${mem?'확인하고 내 경조사에 담기':'수락하고 내 경조사에 담기'}</button>
       ${iv.externalUrl?`<button class="btn btn-line" onclick="openInviteExternal()">${c.doc} 전체보기</button>`:''}
       <button class="btn btn-ghost btn-sm" onclick="declineInvite()">나중에</button>
     </div>
-    <div class="note">수락하면 이 경조사가 <b>내 이음</b>에만 저장돼요 (내 기기 · 다른 분과 분리). 이후 캘린더 저장·${c.money} 송금을 여기서 한 번에.</div>
   </div>`;
 }
 
@@ -1554,7 +1555,6 @@ function openCalSheet(){ let bg=document.getElementById('calsheet');
   bg.innerHTML=`<div class="sheet" onclick="event.stopPropagation()" style="padding-bottom:calc(16px + env(safe-area-inset-bottom))">
     <div class="secthead"><div class="t" style="font-size:15px">캘린더에 저장</div>
       <button class="minibtn" onclick="closeCalSheet()">닫기</button></div>
-    <p class="sub" style="margin:2px 0 12px">${doc} 일정을 내 캘린더에 넣어드려요.</p>
     <button class="btn btn-sage" onclick="closeCalSheet();saveICS(curEvent())">내 캘린더에 저장 <span style="font-weight:400;font-size:11.5px;opacity:.85">· .ics 파일</span></button>
     <button class="btn btn-ghost" style="margin-top:8px" onclick="closeCalSheet();googleCal(curEvent())">구글 캘린더에 등록</button>
   </div>`;
@@ -1646,20 +1646,19 @@ function guestDetail(){
     <div class="lead">${ev.type==='memorial'?'In memoriam':"You're invited"}</div>
     <div class="names serif">${evName(ev)}</div>
     <div class="when">${dateText(ev)}<br/>${esc(ev.venue)}</div>
+    ${ev.message?`<p class="hero-msg serif">${esc(ev.message).replace(/\n/g,'<br/>')}</p>`:''}
     <div class="dday-pill">${dday(ev)}</div>
   </div>
   <div class="row" style="margin:-4px 0 12px">
     ${ev.venue?`<button class="btn btn-line btn-sm" onclick="openMapSheet()">${ev.type==='memorial'?'빈소 길찾기':'📍 길찾기'}</button>`:''}
     ${ev.externalUrl?`<button class="btn btn-line btn-sm" onclick="openExternal(curEvent())">${c.doc} 전체보기</button>`:''}
   </div>
-  ${ev.message?`<p class="quote serif" style="margin:2px 6px 14px">${esc(ev.message).replace(/\n/g,'<br/>')}</p>`:''}
   ${reciCard(ev)}
   <div class="card">
     <h3>${ev.type==='memorial'?`${RIBBON} 마음 전하기 (${c.money})`:`💸 마음 전하기 (${c.money})`}</h3>
-    <p class="sub">${ev.type==='memorial'?'서두르지 않아도 됩니다 — 계좌로 조용히 마음을 전할 수 있어요.':'성함과 금액을 넣고 보낸 뒤, 돌아와서 <b>축의금 명부에 기록하기</b>까지 눌러야 끝나요.'}</p>
     ${accts.length>1?`<div class="seg2">${accts.map((a,i)=>`<button class="${i===idx?'on':''}" onclick="setAcct(${i})">${esc(a.label)}</button>`).join('')}</div>`:''}
     ${acc?``
-      :`<div class="note" style="margin-top:8px">받을 계좌 정보가 아직 없어요 — ${c.doc} 문자에 있는 계좌를 아래에 입력하면 간편송금·계좌이체를 바로 쓸 수 있어요.</div>
+      :`<div class="note" style="margin-top:8px">받을 계좌가 아직 없어요 — 아래에 입력해 주세요.</div>
     <details id="gacct" style="margin-top:8px" ${S.ui.gacctOpen?'open':''} ontoggle="S.ui.gacctOpen=this.open">
       <summary style="cursor:pointer;font-size:12.5px;font-weight:600;color:var(--primary-d)">＋ 받을 계좌 직접 입력</summary>
       <div class="row" style="margin-top:8px">
@@ -1680,10 +1679,9 @@ function guestDetail(){
     <label style="margin-top:12px">보낼 방법</label>
     ${acc?`
     <details class="paycat" ${(S.ui.payCat||'bank')==='bank'?'open':''} ontoggle="if(this.open)S.ui.payCat='bank'">
-      <summary><span class="pc-t"><b>${ev.type==='memorial'?'계좌이체':'🏦 계좌이체'}</b><small>계좌번호 복사 → 내 뱅킹앱에서 이체</small></span><span class="pc-ar">▾</span></summary>
+      <summary><span class="pc-t"><b>${ev.type==='memorial'?'계좌이체':'🏦 계좌이체'}</b></span><span class="pc-ar">▾</span></summary>
       <div class="pc-body">
         <button class="btn btn-primary" onclick="payViaApp('account')">계좌번호 복사 → 내 뱅킹앱에서 이체</button>
-        <p class="lblnote" style="margin-top:6px">${esc(acc.bank)} ${esc(acc.number)} 가 복사돼요 · 보내고 돌아오면 ${ev.type==='memorial'?'상주':'주최자'}에게 바로 알릴 수 있어요</p>
       </div>
     </details>
     <details class="paycat" ${S.ui.payCat==='easy'?'open':''} ontoggle="if(this.open)S.ui.payCat='easy'">
@@ -1697,7 +1695,6 @@ function guestDetail(){
       <summary><span class="pc-t"><b>${ev.type==='memorial'?'계좌이체':'🏦 계좌이체'}</b><small>모든 은행 · 증권 앱</small></span><span class="pc-ar">▾</span></summary>
       <div class="pc-body">
         <button class="btn btn-primary" onclick="openGuestAcct()">계좌 입력하고 복사하기</button>
-        <p class="lblnote" style="margin-top:6px">위 [받을 계좌 직접 입력]에 넣으면 바로 복사돼요.</p>
       </div>
     </details>
     <details class="paycat" ${S.ui.payCat==='easy'?'open':''} ontoggle="if(this.open)S.ui.payCat='easy'">
@@ -1713,22 +1710,16 @@ function guestDetail(){
         <button class="btn btn-line btn-sm" style="margin-top:8px" onclick="openEnvelope(curEvent().id)">봉투 쓰는 법 보기</button>
       </div>
     </details>
-    ${(S.ui.guestSession.pendingPay&&S.ui.guestSession.pendingPay.evId===ev.id)?`<div class="note" style="margin-top:10px"><b>${payMethodLabel(S.ui.guestSession.pendingPay.method)}에서 ${won(S.ui.guestSession.pendingPay.amt)} 송금을 완료하셨나요?</b><br><span style="color:var(--muted);font-size:12px">완료하셨으면 가계부에 기록해 드려요.</span>
+    ${(S.ui.guestSession.pendingPay&&S.ui.guestSession.pendingPay.evId===ev.id)?`<div class="note" style="margin-top:10px"><b>${payMethodLabel(S.ui.guestSession.pendingPay.method)}에서 ${won(S.ui.guestSession.pendingPay.amt)} 송금을 완료하셨나요?</b>
       <div class="row" style="margin-top:9px">
         <button class="btn btn-sage btn-sm" onclick="confirmPendingPay(1,true)">보냈어요 → ${ledgerLabel(ev)}</button>
         <button class="btn btn-ghost btn-sm" onclick="confirmPendingPay(0)">아니요</button>
       </div></div>`:''}
-    ${me&&me.pay&&me.pay.amount!=null?`<div class="note" style="margin-top:10px">✓ <b>${won(me.pay.amount)}</b> 보냄 — 내 가계부에 저장했어요. 아래 <b>[${ledgerLabel(ev)}]</b>로 전할 수 있어요.
-      <div class="row" style="margin-top:9px">
-        <button class="btn btn-ghost btn-sm" onclick="clearMyPay()">기록 지우기</button>
-      </div></div>${iosNudge()}`:''}
-    <p class="lblnote" style="margin-top:9px">이음은 자금을 거치지 않아요 — 송금은 내 금융앱에서 직접 이루어집니다.</p>
   </div>
 
   <details class="fold" ${(me&&me.rsvp.status)||S.ui.rsvpOpen?'open':''} ontoggle="S.ui.rsvpOpen=this.open">
-    <summary>${ev.type==='memorial'?'조문 여부 알리기':'🙋 참석 여부 알리기 (RSVP)'} <span style="font-weight:400;color:var(--muted);font-size:12px">· 선택</span></summary>
+    <summary>${ev.type==='memorial'?'조문 여부 알리기':'🙋 참석 여부 알리기'}</summary>
     <div class="fold-body">
-    <p class="lblnote" style="margin-top:2px">성함은 위 '마음 전하기'의 성함을 함께 써요${nm?` — <b>${esc(nm)}</b>`:''}</p>
     <label>${ev.type==='memorial'?'조문 여부':'참석 여부'}</label>
     <div class="seg2">
       <button class="${me&&me.rsvp.status==='yes'?'on':''}" onclick="rsvp('yes')">${c.join[0]}</button>
@@ -1740,7 +1731,6 @@ function guestDetail(){
       <div><label>식사</label><select onchange="rsvpField('meal',this.value)">
         <option value="1" ${me.rsvp.meal?'selected':''}>예정</option><option value="0" ${!me.rsvp.meal?'selected':''}>안 함</option>
       </select></div></div>`:''}
-    ${me&&me.rsvp.status?`<div class="note" style="margin-top:10px">✓ ${esc(me.name)}님 응답을 저장했어요 — 아래 [${ledgerLabel(ev)}]로 전할 수 있어요.</div>`:''}
     </div>
   </details>
   ${notifyCard(ev,me,nm)}
@@ -1750,22 +1740,16 @@ function notifyCard(ev,me,nm){ // 알리기 단일 진입점: 보낼 내용을 �
   const mem=ev.type==='memorial'; const c=cfg(ev);
   const hasPay=me&&me.pay&&me.pay.amount!=null, hasRsvp=me&&me.rsvp&&me.rsvp.status;
   if(!hasPay&&!hasRsvp) return ''; // 알릴 내용이 생기면 나타남
-  const who=mem?'상주':'주최자';
   const rsvpTxt=hasRsvp?(me.rsvp.status==='yes'?(c.counts?`${c.join[0]} · ${me.rsvp.count||1}명`:c.join[0]):c.join[1]):'';
   const payTxt=hasPay?`${c.money} ${won(me.pay.amount)}${me.pay.method==='toss'?' (토스)':me.pay.method==='kakao'?' (카카오페이)':me.pay.method==='cash'?' (현금 전달)':''}`:'';
-  const direct=!!(RELAY.url&&ev.invited);
   return `<div class="card" id="notifycard">
     <h3>${hasPay?`📒 ${ledgerLabel(ev)}`:(mem?'🕊️ 조문 여부 알리기':'🙋 참석 여부 알리기')}</h3>
     <div class="tienote" style="margin:6px 0 10px">${mem
       ?`🕊️ <b>기록해야 상주가 알 수 있어요.</b> 전한 위로가 이름과 함께 남습니다.`
       :`💞 <b>기록해야 주최자가 알 수 있어요.</b> 보낸 마음이 내 이름과 함께 명부에 남습니다.`}</div>
-    <p class="sub" style="margin:0 0 4px">보낼 내용을 확인해 주세요${nm?` — <b>${esc(nm)}</b>`:''}.</p>
     ${hasRsvp?`<label class="ckrow"><input type="checkbox" id="nf_rsvp" checked><span>${mem?'조문 여부':'참석 여부'} — <b>${esc(rsvpTxt)}</b></span></label>`:''}
-    ${hasPay?`<label class="ckrow"><input type="checkbox" id="nf_pay" checked><span>${c.money} — <b>${esc(payTxt)}</b></span></label>`:''}
+    ${hasPay?`<label class="ckrow"><input type="checkbox" id="nf_pay" checked><span><b>${esc(payTxt)}</b></span></label>`:''}
     <button class="btn btn-primary" style="margin-top:11px" onclick="notifyHost()">${hasPay?ledgerLabel(ev):(mem?'조문 여부 알리기':'참석 여부 알리기')}</button>
-    <p class="lblnote" style="margin-top:7px">${direct
-      ?`공유창 없이 ${who}의 이음으로 바로 전달돼요 — ${who}가 앱을 열면 장부에 자동 반영.`
-      :`카톡 등으로 메시지를 보내면, ${who}가 링크를 탭할 때 장부에 자동 반영돼요.`}</p>
   </div>`; }
 
 /* ======================= 액션 ======================= */
@@ -2669,7 +2653,6 @@ function reciCard(ev){ const r=reciFor(ev); if(!r) return '';
       <button class="minibtn" onclick="openPerson('${jsq(r.name)}')">내역</button></div>
     <p class="sub" style="margin:6px 0 0"><b>${esc(r.name)}</b>님과 ${r.count}건 — 받은 ${won(r.recv)} · 보낸 ${won(r.gave)} ${balHint(r.gave-r.recv)}</p>
     ${r.recvMax>0?`<button class="btn btn-sage btn-sm" style="margin-top:10px" onclick="setAmt(${r.recvMax});toast('받은 만큼 채워뒀어요 — 아래에서 보내세요')">${mem?'🕊️ 받은 마음 돌려드리기':'💞 받은 만큼 보답하기'} · ${won(r.recvMax)}</button>`:''}
-    <p class="lblnote" style="margin-top:7px">${mem?'슬픔의 곁을 지켜준 마음, 잊지 않고 돌려드리세요.':'한 번 받은 마음, 잊지 않고 이어드릴게요.'}</p>
   </div>`; }
 function reciToastFor(ev){ try{ const r=reciFor(ev); if(!r) return; const mem=ev.type==='memorial';
   setTimeout(()=>toast(`🌱 ${r.name}님과 주고받은 기록이 있어요${r.recvMax>0?(mem?` — 받은 ${won(r.recvMax)}, 마음을 돌려드릴 차례예요`:` — 받은 ${won(r.recvMax)}, 보답 잊지 마세요`):' — 상세에서 확인하세요'}`),700); }catch(e){} }
