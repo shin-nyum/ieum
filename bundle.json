@@ -1,11 +1,11 @@
 {
- "build": "v105",
- "gen": "2026-09-10T12:03:31.057Z",
+ "build": "v106",
+ "gen": "2026-09-10T12:13:25.069Z",
  "files": [
   {
    "p": "index.html",
-   "h": "8bccd30911b686bdf6a8ccb3f49aaaa0c8b0b2593ede5362ed53e11d4743d343",
-   "s": 331657
+   "h": "83edd7a5b8c59f20fc1ed6e34d2c0cd6f37fa7b965392ecd5c152876a97b4bca",
+   "s": 331548
   },
   {
    "p": "memorial.html",

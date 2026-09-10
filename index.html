@@ -481,7 +481,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v105'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v106'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -1387,8 +1387,8 @@ function hostView(){
   <div class="card">
     <h3>📨 하객에게 보내기</h3>
     ${infoDone?'':`<div class="note" style="margin-top:8px">위의 <b>행사 정보</b>(이름·날짜)를 먼저 입력하면 보낼 수 있어요.</div>`}
-    <label style="margin-top:12px">모바일 ${c.doc} 링크 연결 <span style="font-weight:400;color:var(--muted)">(선택 — 전문업체 제작본)</span></label>
-    <input placeholder="https://... (바른손/더카드 등)" value="${esc(ev.externalUrl)}" onchange="hostUrlChanged(this.value)">
+    <label style="margin-top:12px">모바일 ${c.doc} 링크 추가 (선택)</label>
+    <input placeholder="https://..." value="${esc(ev.externalUrl)}" onchange="hostUrlChanged(this.value)">
     ${_hostFetching?`<p class="lblnote">⏳ 청첩장 정보를 가져오는 중…</p>`:(ev.externalUrl?`<p class="lblnote">✓ 연결됨</p>`:'')}
     ${ev.externalUrl&&ev.shareImg?`<img src="${esc(ev.shareImg)}" alt="" style="width:76px;height:95px;object-fit:cover;border-radius:10px;border:1px solid var(--line);display:block;margin:4px 0 2px" onerror="this.style.display='none'">`:''}
     <div class="stack" style="margin-top:10px">
