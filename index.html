@@ -6,7 +6,7 @@
 <title>이음 — 마음을 잇다</title>
 <meta property="og:type" content="website" />
 <meta property="og:title" content="이음 — 마음을 잇다" />
-<meta property="og:description" content="경조사, 이제 한 곳에서. 청첩장 확인·캘린더 저장·축의금 송금까지." />
+<meta property="og:description" content="경조사, 이제 한 곳에서. 청첩장 확인부터 축의금 송금까지." />
 <meta property="og:image" content="https://shin-nyum.github.io/ieum/og-image3.jpg" />
 <meta property="og:url" content="https://shin-nyum.github.io/ieum/" />
 <meta name="twitter:card" content="summary_large_image" />
@@ -86,7 +86,7 @@
   button,a,input,select,textarea,summary{touch-action:manipulation} /* 핀치줌 허용하되 더블탭 줌 오작동 방지 */
   html,body{margin:0;padding:0;background:#e9e3d9;color:var(--ink);
     font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic","맑은 고딕",sans-serif;
-    font-size:15px;line-height:1.55;letter-spacing:-.01em;
+    font-size:16.5px;line-height:1.55;letter-spacing:-.01em;
     word-break:keep-all;overflow-wrap:break-word;-webkit-font-smoothing:antialiased}
   .serif{font-family:"Gowun Batang","Nanum Myeongjo","Apple SD Gothic Neo",Georgia,serif;letter-spacing:.02em}
   /* 금액·날짜: 고정폭 숫자 = 정갈한 장부 */
@@ -108,23 +108,23 @@
   .brand .dd{font-size:11px;color:var(--muted)}
   .seg{display:flex;background:#e7e0d5;border-radius:10px;padding:3px;margin-top:9px}
   .seg button{flex:1;border:0;background:transparent;padding:8px 6px;border-radius:8px;
-    font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:.15s}
+    font-size:14.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:.15s}
   .seg button.on{background:var(--card);color:var(--primary-d);box-shadow:0 1px 4px rgba(0,0,0,.07)}
   main{padding:16px 14px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
     padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
-  .card h3{margin:0 0 4px;font-size:14px;letter-spacing:.02em}
-  .card .sub{color:var(--muted);font-size:12px;margin:0 0 12px}
-  label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px;font-weight:500;letter-spacing:.02em}
+  .card h3{margin:0 0 4px;font-size:15.5px;letter-spacing:.02em}
+  .card .sub{color:var(--muted);font-size:13px;margin:0 0 12px}
+  label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px;font-weight:500;letter-spacing:.02em}
   input,select,textarea{width:100%;padding:10px 11px;border:1px solid var(--line);
-    border-radius:10px;font-size:14px;background:var(--field);color:var(--ink);font-family:inherit}
+    border-radius:10px;font-size:15.5px;background:var(--field);color:var(--ink);font-family:inherit}
   /* iOS 사파리: 16px 미만 입력 포커스 시 강제 확대(자동 줌) → iOS에서만 16px (핀치줌 정책은 유지) */
-  @supports(-webkit-touch-callout:none){ input,select,textarea{font-size:16px} }
+  @supports(-webkit-touch-callout:none){ input,select,textarea{font-size:17.5px} }
   input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(143,104,82,.13)}
   html[data-theme="dark"] input:focus,html[data-theme="dark"] select:focus,html[data-theme="dark"] textarea:focus{box-shadow:0 0 0 3px rgba(198,156,130,.2)}
   .row{display:flex;gap:8px}.row>*{flex:1}
   .btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;
-    border:0;border-radius:11px;padding:13px;font-size:14px;font-weight:600;cursor:pointer;
+    border:0;border-radius:11px;padding:13px;font-size:15.5px;font-weight:600;cursor:pointer;
     transition:background-color .18s ease,border-color .18s ease,transform .1s ease,box-shadow .18s ease;font-family:inherit}
   .btn:active{transform:scale(.98)}
   .chip:active,.minibtn:active,.payopt:active,.calday:active{transform:scale(.96);transition:transform .1s ease}
@@ -135,7 +135,7 @@
   .btn-ghost{background:#f1ece4;color:var(--ink);border:1px solid var(--line)}
   .btn-sage{background:var(--sage);color:#fff}
   .btn-line{background:var(--card);color:var(--primary-d);border:1px solid var(--primary)}
-  .btn-sm{padding:9px 10px;font-size:13px;border-radius:9px}
+  .btn-sm{padding:9px 10px;font-size:14.5px;border-radius:9px}
   .btn[disabled],.btn-disabled{background:#ece7df;color:#b3aa9c;cursor:not-allowed;box-shadow:none}
   .btn-disabled .lock{font-size:11px;opacity:.7}
   .stack>*{margin-top:9px}
@@ -143,20 +143,18 @@
     radial-gradient(140% 100% at 50% 0%, #fffefb 0%, #f9f4eb 60%, #f4eee2 100%);
     border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:14px}
   .hero .lead{font-size:10.5px;letter-spacing:.3em;font-weight:500;color:var(--gold-text);text-transform:uppercase}
-  .hero .names{font-size:25px;margin:12px 0 4px;color:var(--ink);line-height:1.45}
-  .hero .names span{color:var(--rose);margin:0 9px;font-size:17px;vertical-align:middle}
-  .hero .when{font-size:13px;color:var(--muted);margin-top:9px;line-height:1.7}
-.hero .hero-msg{font-size:13.5px;color:var(--muted);line-height:1.85;margin:14px auto 0;max-width:300px} /* 주최자 인사말 — 디데이 뱃지 바로 위 */
+  .hero .names{font-size:27.5px;margin:12px 0 4px;color:var(--ink);line-height:1.45}
+  .hero .names span{color:var(--rose);margin:0 9px;font-size:18.5px;vertical-align:middle}
+  .hero .when{font-size:14.5px;color:var(--muted);margin-top:9px;line-height:1.7}
+.hero .hero-msg{font-size:15px;color:var(--muted);line-height:1.85;margin:14px auto 0;max-width:300px} /* 주최자 인사말 — 디데이 뱃지 바로 위 */
 .hero.mem .hero-msg{color:#a99e8e}
-  .dday-pill{display:inline-block;margin-top:13px;background:var(--ink);color:#fff;
-    font-size:12px;font-weight:600;letter-spacing:.08em;padding:6px 14px;border-radius:999px}
+  .hero .dday-pill{margin-top:8px} .hero .when{margin-top:12px}
+.dday-pill{display:inline-block;margin-top:13px;background:var(--ink);color:#fff;
+    font-size:13px;font-weight:600;letter-spacing:.08em;padding:6px 14px;border-radius:999px}
   /* 부고 상세: 먹색 히어로 — 기쁜 자리가 아니므로 톤을 낮춘다 (homehero.mem 문법 재사용) */
   .hero{position:relative}
-  .hero-cal{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:10px;border:1px solid var(--line);
-    background:rgba(255,255,255,.72);color:var(--primary-d);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
-  .hero.mem .hero-cal{background:rgba(255,255,255,.08);border-color:#575047;color:#d8cdbb}
-  html[data-theme="dark"] .hero-cal{background:rgba(255,255,255,.06);border-color:var(--line);color:var(--primary)}
-  .hero.mem{background:linear-gradient(180deg,#3a352f,#2c2823);border-color:#575047}
+      background:rgba(255,255,255,.72);color:var(--primary-d);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+      .hero.mem{background:linear-gradient(180deg,#3a352f,#2c2823);border-color:#575047}
   .hero.mem .names{color:#e8e0d2}
   .hero.mem .when{color:#a99e8e}
   .hero.mem .lead{color:#8f857a;letter-spacing:.3em}
@@ -164,12 +162,12 @@
   html[data-theme="dark"] .hero.mem{background:linear-gradient(180deg,#332e28,#2a2621)}
   /* 알리기 확인 체크박스 행 */
   .ckrow{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);
-    border-radius:10px;background:var(--field);font-size:13px;margin-top:8px;cursor:pointer;color:var(--ink)}
+    border-radius:10px;background:var(--field);font-size:14.5px;margin-top:8px;cursor:pointer;color:var(--ink)}
   .ckrow input{width:18px;height:18px;flex:none;margin:0;accent-color:var(--primary);padding:0}
   .ckrow span{flex:1;line-height:1.5}
-  .quote{font-size:13.5px;color:#6a6258;text-align:center;line-height:1.9;padding:4px 6px 0}
+  .quote{font-size:15px;color:#6a6258;text-align:center;line-height:1.9;padding:4px 6px 0}
   .divider{height:1px;background:var(--line);margin:14px 0}
-  .pill{display:inline-block;font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;letter-spacing:.01em}
+  .pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;letter-spacing:.01em}
   .pill-ok{background:#e7f0ea;color:var(--ok)}
   .pill-no{background:#f6e7e4;color:var(--danger)}
   .pill-wait{background:#f3ece1;color:var(--warn)}
@@ -192,7 +190,7 @@
   .paygrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .payopt{border:1px solid var(--line);background:var(--field);border-radius:12px;padding:11px 12px;
     text-align:left;cursor:pointer;font-family:inherit;color:var(--ink)}
-  .payopt b{display:block;font-size:13.5px}
+  .payopt b{display:block;font-size:15px}
   .payopt small{display:block;color:var(--muted);font-size:10.5px;margin-top:2px}
   .payopt.on{border-color:var(--primary);background:var(--tint2);box-shadow:0 0 0 1px var(--primary)}
   /* 튜토리얼 (스포트라이트 코치마크) */
@@ -201,8 +199,8 @@
   .tutbox{position:fixed;z-index:72;max-width:340px;width:calc(100% - 40px);background:var(--card);
     border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.28);
     padding:15px 16px 13px;transition:top .25s ease,left .25s ease}
-  .tutbox .tt{font-weight:700;font-size:15px;padding-right:26px;color:var(--ink)}
-  .tutbox .tx{font-size:13px;color:var(--muted);line-height:1.65;margin-top:5px}
+  .tutbox .tt{font-weight:700;font-size:16.5px;padding-right:26px;color:var(--ink)}
+  .tutbox .tx{font-size:14.5px;color:var(--muted);line-height:1.65;margin-top:5px}
   .tutbox .x{position:absolute;top:8px;right:10px;border:0;background:none;font-size:17px;color:var(--muted);cursor:pointer;padding:5px;line-height:1}
   .tutdots{display:flex;gap:5px;margin:11px 0 0}
   .tutdots i{width:6px;height:6px;border-radius:50%;background:var(--line);transition:.2s}
@@ -214,11 +212,11 @@
     border:1px solid #d9c8a4;border-radius:16px;box-shadow:var(--shadow); /* 금테는 탈색 헤어라인으로만 암시 */
     padding:16px 16px 15px;margin-bottom:13px;cursor:pointer;text-align:center}
   .hh-top{display:flex;justify-content:space-between;align-items:center}
-  .hh-dd{background:var(--ink);color:#fff;font-size:12px;font-weight:600;padding:5px 12px;border-radius:999px;letter-spacing:.08em}
+  .hh-dd{background:var(--ink);color:#fff;font-size:13px;font-weight:600;padding:5px 12px;border-radius:999px;letter-spacing:.08em}
   .hh-ic{font-size:32px;margin-top:2px}
-  .hh-nm{font-size:21px;margin-top:5px;color:var(--ink)}
+  .hh-nm{font-size:23px;margin-top:5px;color:var(--ink)}
   .hh-nm .typ{font-size:11px;color:var(--sage-d);font-weight:700}
-  .hh-dt{font-size:12.5px;color:var(--muted);margin-top:7px;line-height:1.7}
+  .hh-dt{font-size:14px;color:var(--muted);margin-top:7px;line-height:1.7}
   .hh-btns{margin-top:12px}
   .homehero.mem{background:linear-gradient(180deg,#3a352f,#2c2823);border-color:#575047}
   .homehero.mem .hh-nm{color:#e8e0d2}.homehero.mem .hh-dt{color:#a99e8e}
@@ -228,7 +226,7 @@
   /* 접이식 섹션 */
   details.fold{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
     box-shadow:var(--shadow);margin-bottom:14px}
-  details.fold>summary{padding:14px 16px;font-weight:700;font-size:14px;cursor:pointer;list-style:none;color:var(--ink)}
+  details.fold>summary{padding:14px 16px;font-weight:700;font-size:15.5px;cursor:pointer;list-style:none;color:var(--ink)}
   details.fold>summary::-webkit-details-marker{display:none}
   details.fold>summary::after{content:'▾';float:right;color:var(--muted);font-size:12px}
   details.fold[open]>summary::after{content:'▴'}
@@ -240,8 +238,8 @@
   .paycat>summary{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;list-style:none}
   .paycat>summary::-webkit-details-marker{display:none}
   .paycat>summary .pc-t{flex:1}
-  .paycat>summary b{font-size:14px;color:var(--ink)}
-  .paycat>summary small{display:block;color:var(--muted);font-size:11.5px;margin-top:1px}
+  .paycat>summary b{font-size:15.5px;color:var(--ink)}
+  .paycat>summary small{display:block;color:var(--muted);font-size:12.5px;margin-top:1px}
   .paycat>summary .pc-ar{color:var(--muted);font-size:12px;transition:.15s}
   .paycat[open]>summary .pc-ar{transform:rotate(180deg)}
   .paycat[open]{background:var(--card);box-shadow:0 2px 10px rgba(57,52,46,.06)}
@@ -254,7 +252,7 @@
   .inksw.custom{background:conic-gradient(#e66,#eb3,#6c6,#5ac,#96e,#e66);font-size:15px}
   /* 송금=인연 기록 강조 */
   .tienote{background:#faf3f0;border:1px solid #ecdcd6;border-radius:11px;
-    padding:11px 13px;font-size:12.5px;line-height:1.7;color:#6d5350;margin-bottom:12px}
+    padding:11px 13px;font-size:14px;line-height:1.7;color:#6d5350;margin-bottom:12px}
   .tienote b{color:#96545e}
   html[data-theme="dark"] .tienote{background:#382e2c;border-color:#4a3c39;color:#cdb3ae}
   html[data-theme="dark"] .tienote b{color:#dfa0a8}
@@ -264,75 +262,75 @@
   .glist{display:flex;flex-direction:column;gap:8px}
   .grow{border:1px solid var(--line);border-radius:11px;padding:11px 12px;background:var(--field)}
   .grow .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
-  .grow .nm{font-weight:600;font-size:14px}
-  .grow .meta{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .grow .nm{font-weight:600;font-size:15.5px}
+  .grow .meta{font-size:12.5px;color:var(--muted);margin-top:2px}
   .grow .amt{display:flex;align-items:center;gap:7px;margin-top:9px}
-  .grow .amt input{padding:7px 9px;font-size:13px}
+  .grow .amt input{padding:7px 9px;font-size:14.5px}
   .minibtn{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:7px 9px;
-    font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;color:var(--ink)}
+    font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;color:var(--ink)}
   .minibtn.on{background:var(--ok);color:#fff;border-color:var(--ok)}
   .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
   .stat{background:var(--tint);border:1px solid var(--line);border-radius:11px;padding:11px 8px;text-align:center}
-  .stat .v{font-size:19px;font-weight:700;color:var(--primary-d)}
-  .stat .v.big{font-size:16px}
-  .stat .k{font-size:11px;color:var(--muted);margin-top:2px}
+  .stat .v{font-size:21px;font-weight:700;color:var(--primary-d)}
+  .stat .v.big{font-size:17.5px}
+  .stat .k{font-size:12px;color:var(--muted);margin-top:2px}
   .seg2{display:flex;background:var(--seg-bg);border-radius:9px;padding:3px;margin:2px 0 4px}
   .seg2 button{flex:1;border:0;background:transparent;padding:8px;border-radius:7px;
-    font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer}
+    font-size:14px;font-weight:600;color:var(--muted);cursor:pointer}
   .seg2 button.on{background:var(--card);color:var(--primary-d);box-shadow:0 1px 3px rgba(0,0,0,.08)}
-  .note{font-size:11.5px;color:var(--muted);line-height:1.7;background:var(--note-bg);
+  .note{font-size:12.5px;color:var(--muted);line-height:1.7;background:var(--note-bg);
     border:1px solid var(--line);border-radius:10px;padding:10px 11px;margin-top:10px} /* 점선은 '추가' 어포던스(.badge-add) 전용 */
   .note b{color:var(--primary-d)}
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
-    background:rgba(45,40,34,.95);backdrop-filter:blur(8px);color:#fff;padding:12px 18px;border-radius:12px;font-size:13px;
+    background:rgba(45,40,34,.95);backdrop-filter:blur(8px);color:#fff;padding:12px 18px;border-radius:12px;font-size:14.5px;
     font-weight:500;letter-spacing:.01em;box-shadow:0 6px 20px rgba(0,0,0,.16);
     opacity:0;pointer-events:none;transition:.25s;z-index:100;max-width:90%;text-align:center}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-  .empty{text-align:center;color:var(--muted);font-size:12.5px;padding:18px 6px}
+  .empty{text-align:center;color:var(--muted);font-size:14px;padding:18px 6px}
   .footer{text-align:center;font-size:10.5px;color:#6e6759;padding:8px 18px 0;line-height:1.7}
   .badge-add{width:100%;border:1px dashed #c9a892;background:var(--tint2);color:var(--primary-d);
-    border-radius:10px;padding:11px;font-size:13px;font-weight:600;cursor:pointer}
+    border-radius:10px;padding:11px;font-size:14.5px;font-weight:600;cursor:pointer}
   .secthead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-  .secthead .t{font-size:13px;font-weight:700;letter-spacing:.02em}
-  .secthead .c{font-size:11px;color:var(--muted)}
+  .secthead .t{font-size:14.5px;font-weight:700;letter-spacing:.02em}
+  .secthead .c{font-size:12px;color:var(--muted)}
   .acct{display:flex;align-items:center;justify-content:space-between;background:var(--tint);
     border:1px solid var(--line);border-radius:11px;padding:11px 12px;margin-top:8px}
-  .acct .b{font-size:13px}.acct .b small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+  .acct .b{font-size:14.5px}.acct .b small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
   /* 경조사 목록(앱 내 캘린더) */
   .listhead{display:flex;align-items:baseline;justify-content:space-between;margin:2px 2px 12px}
-  .listhead .t{font-size:18px;font-weight:700;color:var(--ink);line-height:1.35}
-  .listhead .c{font-size:12px;color:var(--muted)}
+  .listhead .t{font-size:20px;font-weight:700;color:var(--ink);line-height:1.35}
+  .listhead .c{font-size:13px;color:var(--muted)}
   .evcard{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);
     border-radius:var(--radius);padding:13px;margin-bottom:10px;box-shadow:var(--shadow);cursor:pointer;transition:.12s}
   .evcard:active{transform:scale(.99)}
   /* 다음 일정 요약용 납작 카드 */
   .evcard.slim{padding:8px 11px;margin-bottom:7px;gap:10px}
   .evcard.slim .ic{width:34px;height:34px;font-size:17px;border-radius:9px}
-  .evcard.slim .nm{font-size:13.5px}
-  .evcard.slim .dt{font-size:11px;margin-top:1px}
-  .evcard.slim .dd{font-size:11px;padding:3px 8px}
+  .evcard.slim .nm{font-size:15px}
+  .evcard.slim .dt{font-size:12px;margin-top:1px}
+  .evcard.slim .dd{font-size:12px;padding:3px 8px}
   .evcard .ic{font-size:24px;width:48px;height:48px;flex:none;display:flex;align-items:center;
     justify-content:center;background:var(--ic-bg);border-radius:13px}
   .evcard .info{flex:1;min-width:0}
-  .evcard .nm{font-weight:600;font-size:15px;color:var(--ink)}
+  .evcard .nm{font-weight:600;font-size:16.5px;color:var(--ink)}
   .evcard .typ{font-size:10.5px;font-weight:700;color:var(--sage-d);margin-left:6px}
-  .evcard .dt{font-size:12px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .evcard .dt{font-size:13px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .evcard .right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:none}
-  .evcard .dd{font-size:12px;font-weight:700;color:var(--primary-d);background:var(--dd-bg);padding:4px 9px;border-radius:999px;white-space:nowrap}
+  .evcard .dd{font-size:13px;font-weight:700;color:var(--primary-d);background:var(--dd-bg);padding:4px 9px;border-radius:999px;white-space:nowrap}
   .evcard .chev{color:#cabfae;font-size:16px}
-  .backbtn{background:none;border:0;color:var(--primary-d);font-weight:700;font-size:13px;
+  .backbtn{background:none;border:0;color:var(--primary-d);font-weight:700;font-size:14.5px;
     cursor:pointer;padding:4px 0;margin-bottom:6px;display:inline-flex;align-items:center;gap:4px}
   .lblnote{font-size:11px;color:var(--muted);margin-top:4px}
   /* 이음 달력 */
   .calhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-  .caltitle{font-size:15px;font-weight:700;color:var(--ink);font-family:"Gowun Batang","Nanum Myeongjo",serif;letter-spacing:.04em} /* 월력(月曆)의 정서 */
+  .caltitle{font-size:16.5px;font-weight:700;color:var(--ink);font-family:"Gowun Batang","Nanum Myeongjo",serif;letter-spacing:.04em} /* 월력(月曆)의 정서 */
   .calnav{border:1px solid var(--line);background:var(--card);border-radius:8px;width:34px;height:34px;
     font-size:17px;cursor:pointer;color:var(--primary-d);line-height:1}
   .calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
-  .caldow{text-align:center;font-size:11px;font-weight:600;color:var(--muted);padding:3px 0}
+  .caldow{text-align:center;font-size:12px;font-weight:600;color:var(--muted);padding:3px 0}
   .caldow.sun{color:var(--danger)}
   .calday{position:relative;aspect-ratio:1/1;border:0;background:transparent;border-radius:9px;
-    font-size:13px;color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit}
+    font-size:14.5px;color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit}
   .calday.empty{visibility:hidden;cursor:default}
   .calday.ev{font-weight:700;color:var(--primary-d);background:#f7f0e6}
   .calday.today{box-shadow:inset 0 0 0 1.5px var(--primary)}
@@ -343,88 +341,88 @@
   .calseltt{font-size:12px;font-weight:700;color:var(--primary-d);margin-bottom:8px}
   .calevrow{display:flex;align-items:center;gap:9px;padding:9px 10px;border:1px solid var(--line);
     border-radius:10px;background:var(--field);cursor:pointer;margin-bottom:6px}
-  .calevrow .cic{font-size:17px}.calevrow .cnm{flex:1;font-weight:600;font-size:13px}
+  .calevrow .cic{font-size:17px}.calevrow .cnm{flex:1;font-weight:600;font-size:14.5px}
   .calevrow .ctag{font-size:10.5px;color:var(--sage-d);font-weight:700}
   .calevrow .cchev{color:#cabfae}
-  .caladd{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--muted)}
+  .caladd{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--muted)}
   .addtype{border:1px solid var(--primary);background:var(--tint2);color:var(--primary-d);border-radius:9px;
-    padding:8px 11px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit}
+    padding:8px 11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
   /* 시작(진입) 화면 */
   .landing{padding:6px 4px 20px}
   .land-hero{text-align:center;padding:34px 16px 26px}
   .land-logo{font-size:42px;color:var(--primary-d);letter-spacing:.08em;line-height:1.15}
-  .land-slogan{font-size:13px;color:var(--gold-text);letter-spacing:.28em;margin-top:11px;font-weight:500}
+  .land-slogan{font-size:14.5px;color:var(--gold-text);letter-spacing:.28em;margin-top:11px;font-weight:500}
   .land-slogan::after{content:"";display:block;width:24px;height:1px;background:var(--gold);opacity:.65;margin:16px auto 0} /* 절제된 금박=선 하나, 랜딩 한정 */
-  .land-desc{font-size:13px;color:var(--muted);margin-top:18px;line-height:1.8}
+  .land-desc{font-size:14.5px;color:var(--muted);margin-top:18px;line-height:1.8}
   .land-choice{display:flex;flex-direction:column;gap:12px}
   .land-card{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--card);
     border-radius:var(--radius);padding:20px;cursor:pointer;box-shadow:var(--shadow);transition:.12s;font-family:inherit}
   .land-card:active{transform:scale(.99)}
   .land-card.primary{border:1px solid var(--primary);background:var(--tint2)}
   .lc-ic{font-size:30px;line-height:1}
-  .lc-t{font-size:18px;font-weight:700;color:var(--ink);margin-top:9px}
+  .lc-t{font-size:20px;font-weight:700;color:var(--ink);margin-top:9px}
   .land-card.primary .lc-t{color:var(--primary-d)}
-  .lc-d{font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.6}
-  .lc-go{margin-top:13px;font-size:13px;font-weight:600;color:var(--primary-d)}
+  .lc-d{font-size:14px;color:var(--muted);margin-top:5px;line-height:1.6}
+  .lc-go{margin-top:13px;font-size:14.5px;font-weight:600;color:var(--primary-d)}
   .land-foot{text-align:center;font-size:11.5px;color:var(--muted);margin-top:18px;line-height:1.6}
   .budget-net{display:flex;align-items:center;justify-content:space-between;margin-top:12px;
-    background:#f3ece0;border-radius:11px;padding:13px 14px;font-weight:700;font-size:14px;color:var(--primary-d)}
-  .budget-net b{font-size:19px}
+    background:#f3ece0;border-radius:11px;padding:13px 14px;font-weight:700;font-size:15.5px;color:var(--primary-d)}
+  .budget-net b{font-size:21px}
   /* 가계부·관계칩 */
   .chips{display:flex;flex-wrap:wrap;gap:6px}
-  .chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 13px;font-size:12.5px;
+  .chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 13px;font-size:14px;
     font-weight:600;color:var(--ink);cursor:pointer;font-family:inherit}
   .chip.on{background:var(--primary);color:#fff;border-color:var(--primary)}
   .relrow{display:flex;align-items:center;gap:9px;margin-bottom:9px}
-  .relrow .rl{width:42px;font-size:12px;font-weight:700;color:var(--ink);flex:none}
+  .relrow .rl{width:42px;font-size:13px;font-weight:700;color:var(--ink);flex:none}
   .relrow .bar{flex:1;height:9px;background:#f0e9dd;border-radius:5px;overflow:hidden}
   .relrow .bar .fill{height:100%;background:var(--primary);border-radius:5px}
-  .relrow .rv,.calevrow .rv{font-size:12.5px;font-weight:700;color:var(--primary-d);min-width:62px;text-align:right;flex:none}
+  .relrow .rv,.calevrow .rv{font-size:14px;font-weight:700;color:var(--primary-d);min-width:62px;text-align:right;flex:none}
   /* 추천기 */
   .reco-cta{display:flex;align-items:center;gap:11px;cursor:pointer;background:var(--tint2);border-color:var(--primary)}
   .reco-cta .rc-ic{font-size:24px;flex:none}
   .reco-cta .rc-tx{flex:1;min-width:0}
-  .reco-cta .rc-t{font-weight:700;font-size:15px;color:var(--primary-d)}
-  .reco-cta .rc-d{font-size:12px;color:var(--muted);margin-top:2px}
+  .reco-cta .rc-t{font-weight:700;font-size:16.5px;color:var(--primary-d)}
+  .reco-cta .rc-d{font-size:13px;color:var(--muted);margin-top:2px}
   .reco-cta .rc-go{color:var(--primary-d);font-weight:700;font-size:18px;flex:none}
   .reco-result{text-align:center;background:var(--tint2);border:1px solid var(--line);border-radius:13px;padding:18px;margin-top:16px}
-  .reco-result .rr-k{font-size:12px;color:var(--muted);font-weight:700}
+  .reco-result .rr-k{font-size:13px;color:var(--muted);font-weight:700}
   .reco-result .rr-v{font-size:32px;font-weight:700;color:var(--primary-d);margin-top:4px;letter-spacing:-.02em}
   .rr-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:11px}
-  .rrc{font-size:12px;font-weight:600;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 11px}
+  .rrc{font-size:13px;font-weight:600;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 11px}
   .rrc.on{background:var(--primary);color:#fff;border-color:var(--primary)}
   /* 리마인더 */
   .remind{background:linear-gradient(180deg,#fff,#faf4ec);border-color:#e6d9c4}
   .rm-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-  .rm-h{font-size:13px;font-weight:600;color:var(--primary-d)}
+  .rm-h{font-size:14.5px;font-weight:600;color:var(--primary-d)}
   .rm-noti{border:1px solid var(--primary);background:var(--card);color:var(--primary-d);border-radius:999px;
-    padding:5px 11px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit}
+    padding:5px 11px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
   .rm-noti.on{background:var(--ok);color:#fff;border-color:var(--ok)}
   .rm-ev{display:flex;align-items:center;gap:11px;cursor:pointer}
   .rm-ic{font-size:22px;width:42px;height:42px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--ic-bg);border-radius:11px}
   .rm-info{flex:1;min-width:0}
-  .rm-nm{font-weight:600;font-size:14px}.rm-tag{font-size:10px;color:var(--sage-d);font-weight:700;margin-left:4px}
-  .rm-dt{font-size:11.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .rm-dd{font-size:13px;font-weight:700;color:#fff;background:var(--danger);padding:5px 10px;border-radius:999px;flex:none}
-  .rm-more{font-size:11.5px;color:var(--muted);margin-top:9px;text-align:center}
+  .rm-nm{font-weight:600;font-size:15.5px}.rm-tag{font-size:10px;color:var(--sage-d);font-weight:700;margin-left:4px}
+  .rm-dt{font-size:12.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rm-dd{font-size:14.5px;font-weight:700;color:#fff;background:var(--danger);padding:5px 10px;border-radius:999px;flex:none}
+  .rm-more{font-size:12.5px;color:var(--muted);margin-top:9px;text-align:center}
   /* 봉투 */
   .env-card{background:var(--tint);border:1px solid var(--line);border-radius:13px;padding:26px 18px;text-align:center}
   .env-front{font-size:30px;font-weight:700;color:var(--ink);letter-spacing:.12em}
-  .env-sub{font-size:13px;color:var(--muted);margin-top:6px;letter-spacing:.1em;font-family:"Gowun Batang","Nanum Myeongjo",serif}
-  .env-row{display:flex;gap:11px;align-items:flex-start;font-size:12.5px;color:var(--ink);line-height:1.6;margin-bottom:10px}
+  .env-sub{font-size:14.5px;color:var(--muted);margin-top:6px;letter-spacing:.1em;font-family:"Gowun Batang","Nanum Myeongjo",serif}
+  .env-row{display:flex;gap:11px;align-items:flex-start;font-size:14px;color:var(--ink);line-height:1.6;margin-bottom:10px}
   .env-k{flex:none;width:40px;font-weight:700;color:var(--primary-d)}
   /* 하단 탭 내비 */
   .bnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:40;
     display:flex;background:rgba(255,253,249,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);
     padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
   .bnav button{flex:1;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:3px;
-    padding:5px 0;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;font-family:inherit;border-radius:10px;letter-spacing:.01em}
+    padding:5px 0;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;font-family:inherit;border-radius:10px;letter-spacing:.01em}
   .bnav button .bn-ic{width:21px;height:21px;opacity:.75;transition:opacity .15s} /* 단색 라인 아이콘 — 크롬은 조용하게 */
   .bnav button.on{color:var(--primary-d)}
   .bnav button.on .bn-ic{opacity:1}
   .evcard.mg{touch-action:pan-y;user-select:none;-webkit-user-select:none}
   .evcard.ae-drag{opacity:.78;position:relative;z-index:60;box-shadow:0 10px 26px rgba(0,0,0,.2);transition:none}
-  #trashzone{position:fixed;left:50%;transform:translateX(-50%) translateY(16px);bottom:calc(78px + env(safe-area-inset-bottom));width:min(86%,368px);padding:15px 12px;border:1.6px dashed var(--danger);border-radius:14px;background:var(--card);color:var(--danger);text-align:center;font-weight:700;font-size:14px;z-index:59;opacity:0;transition:opacity .18s,transform .18s;pointer-events:none}
+  #trashzone{position:fixed;left:50%;transform:translateX(-50%) translateY(16px);bottom:calc(78px + env(safe-area-inset-bottom));width:min(86%,368px);padding:15px 12px;border:1.6px dashed var(--danger);border-radius:14px;background:var(--card);color:var(--danger);text-align:center;font-weight:700;font-size:15.5px;z-index:59;opacity:0;transition:opacity .18s,transform .18s;pointer-events:none}
   #trashzone.show{opacity:1;transform:translateX(-50%) translateY(0)}
   #trashzone.hot{background:#f6e7e4;transform:translateX(-50%) scale(1.05)}
   html[data-theme="dark"] #trashzone.hot{background:#42302c}
@@ -434,8 +432,8 @@
   .more-item:last-child{border-bottom:0}
   .more-item .mi-ic{font-size:21px;width:30px;text-align:center;flex:none}
   .more-item .mi-tx{flex:1;display:flex;flex-direction:column}
-  .more-item .mi-t{font-size:14px;font-weight:700;color:var(--ink)}
-  .more-item .mi-d{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .more-item .mi-t{font-size:15.5px;font-weight:700;color:var(--ink)}
+  .more-item .mi-d{font-size:12.5px;color:var(--muted);margin-top:1px}
   .more-item .mi-go{color:#cabfae;font-size:18px;font-weight:700}
   /* 품앗이 균형 */
   .bal{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap}
@@ -479,7 +477,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v103'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v104'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -843,7 +841,7 @@ async function shareEvent(ev){
     if(RELAY.url){ ogImg=RELAY.url+'/img?u='+encodeURIComponent(ev.shareImg); ogDim=pr?{imageWidth:pr.w,imageHeight:pr.h}:{}; } // 프록시 경유 — 차단 CDN도 썸네일 유지
     // 프록시 없이 외부 CDN을 직접 넣으면 폰에서 로드돼도 카카오 서버 검증(핫링크·리퍼러)에 막혀 4002 → 릴레이 프록시 배포 전까지 자체 썸네일 (출시 후 실기기 4002 재현 2026-09-07)
   }
-  const text=`${evNamePlain(ev)} ${ev.subtitle}\n${dateText(ev)} · ${ev.venue}\n${mem?'부고 확인·조의 전하기':'청첩장 확인·캘린더·축의금 보내기'} ▸`;
+  const text=`${evNamePlain(ev)} ${ev.subtitle}\n${dateText(ev)} · ${ev.venue}\n${mem?'부고 확인·조의 전하기':'청첩장 확인·축의금 보내기'} ▸`;
   const ready=window.Kakao&&Kakao.isInitialized&&Kakao.isInitialized();
   if(ready){
     // 모바일 카카오톡은 패킷 10K 상한 — 초대링크(인사말 포함)가 카드에 반복될수록 폭발(실기기 4002 재현) → 버튼 없이 카드 탭으로 열기(링크 2회), 그래도 크면 1회로 축소
@@ -994,7 +992,7 @@ function smsHref(body){ const ios=/iPhone|iPad|iPod/i.test(navigator.userAgent);
 function inviteSmsBody(ev,link){ const mem=ev.type==='memorial';
   return `${evNamePlain(ev)} ${ev.subtitle}
 ${dateText(ev)} · ${ev.venue}
-${mem?'부고 확인·조의 전하기':'청첩장 확인·캘린더·축의금 보내기'} ▸
+${mem?'부고 확인·조의 전하기':'청첩장 확인·축의금 보내기'} ▸
 ${link}`; }
 async function shareEventSMS(ev){
   const link=(await shortInviteLink(ev))||inviteLink(ev); const body=inviteSmsBody(ev,link);
@@ -1040,9 +1038,9 @@ function inviteView(){ const iv=S.ui.pendingInvite; if(!iv){ S.ui.guestView='lis
   return `<div class="hero" style="margin-top:6px">
     <div class="lead">${mem?'부고':'청첩장이 도착했어요'}</div>
     <div class="names serif">${evName(iv)}</div>
+    <div class="dday-pill">${dday(iv)}</div>
     <div class="when">${dateText(iv)}<br/>${esc(iv.venue)}</div>
     <p class="hero-msg serif">${(esc(iv.message||'').replace(/\n/g,'<br/>'))||(mem?'삼가 부고를 전해 드립니다.':'귀한 걸음으로 함께해 주세요.')}</p>
-    <div class="dday-pill">${dday(iv)}</div>
   </div>
   <div class="card">
     <div class="stack">
@@ -1241,7 +1239,7 @@ function landingView(){
       <button class="land-card primary" onclick="enterAs('guest')">
         <div class="lc-ic">🎁</div>
         <div class="lc-t">내 경조사</div>
-        <div class="lc-d">받은 청첩장·부고를 한곳에서 관리하고, 캘린더 저장·축의금 송금까지 한 번에</div>
+        <div class="lc-d">받은 청첩장·부고를 한곳에서 관리하고, 축의금 송금까지 한 번에</div>
         <div class="lc-go">시작하기 ›</div>
       </button>
       <button class="land-card" onclick="enterAs('host')">
@@ -1377,7 +1375,6 @@ function hostView(){
   <details class="fold" ${acctOpen?'open':''} ontoggle="hostFoldSet('acct',this.open)">
     <summary>🏦 ${c.money} 받을 계좌 ${acctDone?`<span style="font-weight:400;color:var(--ok);font-size:12px">· 등록됨</span>`:`<span style="font-weight:400;color:var(--muted);font-size:12px">· 미입력</span>`}</summary>
     <div class="fold-body">
-    <p class="sub">하객은 이 계좌로 직접 보냅니다. 이음은 자금을 만지지 않아요.</p>
     ${ev.accounts.map((a,i)=>acctEditor(i,a)).join('')}
     ${(ev.accounts||[]).length<6?`<button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="addHostAcct()">＋ 계좌 추가 <span style="font-weight:400;font-size:11px;color:var(--muted)">· 혼주(부모님) 계좌 등 최대 6개</span></button>`:''}
     </div>
@@ -1385,11 +1382,10 @@ function hostView(){
 
   <div class="card">
     <h3>📨 하객에게 보내기</h3>
-    <p class="sub">단톡방에 링크 하나 — 받은 분들이 각자 저장하고, 캘린더·${c.money}까지 한 번에.</p>
     ${infoDone?'':`<div class="note" style="margin-top:8px">위의 <b>행사 정보</b>(이름·날짜)를 먼저 입력하면 보낼 수 있어요.</div>`}
     <label style="margin-top:12px">모바일 ${c.doc} 링크 연결 <span style="font-weight:400;color:var(--muted)">(선택 — 전문업체 제작본)</span></label>
     <input placeholder="https://... (바른손/더카드 등)" value="${esc(ev.externalUrl)}" onchange="hostUrlChanged(this.value)">
-    <p class="lblnote">${_hostFetching?'⏳ 청첩장 정보를 가져오는 중…':(ev.externalUrl?`✓ 연결됨 — ${c.doc} 썸네일이 그대로 쓰이고, 하객이 원본도 볼 수 있어요`:'링크를 넣으면 이름·날짜·계좌 자동 입력을 제안하고, 그 썸네일로 나가요')}</p>
+    ${_hostFetching?`<p class="lblnote">⏳ 청첩장 정보를 가져오는 중…</p>`:(ev.externalUrl?`<p class="lblnote">✓ 연결됨</p>`:'')}
     ${ev.externalUrl&&ev.shareImg?`<img src="${esc(ev.shareImg)}" alt="" style="width:76px;height:95px;object-fit:cover;border-radius:10px;border:1px solid var(--line);display:block;margin:4px 0 2px" onerror="this.style.display='none'">`:''}
     <div class="stack" style="margin-top:10px">
       <button class="btn btn-kakao" onclick="shareFromHost('kakao')">카카오톡으로 보내기</button>
@@ -1416,8 +1412,28 @@ function acctEditor(i,a){
       <div><input placeholder="계좌번호" value="${esc(a.number)}" onchange="updAcct(${i},'number',this.value)"></div>
     </div>
     <input style="margin-top:6px" placeholder="예금주" value="${esc(a.holder)}" onchange="updAcct(${i},'holder',this.value)">
-    <input style="margin-top:6px" placeholder="카카오페이 송금링크 (선택 · qr.kakaopay.com/...)" value="${esc(a.kakaopay||'')}" onchange="updAcct(${i},'kakaopay',this.value)">
-    <p class="lblnote">카카오페이 앱 → 나에게 송금 → 링크 복사해 붙여넣으면 하객이 '카카오페이로 보내기'를 쓸 수 있어요.</p></div>`;
+    <div class="row" style="margin-top:6px;align-items:center">
+      <input placeholder="카카오페이 송금링크 (선택)" value="${esc(a.kakaopay||'')}" onfocus="kpFocus(this)" onchange="updAcct(${i},'kakaopay',this.value)">
+      <button class="minibtn" style="max-width:96px;white-space:nowrap" onclick="openKpGuide()">링크 얻는 법</button>
+    </div></div>`;
+}
+/* ---- 카카오페이 송금링크 안내: 앱에는 '링크 복사' 버튼이 없고 QR(이미지)만 준다 → QR을 인식해 qr.kakaopay.com 링크를 얻는 실제 경로 (2026-09 확인) ---- */
+let _kpGuided=false;
+function kpFocus(el){ if(el&&!el.value&&!_kpGuided){ _kpGuided=true; try{ el.blur(); }catch(e){} openKpGuide(); } }
+function openKpGuide(){ let bg=document.getElementById('kpguide');
+  if(!bg){ bg=document.createElement('div'); bg.id='kpguide'; bg.className='sheet-bg'; bg.onclick=closeKpGuide; document.body.appendChild(bg); }
+  bg.innerHTML=`<div class="sheet" onclick="event.stopPropagation()">
+    <div class="secthead" style="margin-bottom:10px"><div class="t" style="font-size:17px">카카오페이 송금링크 가져오기</div></div>
+    <ol style="margin:0 0 6px 20px;padding:0;line-height:1.9;font-size:15.5px">
+      <li>카카오톡 → <b>더보기(⋯)</b> → <b>코드스캔</b> → 아래 <b>송금코드</b></li>
+      <li>QR 아래 <b>다운로드</b>로 이미지 저장</li>
+      <li>갤러리에서 그 QR을 열어 <b>QR 인식</b>(구글 렌즈·삼성 갤러리) → <b>qr.kakaopay.com</b> 링크 <b>복사</b></li>
+      <li>이 칸에 붙여넣기</li>
+    </ol>
+    <div class="note" style="margin:8px 0 12px">링크는 선택이에요. 없어도 하객은 계좌이체·토스로 보낼 수 있어요.</div>
+    <button class="btn btn-primary" onclick="closeKpGuide()">알겠어요</button>
+  </div>`; setTimeout(()=>bg.classList.add('show'),10); }
+function closeKpGuide(){ const bg=document.getElementById('kpguide'); if(!bg) return; bg.classList.remove('show'); setTimeout(()=>{ try{ bg.remove(); }catch(e){} },220);
 }
 function rowHost(ev,x){
   const p=x.pay||{};
@@ -1545,19 +1561,6 @@ function openMapSheet(){ const ev=curEvent()||hostEvent(); if(!ev||!ev.venue){ t
   </div>`;
   bg.onclick=closeMapSheet; setTimeout(()=>bg.classList.add('show'),10); }
 function closeMapSheet(){ const bg=document.getElementById('mapsheet'); if(!bg)return; bg.classList.remove('show'); setTimeout(()=>{ try{bg.remove();}catch(e){} },220); }
-function openCalSheet(){ let bg=document.getElementById('calsheet');
-  if(!bg){ bg=document.createElement('div'); bg.id='calsheet'; bg.className='sheet-bg';
-    bg.addEventListener('click',e=>{ if(e.target===bg) closeCalSheet(); }); document.body.appendChild(bg); }
-  const ev=curEvent(); const doc=ev?cfg(ev).doc:'경조사';
-  bg.innerHTML=`<div class="sheet" onclick="event.stopPropagation()" style="padding-bottom:calc(16px + env(safe-area-inset-bottom))">
-    <div class="secthead"><div class="t" style="font-size:15px">캘린더에 저장</div>
-      <button class="minibtn" onclick="closeCalSheet()">닫기</button></div>
-    <button class="btn btn-sage" onclick="closeCalSheet();saveICS(curEvent())">내 캘린더에 저장 <span style="font-weight:400;font-size:11.5px;opacity:.85">· .ics 파일</span></button>
-    <button class="btn btn-ghost" style="margin-top:8px" onclick="closeCalSheet();googleCal(curEvent())">구글 캘린더에 등록</button>
-  </div>`;
-  clearTimeout(_calshHideT); setTimeout(()=>bg.classList.add('show'),10); }
-function closeCalSheet(){ const bg=document.getElementById('calsheet'); if(!bg) return;
-  bg.classList.remove('show'); _calshHideT=setTimeout(()=>{ try{ bg.remove(); }catch(e){} },220); }
 function openCalPopup(){ CALPOP_YM=CALPOP_YM||ymToday(); clearTimeout(_calpopHideT);
   renderCalPopup(); const bg=document.getElementById('calpop');
   setTimeout(()=>bg.classList.add('show'),10);
@@ -1639,12 +1642,11 @@ function guestDetail(){
   return `
   <button class="backbtn" onclick="backToList()">‹ 내 경조사</button>
   <div class="hero${ev.type==='memorial'?' mem':''}">
-    <button class="hero-cal" onclick="openCalSheet()" aria-label="캘린더에 저장"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16.5" rx="3"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg></button>
     <div class="lead">${ev.type==='memorial'?'In memoriam':"You're invited"}</div>
     <div class="names serif">${evName(ev)}</div>
+    <div class="dday-pill">${dday(ev)}</div>
     <div class="when">${dateText(ev)}<br/>${esc(ev.venue)}</div>
     ${ev.message?`<p class="hero-msg serif">${esc(ev.message).replace(/\n/g,'<br/>')}</p>`:''}
-    <div class="dday-pill">${dday(ev)}</div>
   </div>
   <div class="row" style="margin:-4px 0 12px">
     ${ev.venue?`<button class="btn btn-line btn-sm" onclick="openMapSheet()">${ev.type==='memorial'?'빈소 길찾기':'📍 길찾기'}</button>`:''}
@@ -1707,28 +1709,35 @@ function guestDetail(){
         <button class="btn btn-line btn-sm" style="margin-top:8px" onclick="openEnvelope(curEvent().id)">봉투 쓰는 법 보기</button>
       </div>
     </details>
-    ${(S.ui.guestSession.pendingPay&&S.ui.guestSession.pendingPay.evId===ev.id)?`<div class="note" style="margin-top:10px"><b>${payMethodLabel(S.ui.guestSession.pendingPay.method)}에서 ${won(S.ui.guestSession.pendingPay.amt)} 송금을 완료하셨나요?</b>
-      <div class="row" style="margin-top:9px">
-        <button class="btn btn-sage btn-sm" onclick="confirmPendingPay(1,true)">보냈어요 → ${ledgerLabel(ev)}</button>
-        <button class="btn btn-ghost btn-sm" onclick="confirmPendingPay(0)">아니요</button>
-      </div></div>`:''}
   </div>
 
   ${notifyCard(ev,me,nm)}
   <button class="backbtn" style="color:var(--danger);margin:0 4px 10px" onclick="delEvent('${ev.id}')">이 경조사 삭제</button>`;
 }
-function notifyCard(ev,me,nm){ // 명부 기록 단일 진입점: 송금 기록이 생기면 나타남 (삭제 버튼 직전)
-  const mem=ev.type==='memorial'; const c=cfg(ev);
-  if(!(me&&me.pay&&me.pay.amount!=null)) return '';
-  const payTxt=`${c.money} ${won(me.pay.amount)}${me.pay.method==='toss'?' (토스)':me.pay.method==='kakao'?' (카카오페이)':me.pay.method==='cash'?' (현금 전달)':''}`;
+function notifyCard(ev,me,nm){ // 명부 기록 — 항상 표시 (팝업을 놓쳐도 여기서 기록+전달)
+  const mem=ev.type==='memorial'; const c=cfg(ev); const hasPay=!!(me&&me.pay&&me.pay.amount!=null);
+  const payTxt=hasPay?`${c.money} ${won(me.pay.amount)}${me.pay.method==='toss'?' (토스)':me.pay.method==='kakao'?' (카카오페이)':me.pay.method==='cash'?' (현금 전달)':''}`:'';
   return `<div class="card" id="notifycard">
     <h3>📒 ${ledgerLabel(ev)}</h3>
     <div class="tienote" style="margin:6px 0 10px">${mem
       ?`🕊️ <b>기록해야 상주가 알 수 있어요.</b> 전한 위로가 이름과 함께 남습니다.`
       :`💞 <b>기록해야 주최자가 알 수 있어요.</b> 보낸 마음이 내 이름과 함께 명부에 남습니다.`}</div>
-    <p class="sub" style="margin:0"><b>${esc(nm)}</b> · <b>${esc(payTxt)}</b></p>
-    <button class="btn btn-primary" style="margin-top:11px" onclick="notifyHost()">${ledgerLabel(ev)}</button>
+    ${hasPay?`<p class="sub" style="margin:0"><b>${esc(nm)}</b> · <b>${esc(payTxt)}</b></p>`:''}
+    <button class="btn btn-primary" style="margin-top:11px" onclick="recordAndNotify()">${ledgerLabel(ev)}</button>
   </div>`; }
+function recordAndNotify(){ const ev=curEvent(); if(!ev) return; // 기록이 없으면 입력칸(또는 대기 중 송금)의 금액으로 기록한 뒤 전달
+  const nm=(S.ui.guestSession.name||($('#gname')&&$('#gname').value.trim())||(S.settings&&S.settings.name)||'').trim();
+  if(!nm){ toast('성함을 입력해 주세요'); focusGname(); return; }
+  const me=ev.guests.find(g=>g.name===nm);
+  if(me&&me.pay&&me.pay.amount!=null){ S.ui.guestSession.name=nm; notifyHost(); return; }
+  const pp=S.ui.guestSession.pendingPay; const mine=pp&&pp.evId===ev.id?pp:null;
+  const amt=Number($('#sendamt')&&$('#sendamt').value)||(mine?mine.amt:0);
+  if(!amt){ toast('보낸 금액을 입력해 주세요'); const el=$('#sendamt'); if(el){ try{ el.focus(); }catch(e){} } return; }
+  own(ev); S.ui.guestSession.name=nm;
+  let x=ev.guests.find(g=>g.name===nm); if(!x){ x=mkGuest(nm,ev.myRelation||'지인',S.ui.guestSession.acctIdx||0); x.unregistered=true; ev.guests.push(x); }
+  x.pay={amount:amt, source:'app', method:(mine&&mine.method)||'account'}; ev.myGift=amt;
+  if(mine) S.ui.guestSession.pendingPay=null; payWatchStop(); S.ui.guestSession.draftAmt=null; save(); render();
+  setTimeout(notifyHost,150); }
 /* ======================= 액션 ======================= */
 function updEv(k,v){const ev=own(hostEvent());ev[k]=v;save();if(k==='date'||k==='time')$('#ddayTop').textContent=dday(ev);}
 function setType(t){
@@ -3421,7 +3430,7 @@ const TUT_STEPS=[
  {at:'list', v:()=>{S.ui.tab='guest';S.ui.guestView='list';}, sel:'.badge-add',
   t:'청첩장 가져오기', x:'카톡으로 받은 청첩장 링크를 붙여넣으면 이름·날짜·계좌까지 자동으로 채워져요.'},
  {at:'detail', ev:'e2', v:()=>{S.ui.tab='guest';S.ui.guestView='detail';S.ui.currentEventId='e2';}, sel:'.hero',
-  t:'청첩장 상세', x:'날짜·장소 확인부터 내 캘린더 저장(.ics·구글)까지 여기서 한 번에 끝나요.'},
+  t:'청첩장 상세', x:'날짜·장소 확인, 길찾기, 축의금 보내기까지 여기서 끝나요.'},
  {at:'detail', ev:'e2', v:()=>{S.ui.tab='guest';S.ui.guestView='detail';S.ui.currentEventId='e2';S.ui.payCat='bank';}, sel:'.paycat .btn-primary',
   t:'계좌 복사 → 뱅킹앱 → 명부 기록', x:'계좌번호를 복사해 뱅킹앱에서 보내고 돌아오면 [축의금 명부에 기록하기]로 주최자에게 알릴 수 있어요. 토스·카카오페이는 아래 간편송금에서. (연습이니 눌러봐도 기록은 남지 않아요)'},
  {at:'ledger', v:()=>{S.ui.tab='guest';S.ui.guestView='ledger';}, sel:'.stats',
@@ -3744,11 +3753,11 @@ window.addEventListener('popstate', ()=>{
 });
 function backStep(){ // 한 단계 위로 (popstate·네이티브 뒤로가기 공용)
   try{
-    if(document.getElementById('calsheet')) closeCalSheet();
-    else if(document.getElementById('mapsheet')) closeMapSheet();
+    if(document.getElementById('mapsheet')) closeMapSheet();
     else if(document.getElementById('tiepop')) closeTiePop();
     else if(document.getElementById('paypop')) closePayPop();   // 송금 복귀 확인 시트 — pendingPay는 유지되어 인라인 확인이 폴백
     else if(document.getElementById('addpop')) closeAddSheet(); // 경조사 추가 선택 시트
+    else if(document.getElementById('kpguide')) closeKpGuide();  // 카카오페이 링크 안내
     else if(document.getElementById('rgsheet')) closeRestoreGuide();
     else if(document.getElementById('calpop')) closeCalPopup();
     else if(document.getElementById('paysheet')) declinePass();
