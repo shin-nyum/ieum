@@ -92,21 +92,6 @@ export default {
         } catch (e) { return Response.redirect(FALLBACK, 302); }
       }
 
-      // 초대 오픈 카운터 (익명 — 해시 키+숫자만, 대규모 발송 게이트용)
-      if (req.method === 'POST' && url.pathname === '/open') {
-        let body; try { body = await req.json(); } catch { return json({ error: 'BAD_JSON' }, 400); }
-        const k = String(body.k || '');
-        if (!/^[0-9a-f]{32}$/.test(k)) return json({ error: 'BAD_KEY' }, 400);
-        const cur = parseInt((await env.REPLIES.get('op:' + k)) || '0', 10);
-        await env.REPLIES.put('op:' + k, String(cur + 1), { expirationTtl: 60 * 60 * 24 * 180 });
-        return json({ ok: true });
-      }
-      if (req.method === 'GET' && url.pathname === '/open') {
-        const k = String(url.searchParams.get('k') || '');
-        if (!/^[0-9a-f]{32}$/.test(k)) return json({ error: 'BAD_KEY' }, 400);
-        return json({ n: parseInt((await env.REPLIES.get('op:' + k)) || '0', 10) });
-      }
-
       // 네이티브 앱 OTA 웹 번들 프록시 — 앱 WebView는 자기 오리진(shin-nyum.github.io) 요청을 로컬 서버가 가로채므로
       // GitHub Pages의 최신 파일은 이 경유로만 받을 수 있다. 경로 화이트리스트 + 짧은 엣지 캐시.
       if (req.method === 'GET' && url.pathname === '/web') {

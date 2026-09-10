@@ -57,7 +57,7 @@
   /* 다크: 밝은 채움 위 흰 글자는 대비 탈락 — 진한 잉크로 반전(기존 .dday-pill 문법 확장) */
   html[data-theme="dark"] .btn-primary,html[data-theme="dark"] .btn-sage,html[data-theme="dark"] .chip.on,
   html[data-theme="dark"] .rrc.on,html[data-theme="dark"] .calday.sel,html[data-theme="dark"] .calday.sel.ev,
-  html[data-theme="dark"] .minibtn.on,html[data-theme="dark"] .rm-noti.on,html[data-theme="dark"] .rm-dd,
+  html[data-theme="dark"] .minibtn.on,html[data-theme="dark"] .rm-noti.on,
   html[data-theme="dark"] .pbdg{color:#241f19}
   html[data-theme="dark"] .quote{color:#b5aa99}
   html[data-theme="dark"] .pill-gold,html[data-theme="dark"] .pchip{color:var(--gold)}
@@ -88,7 +88,7 @@
   .serif{font-family:"Gowun Batang","Nanum Myeongjo","Apple SD Gothic Neo",Georgia,serif;letter-spacing:.02em}
   /* 금액·날짜: 고정폭 숫자 = 정갈한 장부 */
   .stat .v,.reco-result .rr-v,.calevrow .rv,.grow .amt input,
-  .calday,.hh-dd,.dday-pill,.evcard .dd,.rm-dd{font-variant-numeric:tabular-nums}
+  .calday,.hh-dd,.dday-pill,.evcard .dd{font-variant-numeric:tabular-nums}
   :focus-visible{outline:2px solid var(--primary);outline-offset:2px}
   .phone{max-width:430px;margin:0 auto;min-height:100vh;min-height:100dvh;background:var(--bg);
     box-shadow:0 0 40px rgba(0,0,0,.12);position:relative;padding-bottom:calc(80px + env(safe-area-inset-bottom))}
@@ -344,9 +344,6 @@
   .calevrow .cic{font-size:17px}.calevrow .cnm{flex:1;font-weight:600;font-size:14.5px}
   .calevrow .ctag{font-size:10.5px;color:var(--sage-d);font-weight:700}
   .calevrow .cchev{color:#cabfae}
-  .caladd{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--muted)}
-  .addtype{border:1px solid var(--primary);background:var(--tint2);color:var(--primary-d);border-radius:9px;
-    padding:8px 11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
   /* 시작(진입) 화면 */
   .landing{padding:6px 4px 20px}
   .land-hero{text-align:center;padding:34px 16px 26px}
@@ -365,7 +362,6 @@
   .lc-d{font-size:14px;color:var(--muted);margin-top:5px;line-height:1.6}
   .lc-go{margin-top:13px;font-size:14.5px;font-weight:600;color:var(--primary-d)}
   .land-foot{text-align:center;font-size:11.5px;color:var(--muted);margin-top:18px;line-height:1.6}
-    background:#f3ece0;border-radius:11px;padding:13px 14px;font-weight:700;font-size:15.5px;color:var(--primary-d)}
   /* 가계부·관계칩 */
   .chips{display:flex;flex-wrap:wrap;gap:6px}
   .chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 13px;font-size:14px;
@@ -401,8 +397,6 @@
   .bnav button .bn-ic{width:21px;height:21px;opacity:.75;transition:opacity .15s} /* 단색 라인 아이콘 — 크롬은 조용하게 */
   .bnav button.on{color:var(--primary-d)}
   .bnav button.on .bn-ic{opacity:1}
-  .evcard.mg{touch-action:pan-y;user-select:none;-webkit-user-select:none}
-  .evcard.ae-drag{opacity:.78;position:relative;z-index:60;box-shadow:0 10px 26px rgba(0,0,0,.2);transition:none}
   /* 더보기 */
   .more-item{display:flex;align-items:center;gap:13px;width:100%;border:0;background:transparent;
     padding:13px 12px;cursor:pointer;font-family:inherit;text-align:left;border-bottom:1px solid var(--line)}
@@ -454,7 +448,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v109'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v110'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -574,7 +568,7 @@ function own(ev){ if(!ev) return ev;
   if(ev.demo) delete ev.demo; if(ev.tut) delete ev.tut; if(ev.draft) delete ev.draft; return ev; }
 let S=load();
 function load(){
-  try{ const r=localStorage.getItem(LS); if(r) return migrate(JSON.parse(r)); }catch(e){}
+  try{ const r=localStorage.getItem(LS); if(r) return migrate(JSON.parse(r)); }catch(e){ console.error('load failed — seed로 시작', e); }
   return seed();
 }
 /* ---- IndexedDB 미러: localStorage가 비워져도(브라우저 정리 등) 자동 복구 ---- */
@@ -701,12 +695,12 @@ function allEvBodyHTML(){
   let past=evs.filter(e=>!e.date||new Date(e.date+'T'+(e.time||'00:00'))<now).reverse();
   if(q){ up=up.filter(hit); past=past.filter(hit); }
   if(!up.length&&!past.length) return `<div class="empty">${q?`'${esc(q)}' 검색 결과가 없어요`:'등록된 경조사가 없어요'}</div>`;
-  return `${up.length?`<div class="secthead" style="margin:2px 2px 7px"><div class="t">다가오는</div><div class="c">${up.length}건</div></div>${up.map(e=>evcardHTML(e,false,true)).join('')}`:''}
-  ${past.length?`<div class="secthead" style="margin:14px 2px 7px"><div class="t">지난</div><div class="c">${past.length}건</div></div>${past.map(e=>evcardHTML(e,false,true)).join('')}`:''}`;
+  return `${up.length?`<div class="secthead" style="margin:2px 2px 7px"><div class="t">다가오는</div><div class="c">${up.length}건</div></div>${up.map(e=>evcardHTML(e)).join('')}`:''}
+  ${past.length?`<div class="secthead" style="margin:14px 2px 7px"><div class="t">지난</div><div class="c">${past.length}건</div></div>${past.map(e=>evcardHTML(e)).join('')}`:''}`;
 }
 function renderAllEv(){ const el=document.getElementById('allev-body'); if(el) el.innerHTML=allEvBodyHTML(); }
 
-/* ---- 전체보기: 길게 눌러 끌어서 삭제 (휴지통 드롭) ---- */
+/* ---- 전체보기 ---- */
 function allEventsView(){
   const all=S.events.filter(e=>!(e.draft&&!evHasContent(e)));
   return `
@@ -1243,7 +1237,7 @@ function hostView(){
       <div><label>시간</label><input type="time" value="${ev.time}" onchange="updEv('time',this.value)"></div>
     </div>
     <label>${c.venueL}</label><input value="${esc(ev.venue)}" onchange="updEv('venue',this.value)">
-    <label>주소</label><input value="${esc(ev.address)}" onchange="updEv('address',this.value)">
+    <label>주소</label><input id="ev_addr" value="${esc(ev.address)}" onfocus="addrFocus(this)" onchange="updEv('address',this.value)">
     <label>인사말</label><textarea rows="3" onchange="updEv('message',this.value)">${esc(ev.message)}</textarea>
     </div>
   </details>
@@ -1294,7 +1288,7 @@ function acctEditor(i,a){
       <button class="minibtn" style="max-width:96px;white-space:nowrap" onclick="openKpGuide()">링크 얻는 법</button>
     </div></div>`;
 }
-/* ---- 카카오페이 송금링크 안내: 앱에는 '링크 복사' 버튼이 없고 QR(이미지)만 준다 → QR을 인식해 qr.kakaopay.com 링크를 얻는 실제 경로 (2026-09 확인) ---- */
+/* ---- 카카오페이 송금링크 안내: 카카오톡 더보기 → QR 스캔 → 송금코드(₩) → 링크 아이콘 → 링크 복사 (사용자 실기기 확인 2026-09) ---- */
 let _kpGuided=false;
 function kpFocus(el){ if(el&&!el.value&&!_kpGuided){ _kpGuided=true; try{ el.blur(); }catch(e){} openKpGuide(); } }
 function openKpGuide(){ _kpGuided=true; let bg=document.getElementById('kpguide');
@@ -1303,7 +1297,7 @@ function openKpGuide(){ _kpGuided=true; let bg=document.getElementById('kpguide'
     <div class="secthead" style="margin-bottom:12px"><div class="t" style="font-size:18px">카카오페이 송금링크 가져오기</div></div>
     <div class="kp-step"><div class="kp-n">1</div><div class="kp-ic"><span style="font-size:24px;line-height:1">💬</span></div><div class="kp-t"><b>카카오톡</b>을 열고 <b>더보기</b> <span style="font-size:20px;line-height:1;letter-spacing:1px">⋯</span></div></div>
     <div class="kp-step"><div class="kp-n">2</div><div class="kp-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3M21 14v3M14 21h3M21 21h.01"/></svg></div><div class="kp-t">오른쪽 위 <b>QR 스캔</b> 아이콘</div></div>
-    <div class="kp-step"><div class="kp-n">3</div><div class="kp-ic"><span style="font-size:15px;font-weight:800;border:2px solid currentColor;border-radius:8px;padding:2px 8px">받기</span></div><div class="kp-t"><b>받기</b> 탭</div></div>
+    <div class="kp-step"><div class="kp-n">3</div><div class="kp-ic"><span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;font-size:17px;font-weight:800;border:2px solid currentColor;border-radius:50%">₩</span></div><div class="kp-t"><b>송금코드</b> 탭</div></div>
     <div class="kp-step"><div class="kp-n">4</div><div class="kp-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7L12 19"/></svg></div><div class="kp-t"><b>링크</b> 아이콘 → 링크 복사</div></div>
     <div class="kp-step"><div class="kp-n">5</div><div class="kp-ic"><span style="font-size:24px;line-height:1">📋</span></div><div class="kp-t">이음의 <b>카카오페이 송금링크</b> 칸에 붙여넣기</div></div>
     <button class="btn btn-primary" style="margin-top:14px" onclick="closeKpGuide()">알겠어요</button>
@@ -1327,8 +1321,8 @@ function rowHost(ev,x){
 }
 
 /* ---------- 하객: 경조사 목록(앱 내 캘린더) ---------- */
-function evcardHTML(ev,slim,mg){ const c=cfg(ev); return `
-    <div class="evcard${slim?' slim':''}${mg?' mg':''}" onclick="${mg?`if(window._aeSquelch&&Date.now()-window._aeSquelch<400)return;`:''}openEvent('${ev.id}')">
+function evcardHTML(ev,slim){ const c=cfg(ev); return `
+    <div class="evcard${slim?' slim':''}" onclick="openEvent('${ev.id}')">
       <div class="ic">${c.icon}</div>
       <div class="info">
         <div class="nm">${esc(evNamePlain(ev))||'(이름 미입력)'}<span class="typ">${c.label}${ev.role==='host'?' · 내 행사':''}</span></div>
@@ -1418,7 +1412,30 @@ function addEventOnDate(ds,type){ // 달력에서 날짜 탭 → 참석할 경�
   S.ui.calSelDate=null; save(); render(); window.scrollTo(0,0);
   toast(selDateLabel(ds)+'로 채워뒀어요 — 정보를 입력하세요');
 }
-/* ---- 직접 추가: 달력 팝업에서 날짜 선택 → 전체 입력 폼 (본문 상시 달력 진입과 병행) ---- */
+/* ---- 직접 추가: 달력의 빈 날짜에서 → 입력 폼(날짜 프리필) ---- */
+/* ---- 주소 입력(주최자): 빈 칸을 누르면 직접 입력 / 지도앱에서 장소를 찾아 주소를 복사해 붙여넣기 — 길찾기와 같은 지도 URL ---- */
+const MAPS=[ ['네이버 지도', q=>q?'https://map.naver.com/p/search/'+q:'https://map.naver.com/'],
+             ['카카오맵',   q=>q?'https://map.kakao.com/link/search/'+q:'https://map.kakao.com/'],
+             ['구글 지도',  q=>q?'https://www.google.com/maps/search/?api=1&query='+q:'https://www.google.com/maps'] ];
+let _addrSkip=false, _addrReturn=false;
+function addrFocus(el){ if(_addrSkip){ _addrSkip=false; return; } if(el&&!el.value){ try{ el.blur(); }catch(e){} openAddrSheet(); } }
+function addrTypeIn(){ closeAddrSheet(); setTimeout(()=>{ const el=document.getElementById('ev_addr'); if(el){ _addrSkip=true; el.focus(); } },240); }
+function addrViaMap(i){ const ev=hostEvent(); const q=encodeURIComponent(((ev&&ev.venue)||'').trim()); const m=MAPS[i]; if(!m) return;
+  closeAddrSheet(); _addrReturn=true; openUrl(m[1](q)); toast('지도에서 주소를 복사해 돌아온 뒤 붙여넣으세요'); }
+addEventListener('visibilitychange',()=>{ if(document.visibilityState!=='visible'||!_addrReturn) return; _addrReturn=false;
+  const el=document.getElementById('ev_addr'); if(el&&!el.value){ _addrSkip=true; try{ el.focus(); }catch(e){} } }); // 지도앱에서 돌아오면 바로 붙여넣을 수 있게
+function openAddrSheet(){ const ev=hostEvent(); if(!ev) return;
+  let bg=document.getElementById('addrsheet'); if(!bg){ bg=document.createElement('div'); bg.id='addrsheet'; bg.className='sheet-bg'; bg.onclick=closeAddrSheet; document.body.appendChild(bg); }
+  bg.innerHTML=`<div class="sheet" onclick="event.stopPropagation()">
+    <div class="secthead" style="margin-bottom:12px"><div class="t" style="font-size:18px">주소 입력</div></div>
+    <div class="stack">
+      <button class="btn btn-primary" onclick="addrTypeIn()">✏️ 직접 입력</button>
+      ${MAPS.map((m,i)=>`<button class="btn btn-ghost" onclick="addrViaMap(${i})">📍 ${m[0]}에서 찾기</button>`).join('')}
+    </div>
+    <button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="closeAddrSheet()">닫기</button>
+  </div>`;
+  setTimeout(()=>bg.classList.add('show'),10); }
+function closeAddrSheet(){ const bg=document.getElementById('addrsheet'); if(!bg) return; bg.classList.remove('show'); setTimeout(()=>{ try{ bg.remove(); }catch(e){} },220); }
 /* 길찾기: 예식장·빈소를 지도앱으로 — 당일 최다 니즈 (100% 클라이언트 URL 스킴) */
 function openMapSheet(){ const ev=curEvent()||hostEvent(); if(!ev||!ev.venue){ toast('장소 정보가 없어요'); return; }
   const q=encodeURIComponent((ev.venue+' '+(ev.address||'')).trim());
@@ -1429,6 +1446,7 @@ function openMapSheet(){ const ev=curEvent()||hostEvent(); if(!ev||!ev.venue){ t
     <div class="stack">
       <button class="btn btn-ghost" onclick="openUrl('https://map.kakao.com/link/search/${q}')">카카오맵으로 찾기</button>
       <button class="btn btn-ghost" onclick="openUrl('https://map.naver.com/p/search/${q}')">네이버지도로 찾기</button>
+      <button class="btn btn-ghost" onclick="openUrl('https://www.google.com/maps/search/?api=1&query=${q}')">구글 지도로 찾기</button>
     </div>
     <button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="closeMapSheet()">닫기</button>
   </div>`;
@@ -1458,7 +1476,8 @@ function calendarHTML(){
           <span class="cic">${c.icon}</span><span class="cnm">${esc(evNamePlain(ev))||'(이름 미입력)'}</span>
           <span class="ctag">${c.label}</span><span class="cchev">›</span></div>`;}).join('')}</div>`;
     } else {
-      below=`<div class="calsel"><div class="calseltt">${selDateLabel(sel)} · 경조사 없음</div></div>`;
+      below=`<div class="calsel"><div class="calseltt">${selDateLabel(sel)} · 경조사 없음</div>
+        <div class="calevrow" onclick="addEventOnDate('${sel}','wedding')"><span class="cic">＋</span><span class="cnm">이 날짜에 추가</span><span class="cchev">›</span></div></div>`;
     }
   }
   return `<div class="card">
@@ -1932,7 +1951,7 @@ function openExternalBrowser(target){ const url=target||location.href; // 해시
     const i=url.indexOf('#'); const b=i<0?url:url.slice(0,i), h=i<0?'':url.slice(i);
     location.href=b+(b.includes('?')?'&':'?')+'openExternalBrowser=1'+h; return; }
   copy(url); toast('링크를 복사했어요 — 오른쪽 위 메뉴(⋯)의 "외부 브라우저로 열기"를 누르거나, Safari 주소창에 붙여넣어 여세요'); }
-const safeUrl=u=>(typeof u==='string' && /^https?:\/\//i.test(u.trim())) ? u.trim() : ''; // 초대 페이로드의 URL은 남이 만든 값 — intent:// 등 임의 스킴으로 외부 앱을 열지 못하게
+function safeUrl(u){ return (typeof u==='string' && /^https?:\/\//i.test(u.trim())) ? u.trim() : ''; } // 함수 선언이어야 부팅 load()→migrate()에서 호출 가능(const면 TDZ로 전체 상태가 seed로 초기화됨). 초대 페이로드의 URL은 남이 만든 값 — intent:// 등 임의 스킴으로 외부 앱을 열지 못하게
 function openUrl(u){ u=safeUrl(u); if(!u){ toast('열 수 없는 주소예요'); return; }
   let w=null; try{ w=window.open(u,'_blank'); }catch(e){} if(!w) location.href=u; } // 인앱은 window.open 무시 가능
 function dismissIosHint(){ if(S.meta) S.meta.iosHintOff=true; save(); render(); }
@@ -2571,15 +2590,10 @@ const RECO_TABLE={
     {label:'먼 친척', base:50000, close:50000},
     {label:'가까운 친척', base:150000, close:200000, low:true},
     {label:'직계가족', base:500000, close:500000, low:true},
-  ],
-  bday:[
-    {label:'직장·지인', no:30000, yes:50000, close:50000},
-    {label:'친구', no:30000, yes:70000, close:100000},
-    {label:'친척', no:50000, yes:70000, close:100000},
-    {label:'형제자매', no:100000, yes:150000, close:200000},
   ]
 };
-function recoState(){ if(!S.ui.reco) S.ui.reco={kind:'wedding', rel:2, attending:true, venue:'normal', close:false, ctxEventId:null}; return S.ui.reco; }
+function recoState(){ if(!S.ui.reco) S.ui.reco={kind:'wedding', rel:2, attending:true, venue:'normal', close:false, ctxEventId:null};
+  const r=S.ui.reco; if(!RECO_TABLE[r.kind]){ r.kind='wedding'; r.rel=2; } else if(!(r.rel>=0&&r.rel<RECO_TABLE[r.kind].length)) r.rel=0; return r; } // 옛 버전의 돌잔치(bday) 등 표에 없는 종류가 저장돼 있으면 결혼으로
 function recommend(){ const r=recoState(); const row=(RECO_TABLE[r.kind]||[])[r.rel]; if(!row) return {amount:50000};
   let amt;
   if(r.kind==='memorial'){ amt = r.close ? (row.close||row.base) : row.base; }
@@ -2599,7 +2613,7 @@ function recoApply(){ const r=recoState(); const {amount}=recommend();
       toast(won(amount)+'을 보낼 금액에 채워뒀어요 — 아래에서 보내세요'); return; } }
   copy(won(amount)); toast(won(amount)+' 복사 — 추천 금액'); }
 function recoView(){ const r=recoState(); const rows=RECO_TABLE[r.kind]; const res=recommend();
-  const kindL=r.kind==='memorial'?'조의금':r.kind==='bday'?'축하금':'축의금';
+  const kindL=r.kind==='memorial'?'조의금':'축의금';
   const tabs=[['wedding','💍 결혼'],['memorial','🕊️ 부고']];
   return `${r.ctxEventId?`<button class="backbtn" onclick="openEvent('${r.ctxEventId}')">‹ 돌아가기</button>`:`<button class="backbtn" onclick="setGuestTab('more')">‹ 더보기</button>`}
   <div class="listhead"><div class="t serif">경조사비 얼마?</div></div>
@@ -3361,6 +3375,7 @@ function backStep(){ // 한 단계 위로 (popstate·네이티브 뒤로가기 �
     else if(document.getElementById('paypop')) closePayPop();   // 송금 복귀 확인 시트 — pendingPay는 유지되어 명부 카드의 [기록하기]가 폴백
     else if(document.getElementById('addpop')) closeAddSheet(); // 경조사 추가 선택 시트
     else if(document.getElementById('kpguide')) closeKpGuide();  // 카카오페이 링크 안내
+    else if(document.getElementById('addrsheet')) closeAddrSheet(); // 주소 입력 방법 시트
     else if(document.getElementById('paysheet')) declinePass();
     else if(typeof TUT!=='undefined'&&TUT.on) endTutorial(false);
     else if(S.ui.tab==='host'){ if(S.ui.hostSub==='thanks'){ backFromHost2(); } else { backFromHost(); } }
