@@ -454,7 +454,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v108'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v109'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -1272,15 +1272,16 @@ function hostView(){
 }
 function exportXlsxGate(){ const ev=hostEvent(); if(ev&&ev.type==='memorial'){ exportLedgerXLSX(); return; } withPass('xlsx',exportLedgerXLSX); } // 부고는 결제 UI 금지 — 게이트 없이 바로
 function addHostAcct(){ const ev=hostEvent(); if(!ev) return; if((ev.accounts||[]).length>=6){ toast('계좌는 최대 6개까지예요'); return; }
-  own(ev); ev.accounts.push({label:'혼주측', bank:'국민', number:'', holder:''}); save(); render(); }
+  own(ev); ev.accounts.push({label:ev.type==='memorial'?'상주측':'혼주측', bank:'국민', number:'', holder:''}); save(); render(); }
 function delHostAcct(i){ const ev=hostEvent(); if(!ev||!ev.accounts[i]) return;
   if(ev.accounts[i].number && !confirm(`'${ev.accounts[i].label}' 계좌를 삭제할까요?`)) return;
   own(ev); ev.accounts.splice(i,1); save(); render(); }
 function acctEditor(i,a){
+  const mem=(hostEvent()||{}).type==='memorial'; // 부고는 고정 계좌가 상주측 1개 → 두 번째부터 삭제 가능
   return `<div style="margin-top:10px">
     <div class="row" style="align-items:center">
-      <input style="max-width:46%;font-weight:600" value="${esc(a.label)}" placeholder="라벨 (예: 혼주측)" onchange="updAcct(${i},'label',this.value)">
-      ${i>=2?`<button class="btn btn-ghost btn-sm" style="max-width:70px" onclick="delHostAcct(${i})">삭제</button>`:''}
+      <input style="max-width:46%;font-weight:600" value="${esc(a.label)}" placeholder="라벨 (예: ${mem?'상주측':'혼주측'})" onchange="updAcct(${i},'label',this.value)">
+      ${i>=(mem?1:2)?`<button class="btn btn-ghost btn-sm" style="max-width:70px" onclick="delHostAcct(${i})">삭제</button>`:''}
     </div>
     <div class="row" style="margin-top:5px">
       <div style="max-width:40%"><select onchange="updAcct(${i},'bank',this.value)">
