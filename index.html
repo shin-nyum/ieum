@@ -276,6 +276,7 @@
   .stat .v.big{font-size:clamp(12px,3.7vw,17.5px)}
   .stat .k{font-size:12px;color:var(--muted);margin-top:2px}
   .seg2{display:flex;background:var(--seg-bg);border-radius:9px;padding:3px;margin:2px 0 4px}
+  .acct-to{font-size:15px;color:var(--muted);margin:6px 2px 2px} .acct-to b{color:var(--ink);font-size:16.5px}
   .seg2 button{flex:1;border:0;background:transparent;padding:8px;border-radius:7px;
     font-size:14px;font-weight:600;color:var(--muted);cursor:pointer}
   .seg2 button.on{background:var(--card);color:var(--primary-d);box-shadow:0 1px 3px rgba(0,0,0,.08)}
@@ -449,7 +450,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v113'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v114'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -1007,7 +1008,7 @@ function payViaApp(method){ const ev=curEvent(); if(!ev)return;
   S.ui.guestSession.name=nm;
   // 토스·카카오페이 딥링크는 취소·미완료가 흔함 → 기록은 복귀 후 '보냈어요' 확인을 받고 확정 (가짜 송금 기록 방지)
   const deferRecord=(method==='toss')||(method==='kakao'&&acc.kakaopay)||(method==='account'); // 계좌이체도 뱅킹앱에 다녀온 뒤 확인
-  if(deferRecord){ S.ui.guestSession.pendingPay={evId:ev.id, name:nm, amt, method, at:Date.now()}; S.ui.guestSession.draftAmt=null; save(); }
+  if(deferRecord){ S.ui.guestSession.pendingPay={evId:ev.id, name:nm, amt, method, at:Date.now()}; S.ui.guestSession.draftAmt=null; save(); try{ nativeNotiSync(); }catch(e){} } // pendingPay는 ui 영역이라 save()의 변경 감지(events·people·settings)에 안 잡힘 → 리마인드 예약을 직접 갱신
   else {
   let x=ev.guests.find(g=>g.name===nm); if(!x){x=mkGuest(nm,ev.myRelation||'지인',S.ui.guestSession.acctIdx||0);x.unregistered=true;ev.guests.push(x);}
   x.pay={amount:amt, source:method==='cash'?'manual':'app', method};
@@ -1034,7 +1035,7 @@ function payViaApp(method){ const ev=curEvent(); if(!ev)return;
   else { copyAcct(acc); toast('계좌를 복사했어요 — 뱅킹앱에서 보내고 돌아오면 알려드릴게요'); }
   render(); if(!deferRecord) tiePop(ev); else payWatchReturn(); } // 앱에 다녀온 뒤 복귀하면 확인 팝업 → 기록 + 알리기
 function confirmPendingPay(yes,notify){ const pp=S.ui.guestSession.pendingPay; if(!pp) return;
-  S.ui.guestSession.pendingPay=null;
+  S.ui.guestSession.pendingPay=null; try{ nativeNotiSync(); }catch(e){} // 대기 송금 리마인드(pp0/pp1) 취소
   const ev=S.events.find(e=>e.id===pp.evId);
   if(!yes||!ev){ save(); render(); if(!yes) toast('기록하지 않았어요 — 나중에 보내면 다시 눌러주세요'); return; }
   own(ev);
@@ -1517,6 +1518,7 @@ function guestDetail(){
   <div class="card">
     <h3>${ev.type==='memorial'?`${RIBBON} 마음 전하기 (${c.money})`:`💸 마음 전하기 (${c.money})`}</h3>
     ${accts.length>1?`<div class="seg2">${accts.map((a,i)=>`<button class="${i===idx?'on':''}" onclick="setAcct(${i})">${esc(a.label)}</button>`).join('')}</div>`:''}
+    ${acc?`<div class="acct-to">받는 분 <b>${esc(acc.holder||acc.label||'')}</b>${acc.bank?` · ${esc(acc.bank)}`:''}</div>`:``}
     ${acc?``
       :`<div class="note" style="margin-top:8px">받을 계좌가 아직 없어요 — 아래에 입력해 주세요.</div>
     <details id="gacct" style="margin-top:8px" ${S.ui.gacctOpen?'open':''} ontoggle="S.ui.gacctOpen=this.open">
@@ -2523,6 +2525,14 @@ async function fireDueNotis(){ if(!S.ui.noti||!('Notification' in window)||Notif
       const reciTxt=r&&r.recvMax>0?(ev.type==='memorial'?` — 🌱 받은 ${won(r.recvMax)}, 마음을 돌려드릴 차례`:` — 🌱 받은 ${won(r.recvMax)}, 보답 잊지 마세요`):'';
       notiShow(`${evNamePlain(ev)} ${cfg(ev).label} ${dday(ev)}`, {body:`${dateText(ev)} · ${ev.venue||''}`+reciTxt, icon:'icon-192.png', tag:'ieum-due-'+ev.id+'-'+days});
       done[key]=Date.now(); dirty=true; }catch(e){} });
+  // 명부 기록 리마인드(웹): 행사가 지났는데 기록이 없는 하객 행사 — 행사당 1회, 지난 14일 내
+  S.events.forEach(ev=>{ if(ev.demo||ev.tut||ev.draft||ev.role==='host'||!ev.date||!(ev.partyA||'').trim()||guestRecorded(ev)) return;
+    const d=new Date(ev.date+'T00:00'); const days=Math.round((d-t)/86400000); if(days>0||days<-14) return;
+    if(days===0&&new Date().getHours()<20) return; // 당일은 저녁부터
+    const key=ev.id+':rec'; if(done[key]) return;
+    try{ const m=dueMessageJS(ev,'rec0'); notiShow(m.title,{body:m.body,icon:'icon-192.png',tag:'ieum-rec-'+ev.id}); done[key]=Date.now(); dirty=true; }catch(e){} });
+  try{ const pp=S.ui.guestSession&&S.ui.guestSession.pendingPay; const ev=pp&&S.events.find(e=>e.id===pp.evId);
+    if(ev&&!guestRecorded(ev)&&Date.now()-pp.at>30*60000&&!done['pp:'+pp.at]){ const m=dueMessageJS(ev,'pp0'); notiShow(m.title,{body:m.body,icon:'icon-192.png',tag:'ieum-pp-'+ev.id}); done['pp:'+pp.at]=Date.now(); dirty=true; } }catch(e){}
   if(dirty){ try{ idbSet('notified', JSON.stringify(done)); }catch(e){} } }
 
 /* ======================= 연간 경조사비 리포트 (공유) ======================= */
@@ -2842,7 +2852,7 @@ function hostUrlChanged(v){ const ev=own(hostEvent()); if(!ev) return;
   const prev=(ev.externalUrl||'').trim(); ev.externalUrl=(v||'').trim(); save();
   const url=(ev.externalUrl.match(/https?:\/\/[^\s]+/)||[])[0];
   if(!url || url===prev){ render(); return; } // 링크 제거·동일 링크 재입력은 조용히 저장만
-  if(confirm(`모바일 ${cfg(ev).doc}에서 정보를 가져와 빈칸을 채울까요?`)){
+  if(confirm(`모바일 ${cfg(ev).doc}의 정보로 채울까요?\n(이름·일시·장소·계좌 등 이미 입력한 값은 ${cfg(ev).doc} 정보로 바뀝니다)`)){
     hostFetchFromUrl(url);
   } else { render(); } }
 async function hostFetchFromUrl(url){ if(_hostFetching) return; _hostFetching=true;
@@ -2852,29 +2862,29 @@ async function hostFetchFromUrl(url){ if(_hostFetching) return; _hostFetching=tr
     const ev=S.events.find(e=>e.id===evId); if(!ev) return; // 화면을 떠났으면 중단
     if(!p){ toast('청첩장 페이지를 읽지 못했어요 — 직접 입력해 주세요 (링크는 저장됨)'); return; }
     own(ev);
-    const filled=[];
+    const filled=[]; // 청첩장에서 찾은 값은 기존 입력을 대체 — 못 찾은 항목만 기존 값 유지 (사용자 요청: 장소·계좌 초기화 후 채움)
     const names=(p.names||'').split(/[♥❤♡·]|그리고/).map(s=>s.trim()).filter(Boolean);
-    if(!ev.partyA&&names[0]){ ev.partyA=names[0]; filled.push('이름'); }
-    if(!ev.partyB&&names[1]){ ev.partyB=names[1]; if(!filled.includes('이름')) filled.push('이름'); }
-    if(!ev.date&&p.date){ ev.date=p.date; if(p.time) ev.time=p.time; filled.push('날짜'); } // 시간은 날짜와 세트로만 (기본값 오염 방지)
-    if(!ev.venue&&p.venue){ // og:description 통짜가 올 수 있어 날짜·요일·시간 조각은 걷어냄
+    if(names[0]&&names[0]!==ev.partyA){ ev.partyA=names[0]; filled.push('이름'); }
+    if(names[1]&&names[1]!==ev.partyB){ ev.partyB=names[1]; if(!filled.includes('이름')) filled.push('이름'); }
+    if(p.date&&(p.date!==ev.date||(p.time&&p.time!==ev.time))){ ev.date=p.date; if(p.time) ev.time=p.time; filled.push('날짜'); } // 시간은 날짜와 세트로만 (기본값 오염 방지)
+    if(p.venue){ // og:description 통짜가 올 수 있어 날짜·요일·시간 조각은 걷어냄
       const v=p.venue.replace(/20\d{2}\s*[년.\-\/]\s*\d{1,2}\s*[월.\-\/]\s*\d{1,2}\s*일?/g,'')
         .replace(/\(?[월화수목금토일]\s*요일\)?|\([월화수목금토일]\)/g,'')
         .replace(/(오전|오후)\s*\d{1,2}\s*시\s*(\d{1,2}\s*분)?|\d{1,2}\s*:\s*\d{2}/g,'')
         .replace(/\s{2,}/g,' ').trim();
-      if(v){ ev.venue=v; filled.push('장소'); } }
-    if(!ev.address&&p.address){ ev.address=p.address; filled.push('주소'); }
-    if(!(ev.message||'').trim()&&p.message){ ev.message=p.message; filled.push('인사말'); }
-    if(p.img&&!ev.shareImg){ ev.shareImg=p.img; filled.push('공유 썸네일'); }
-    if(p.accounts&&p.accounts.length){ let acctN=0;
-      p.accounts.forEach(pa=>{ // 같은 라벨의 빈 슬롯 우선 → 아무 빈 슬롯 → 슬롯 부족 시 새 행 추가(최대 6) — 채워진 계좌는 불변
-        let slot=ev.accounts.find(a=>a.label===pa.label&&!a.number) || ev.accounts.find(a=>!a.number);
-        if(!slot&&ev.accounts.length<6){ slot={label:pa.label||'혼주측',bank:'',number:'',holder:''}; ev.accounts.push(slot); }
-        if(slot){ if(pa.label) slot.label=pa.label; slot.bank=pa.bank; slot.number=pa.number; if(pa.holder) slot.holder=pa.holder; acctN++; } }); // 빈 슬롯은 라벨도 검출값으로(신랑측 아버지 계좌가 '신부측' 슬롯에 들어가는 것 방지)
-      if(acctN) filled.push(`계좌 ${acctN}개`); }
+      if(v&&v!==ev.venue){ ev.venue=v; filled.push('장소'); } }
+    if(p.address&&p.address!==ev.address){ ev.address=p.address; filled.push('주소'); }
+    if(p.message&&p.message!==(ev.message||'')){ ev.message=p.message; filled.push('인사말'); }
+    if(p.img&&p.img!==ev.shareImg){ ev.shareImg=p.img; filled.push('공유 썸네일'); }
+    if(p.accounts&&p.accounts.length){ // 계좌 목록은 통째로 교체 — 같은 번호의 기존 계좌에 있던 카카오페이 링크만 이어받음
+      const digits=n=>String(n||'').replace(/\D/g,'');
+      const old=ev.accounts||[];
+      ev.accounts=p.accounts.slice(0,6).map((pa,i)=>{ const prev=old.find(a=>a.number&&digits(a.number)===digits(pa.number));
+        return {label:pa.label||(i===0?'신랑측':i===1?'신부측':'혼주측'), bank:pa.bank||'', number:pa.number, holder:pa.holder||'', ...(prev&&prev.kakaopay?{kakaopay:prev.kakaopay}:{})}; });
+      hostFoldSet('acct',true); filled.push(`계좌 ${ev.accounts.length}개`); }
     save();
     if(filled.length){ hostFoldSet('info',true); $('#ddayTop').textContent=dday(ev);
-      toast(`청첩장에서 ${filled.join('·')}를 채웠어요 — 행사 정보에서 확인해 주세요`); }
+      toast(`${cfg(ev).doc} 정보로 ${filled.join('·')}를 채웠어요 — 행사 정보에서 확인해 주세요`); }
     else toast('페이지에서 새 정보를 찾지 못했어요 — 직접 입력해 주세요');
   } finally { _hostFetching=false; render(); } }
 
@@ -3273,18 +3283,31 @@ function dueMessageJS(ev,days){ const mem=ev.type==='memorial';
   if(days===7){ if(mem) return null; return {title:`일주일 뒤, ${nm}님의 ${label}이에요`, body:when+' — 마음을 미리 준비해 보세요'}; }
   if(days===1) return mem?{title:`${nm}님 부고 — 내일 발인이에요`,body:when}:{title:`내일, ${nm}님의 ${label}이에요`,body:when+' — 마음을 준비해 주세요'};
   if(days===0) return mem?{title:`${nm}님 부고 — 오늘 발인이에요`,body:when}:{title:`오늘, ${nm}님의 ${label}이에요`,body:when};
+  if(days==='rec0'||days==='rec1'){ const money=mem?'조의금':'축의금'; // 명부 기록 리마인드 (하객, 미기록)
+    return {title:`${nm}님${mem?'':' '+label} ${money}, 명부에 기록하셨나요?`, body:days==='rec0'?`보낸 마음은 [${money} 명부에 기록하기]를 눌러야 주최자 장부와 내 품앗이 가계부에 남아요`:`아직 기록 전이에요 — 이음을 열고 한 번만 눌러 주세요 (현금으로 냈다면 '현금 전달'로)`}; }
+  if(days==='pp0'||days==='pp1') return {title:`${nm}님께 보낸 송금, 명부에 기록하셨나요?`, body:days==='pp0'?'송금을 마쳤다면 이음을 열고 [명부에 기록하기]를 눌러 주세요':'기록이 없으면 주최자 장부에도, 내 가계부에도 남지 않아요'};
   if(days===-1){ if(ev.role!=='host') return null;
     return mem?{title:'조문해 주신 분들께 감사 인사를 전할 차례예요',body:'이음의 [답례 인사 준비하기]에서 문구와 사진을 준비할 수 있어요'}
               :{title:'어제 함께해 주신 분들께 감사 인사를 보낼 차례예요',body:'이음의 [감사 인사 준비하기]에서 한 번에 준비할 수 있어요'}; }
   return null; }
 function nativeNotiId(evId,days){ let h=2166136261; const s=String(evId)+':'+days; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0)%2000000000+1; }
-function nativeNotiPlan(now,events){ // 순수 함수(테스트용): D-7·D-1·D-0·D+1 09:00, 미래 60일 내, 가까운 순 60건
+function guestRecorded(ev){ return !!(ev&&(ev.myGift>0||(ev.guests||[]).some(g=>g&&g.pay&&g.pay.amount!=null))); } // 하객 행사에 내 기록이 있는가
+function nativeNotiPlan(now,events,pending){ // 순수 함수(테스트용): D-7·D-1·D-0·D+1 09:00 + 명부 기록 리마인드(당일 20:00·다음날 10:00, 송금 앱 복귀 미확인 30분·3시간 뒤), 미래 60일 내, 가까운 순 60건
   const t=now||new Date(); const out=[];
   (events||S.events).forEach(ev=>{ if(ev.demo||ev.tut||ev.draft||!ev.date||!(ev.partyA||'').trim()) return;
     [7,1,0,-1].forEach(days=>{ const m=dueMessageJS(ev,days); if(!m) return;
       const at=new Date(ev.date+'T09:00:00'); if(isNaN(at)) return; at.setDate(at.getDate()-days);
       if(at<=t||at-t>60*86400000) return;
-      out.push({id:nativeNotiId(ev.id,days), title:m.title, body:m.body, at, extra:{evId:ev.id,days}}); }); });
+      out.push({id:nativeNotiId(ev.id,days), title:m.title, body:m.body, at, extra:{evId:ev.id,days}}); });
+    if(ev.role!=='host'&&!guestRecorded(ev)){ // 명부 기록이 누락되면 핵심 기능을 못 쓴 것 — 행사 시간이 지난 뒤 두 번 리마인드
+      const evening=new Date(ev.date+'T20:00:00'); const late=(ev.time||'')>='18:00'; if(!isNaN(evening)){
+        const next=new Date(ev.date+'T10:00:00'); next.setDate(next.getDate()+1);
+        [['rec0',late?null:evening],['rec1',next]].forEach(([k,at])=>{ if(!at||at<=t||at-t>60*86400000) return; const m=dueMessageJS(ev,k); if(!m) return;
+          out.push({id:nativeNotiId(ev.id,k), title:m.title, body:m.body, at, extra:{evId:ev.id,days:k}}); }); } } });
+  const pp=pending===undefined?(typeof S!=='undefined'&&S.ui&&S.ui.guestSession&&S.ui.guestSession.pendingPay):pending; // 송금 앱에 다녀온 뒤 아직 확인 전
+  if(pp&&pp.evId&&pp.at){ const ev=(events||S.events).find(e=>e.id===pp.evId);
+    if(ev&&!guestRecorded(ev)){ [['pp0',30*60000],['pp1',3*3600000]].forEach(([k,ms])=>{ const at=new Date(pp.at+ms); if(at<=t) return; const m=dueMessageJS(ev,k); if(!m) return;
+      out.push({id:nativeNotiId(ev.id,k), title:m.title, body:m.body, at, extra:{evId:ev.id,days:k}}); }); } }
   out.sort((a,b)=>a.at-b.at); return out.slice(0,60); }
 let _nnT=null;
 function nativeNotiSync(){ if(!NATIVE) return; clearTimeout(_nnT); _nnT=setTimeout(async()=>{ try{
@@ -3296,11 +3319,11 @@ function nativeNotiSync(){ if(!NATIVE) return; clearTimeout(_nnT); _nnT=setTimeo
  }catch(e){} },800); }
 if(NATIVE){
   BG_NOTI=true;
-  nP('LocalNotifications','createChannel',{id:'ieum-due',name:'경조사 알림',description:'경조사 일주일 전·전날·당일 알림',importance:4,visibility:1}).catch(()=>{});
+  nP('LocalNotifications','createChannel',{id:'ieum-due',name:'경조사 알림',description:'경조사 일주일 전·전날·당일 알림, 명부 기록 리마인드',importance:4,visibility:1}).catch(()=>{});
   window.toggleNoti=function(){
     if(S.ui.noti){ S.ui.noti=false; save(); nativeNotiSync(); render(); toast('알림을 껐어요'); return; }
     nP('LocalNotifications','requestPermissions').then(p=>{
-      if(p&&p.display==='granted'){ S.ui.noti=true; save(); nativeNotiSync(); render(); toast('알림을 켰어요 — 일주일 전·전날·당일에 알려드려요'); }
+      if(p&&p.display==='granted'){ S.ui.noti=true; save(); nativeNotiSync(); render(); toast('알림을 켰어요 — 일주일 전·전날·당일, 명부 기록을 잊었을 때 알려드려요'); }
       else toast('알림 권한이 거부되었어요 — 휴대폰 설정 › 앱 › 이음에서 허용해 주세요'); }).catch(()=>toast('알림을 켤 수 없어요')); };
   window.notiShow=function(title,opts){ nP('LocalNotifications','schedule',{notifications:[{id:(Date.now()%1e9)+1,title,body:(opts&&opts.body)||'',channelId:'ieum-due',smallIcon:'ic_notification_icon',isExactNotification:false}]}).catch(()=>{}); };
   nOn('LocalNotifications','localNotificationActionPerformed',e=>{ try{ const x=e&&e.notification&&e.notification.extra; const id=x&&x.evId;

@@ -1,5 +1,5 @@
 // 네트워크 우선(network-first) — 온라인이면 항상 최신을 보여주고, 오프라인일 때만 캐시로 폴백
-const CACHE = 'ieum-v113';
+const CACHE = 'ieum-v114';
 const ASSETS = [
   './',
   './index.html',
@@ -77,6 +77,10 @@ async function checkDueEvents() {
     for (const ev of evs) {
       if (!ev || !ev.date || ev.demo || ev.tut || ev.draft || !(ev.partyA || '').trim()) continue; // 초안·무명 행사 제외
       const days = Math.round((new Date(ev.date + 'T00:00') - t0) / 86400000);
+      if (ev.role !== 'host' && days <= 0 && days >= -14 && !(days === 0 && now.getHours() < 20) // 명부 기록 리마인드(하객·미기록) — 행사당 1회
+          && !(ev.myGift > 0 || (ev.guests || []).some(g => g && g.pay && g.pay.amount != null)) && !done[ev.id + ':rec']) {
+        const mem = ev.type === 'memorial'; const nm = mem ? (ev.partyA || '') : (ev.partyA || '') + (ev.partyB ? '·' + ev.partyB : '');
+        toShow.push({ ev, days: 'rec', key: ev.id + ':rec', msg: { title: `${nm}님${mem ? '' : (ev.type === 'hwahon' ? ' 화혼' : ' 결혼식')} ${mem ? '조의금' : '축의금'}, 명부에 기록하셨나요?`, body: `보낸 마음은 [${mem ? '조의금' : '축의금'} 명부에 기록하기]를 눌러야 주최자 장부와 내 품앗이 가계부에 남아요` } }); }
       if (days !== 7 && days !== 1 && days !== 0 && days !== -1) continue;
       const key = ev.id + ':' + ev.date + ':' + days;
       if (done[key]) continue;
