@@ -450,7 +450,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v116'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v117'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -1228,9 +1228,9 @@ function hostView(){
     <div class="seg2">
       ${['wedding','hwahon','memorial'].map(t=>`<button class="${ev.type===t?'on':''}" onclick="setType('${t}')">${TYPES[t].icon} ${TYPES[t].label}</button>`).join('')}
     </div>
-
-
-
+    <label>모바일 ${c.doc} 링크 추가 (선택)</label>
+    <input placeholder="https://..." value="${esc(ev.externalUrl)}" onchange="hostUrlChanged(this.value)">
+    ${_hostFetching?`<p class="lblnote">⏳ 청첩장 정보를 가져오는 중…</p>`:(ev.externalUrl?`<p class="lblnote">✓ 연결됨</p>`:'')}
     <div class="row" style="margin-top:8px">
       <div><label>${c.nameA}</label><input value="${esc(ev.partyA)}" onchange="updEv('partyA',this.value)"></div>
       ${c.counts||ev.partyB?`<div><label>${c.nameB}</label><input value="${esc(ev.partyB)}" onchange="updEv('partyB',this.value)"></div>`:`<div><label>${c.nameB}</label><input value="${esc(ev.partyB)}" placeholder="(선택)" onchange="updEv('partyB',this.value)"></div>`}
@@ -1256,10 +1256,7 @@ function hostView(){
   <div class="card">
     <h3>📨 하객에게 보내기</h3>
     ${infoDone?'':`<div class="note" style="margin-top:8px">위의 <b>행사 정보</b>(이름·날짜)를 먼저 입력하면 보낼 수 있어요.</div>`}
-    <label style="margin-top:12px">모바일 ${c.doc} 링크 추가 (선택)</label>
-    <input placeholder="https://..." value="${esc(ev.externalUrl)}" onchange="hostUrlChanged(this.value)">
-    ${_hostFetching?`<p class="lblnote">⏳ 청첩장 정보를 가져오는 중…</p>`:(ev.externalUrl?`<p class="lblnote">✓ 연결됨</p>`:'')}
-    ${ev.externalUrl&&ev.shareImg?`<img src="${esc(ev.shareImg)}" alt="" style="width:76px;height:95px;object-fit:cover;border-radius:10px;border:1px solid var(--line);display:block;margin:4px 0 2px" onerror="this.style.display='none'">`:''}
+    ${ev.externalUrl&&ev.shareImg?`<img src="${esc(ev.shareImg)}" alt="" style="width:76px;height:95px;object-fit:cover;border-radius:10px;border:1px solid var(--line);display:block;margin:10px 0 2px" onerror="this.style.display='none'">`:''}
     <div class="stack" style="margin-top:10px">
       <button class="btn btn-kakao" onclick="shareFromHost('kakao')">카카오톡으로 보내기</button>
       <button class="btn btn-ghost" onclick="shareFromHost('sms')">문자로 보내기</button>
