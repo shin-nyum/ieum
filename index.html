@@ -450,7 +450,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v115'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v116'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -1519,7 +1519,7 @@ function guestDetail(){
   <div class="card">
     <h3>${ev.type==='memorial'?`${RIBBON} 마음 전하기 (${c.money})`:`💸 마음 전하기 (${c.money})`}</h3>
     ${accts.length>1?`<div class="seg2">${accts.map((a,i)=>`<button class="${i===idx?'on':''}" onclick="setAcct(${i})">${esc(a.label)}</button>`).join('')}</div>`:''}
-    ${acc?`<div class="acct-to">받는 분 <b>${esc(acc.holder||acc.label||'')}</b>${acc.bank?` · ${esc(acc.bank)}`:''}</div>`:``}
+    ${acc?`<div class="acct-to">받는 분 <b>${esc((acc.holder||'').trim()||(acc.label||'').trim())}</b>${(acc.bank||'').trim()?` · ${esc(acc.bank.trim())}`:''}</div>`:``}
     ${acc?``
       :`<div class="note" style="margin-top:8px">받을 계좌가 아직 없어요 — 아래에 입력해 주세요.</div>
     <details id="gacct" style="margin-top:8px" ${S.ui.gacctOpen?'open':''} ontoggle="S.ui.gacctOpen=this.open">
