@@ -422,6 +422,110 @@
   .perm-t{flex:1;min-width:0;font-size:16.5px;line-height:1.4;color:var(--ink)}
   .perm-d{font-size:13.5px;color:var(--muted);margin-top:2px}
   .perm-row .btn{width:auto;flex:none}
+  /* ===== v120 테마 '뚜렷하게' (2026-09-18 사용자 결정: 시안 B안 + 로고만 A안) =====
+     크림·그라데이션·그림자·파스텔을 걷어내고 중립 회색 배경·검정 잉크·굵은 글자·실선 카드(카카오 결). 색은 전부 변수 → 다크 모드는 위 dark 블록이 이김. */
+  :root{--bg:#f2f2f2;--card:#ffffff;--ink:#191919;--ink2:#444444;--muted:#5f5f5f;--line:#e0dedb;--line2:#c9c9c9;
+    --primary:#7d5540;--primary-d:#5e3e2d;--gold-text:#6a4e1c;--ok:#2f7a45;--danger:#b23b2e;--warn:#9a5a1a;
+    --tint:#f7f7f7;--tint2:#f5f5f5;--field:#ffffff;--seg-bg:#ebebeb;--ic-bg:#f0efec;--dd-bg:#eee6d6;--note-bg:#f6f6f6;--radius:10px;--shadow:none}
+  html[data-theme="dark"]{--ink2:#cfc6ba;--line2:#4a433b;--shadow:none}
+  html,body{background:#e4e4e4;font-size:17.5px;letter-spacing:0}
+  .phone{box-shadow:none}
+  header{background:var(--card);backdrop-filter:none;border-bottom:1px solid var(--line)}
+  .serif,.caltitle,.hh-nm,.hero .names{font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic","맑은 고딕",sans-serif;letter-spacing:-.01em}
+  .serif{font-weight:800}
+  .listhead .t{font-size:22px;font-weight:800;letter-spacing:-.01em}
+  .listhead .c{font-size:13.5px;color:var(--ink2);font-weight:600}
+  .card,details.fold,.evcard,.land-card,.hero,.homehero,.card-preview,.paycat[open]{box-shadow:none}
+  .card,.evcard,details.fold,.land-card,.hero,.homehero{border-radius:10px}
+  .hero{background:var(--card);border:1px solid var(--line)}
+  .hero .lead{font-size:13px;letter-spacing:.06em;text-transform:none;font-weight:700;color:var(--gold-text)}
+  .hero .names{font-weight:800}
+  .hero .when,.hh-dt{color:var(--ink2);font-size:15.5px;font-weight:500}
+  .hero .hero-msg{color:var(--ink2);font-size:15.5px}
+  .homehero{background:var(--card);border:1.5px solid #cdb27c}
+  .hh-nm{font-weight:800}
+  .hh-dd,.dday-pill{background:var(--ink);color:var(--card);font-weight:700;letter-spacing:0;font-size:14px;padding:6px 12px;border-radius:6px}
+  .card h3{font-size:17px;font-weight:700}
+  .card .sub{font-size:13.5px;color:var(--ink2)}
+  label{font-size:14px;color:var(--ink2);font-weight:600}
+  input,select,textarea{border:1.5px solid var(--line2);border-radius:8px;padding:13px 12px;font-size:17px;background:var(--field)}
+  .btn{font-size:17.5px;font-weight:700;padding:16px;border-radius:8px}
+  .btn-sm{padding:10px 12px;font-size:15px;border-radius:8px}
+  .btn-ghost{background:var(--seg-bg);border:0;color:var(--ink)}
+  .btn-line{border-width:1.5px;font-weight:700}
+  .seg,.seg2{background:var(--seg-bg);border-radius:8px}
+  .seg button,.seg2 button{font-weight:600;font-size:15px;border-radius:6px}
+  .seg button.on,.seg2 button.on{background:var(--primary);color:#fff;box-shadow:none;font-weight:700}
+  .chip{font-weight:600;border-width:1.5px;border-radius:8px}
+  .pill,.bal,.pchip{font-size:13px;font-weight:700;padding:4px 10px;border-radius:6px}
+  .pill-ok,.bal.pos{background:#d7eedd;color:var(--ok)}
+  .pill-no,.bal.neg{background:#f8d9d4;color:var(--danger)}
+  .pill-wait{background:#f2e6cf;color:var(--warn)}
+  .pill-gold,.pchip{background:#f0e3c6;color:var(--gold-text)}
+  .pill-app{background:#d8e6f6;color:#24507f}
+  .pill-cash{background:#efe4cc;color:#5a4416}
+  .bal.even{background:var(--seg-bg);color:var(--ink2)}
+  .stats{gap:9px}
+  .stat{background:var(--card);border:1.5px solid var(--line);border-radius:8px}
+  .stat .v{font-weight:800}
+  .stat .k{font-size:13px;font-weight:600;color:var(--ink2)}
+  .evcard .ic{border-radius:10px;background:var(--ic-bg)}
+  .evcard .nm{font-size:17px;font-weight:700}
+  .evcard .dt{font-size:13.5px;color:var(--ink2)}
+  .evcard .dd{font-weight:800;background:var(--dd-bg);color:var(--primary-d);border-radius:6px}
+  .evcard .chev,.more-item .mi-go,.calevrow .cchev{color:#8f887d}
+  .evcard .ic,.rm-ic,.more-item .mi-ic,.lc-ic,.hh-ic,.reco-cta .rc-ic,.calevrow .cic{filter:none}
+  .badge-add{border:1.5px dashed #a98b73;background:var(--card);font-weight:700;font-size:15.5px;padding:13px;border-radius:8px}
+  .paycat{border:1.5px solid var(--line);background:var(--card);border-radius:8px}
+  .paycat>summary b{font-size:16.5px;font-weight:700}
+  .paycat>summary small{font-size:13.5px;color:var(--ink2)}
+  .paycat[open]{border-color:var(--primary)}
+  .acct{background:var(--card);border:1.5px solid var(--line);border-radius:8px}
+  .acct .b{font-size:15.5px;font-weight:600}
+  .acct-to{color:var(--ink2)}.acct-to b{font-size:17px;font-weight:700}
+  .grow{background:var(--card);border:1.5px solid var(--line);border-radius:8px}
+  .grow .nm{font-weight:700}
+  .grow .meta{color:var(--ink2);font-size:13px}
+  .minibtn{border:1.5px solid var(--line2);font-weight:700;font-size:13.5px;padding:8px 10px}
+  .note{font-size:13.5px;color:var(--ink2);border-radius:8px}
+  .tienote{border-radius:8px;border-width:1.5px}
+  .ckrow,.payopt,.reco-result{border-radius:8px}
+  .calevrow{background:var(--card);border:1.5px solid var(--line);border-radius:8px}
+  .more-item .mi-t{font-size:17px}
+  .more-item .mi-d{font-size:13.5px;color:var(--ink2)}
+  .mi-sec{font-size:12px;font-weight:700;color:var(--ink2);letter-spacing:.06em}
+  .caltitle{font-size:17.5px;font-weight:800}
+  .calday{font-size:15.5px;font-weight:600;border-radius:6px}
+  .calday.ev{background:#f1e8d9;font-weight:800}
+  .caldow{font-size:12.5px;font-weight:700}
+  .calnav{border-width:1.5px}
+  .land-desc{color:var(--ink2);font-size:15.5px}
+  .land-card{border:1.5px solid var(--line);padding:20px}
+  .land-card.primary{border:2px solid var(--primary);background:var(--card)}
+  .lc-t{font-size:22px;font-weight:800}
+  .lc-d{font-size:15px;color:var(--ink2)}
+  .lc-go{font-size:15.5px;font-weight:700}
+  .bnav{background:var(--card);backdrop-filter:none;border-top:1px solid var(--line);padding:8px 4px calc(8px + env(safe-area-inset-bottom))}
+  .bnav button{font-size:13px;font-weight:800;color:var(--muted)}
+  .bnav button .bn-ic{opacity:1;stroke-width:1.9;width:24px;height:24px}
+  .bnav button.on{color:var(--ink)}
+  .bnav button.on .bn-ic{stroke-width:2.6}
+  .footer,.ftlink{color:#6f6f6f;font-size:11.5px}
+  .toast{background:#222;backdrop-filter:none;border-radius:8px;font-size:15px;font-weight:600;box-shadow:none}
+  .sheet{border-radius:14px 14px 0 0;box-shadow:none}
+  .secthead .t{font-size:16px;font-weight:800}
+  .secthead .c{font-size:13px;color:var(--ink2)}
+  .backbtn{font-size:15.5px}
+  .lblnote{font-size:12px;color:var(--muted)}
+  .reco-cta{background:var(--card);border:1.5px solid var(--primary)}
+  .quote{color:var(--ink2)}
+  .tutbox{border-radius:12px}
+  /* 로고 예외(A안): 상단 브랜드 '이음'과 첫 화면 로고 블록은 세리프·모카·자간 유지 */
+  .brand b,.land-logo{font-family:"Gowun Batang","Nanum Myeongjo","Apple SD Gothic Neo",Georgia,serif;letter-spacing:.08em;color:var(--primary-d)}
+  .brand b{font-size:21px;font-weight:800}
+  .brand .slogan{letter-spacing:.08em;color:var(--gold-text);font-weight:600}
+  .land-logo{font-weight:800}
+  .land-slogan{font-weight:700;letter-spacing:.2em;color:var(--gold-text);font-size:14.5px}
 </style>
 </head>
 <body>
@@ -457,7 +561,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v119'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v120'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -3262,7 +3366,7 @@ function nOn(p,e,cb){ try{ if(NATIVE) Capacitor.addListener(p,e,cb); }catch(_){}
 const NFILE='ieum/state.json', NPREV='ieum/prev.json';
 let NINFO={versionName:'',versionCode:0,serverBasePath:'',rolledBack:false};
 function fillFooter(){ const el=document.getElementById('ftver'); if(el) el.textContent='이음 · 마음을 잇다 · '+(NATIVE?'앱 '+(NINFO.versionName||'')+' · 웹 '+APP_BUILD:'웹 '+APP_BUILD); } fillFooter();
-const WEB_STUB='<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>이음</title><style>html,body{margin:0;background:#f3efe8}</style><script>location.replace("/ieum/index.html"+location.search+location.hash)<\/script></head><body></body></html>'; // <\/script>: HTML 파서가 스크립트 블록을 조기 종료하지 않도록
+const WEB_STUB='<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>이음</title><style>html,body{margin:0;background:#f2f2f2}</style><script>location.replace("/ieum/index.html"+location.search+location.hash)<\/script></head><body></body></html>'; // <\/script>: HTML 파서가 스크립트 블록을 조기 종료하지 않도록
 
 /* ---- ① 앱 내부 파일 미러: save()마다 디바운스 기록, 종료 시 즉시. 부팅 시 비어 있으면 여기서 복구 ---- */
 let _nmT=null,_nmLast=null;
