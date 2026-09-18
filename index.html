@@ -450,7 +450,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v117'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v118'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -3369,9 +3369,10 @@ if(NATIVE){ nOn('App','backButton',d=>{ try{
 async function checkWebUpdate(force){ if(!NATIVE||!RELAY.url) return 'skip';
   const now=Date.now(); let last=0; try{ last=+localStorage.getItem('ieum_ota_at')||0; }catch(_){}
   if(!force&&now-last<6*3600e3) return 'throttled';
-  try{ localStorage.setItem('ieum_ota_at',String(now)); }catch(_){}
-  let man=null; try{ const r=await fetch(RELAY.url+'/web?p=bundle.json&t='+now,{cache:'no-store'}); if(!r.ok) return 'nomanifest'; man=await r.json(); }catch(e){ return 'offline'; }
+  const mark=t=>{ try{ localStorage.setItem('ieum_ota_at',String(t)); }catch(_){} };
+  let man=null; try{ const r=await fetch(RELAY.url+'/web?p=bundle.json&t='+now,{cache:'no-store'}); if(!r.ok) return 'nomanifest'; man=await r.json(); }catch(e){ return 'offline'; } // 조회 실패엔 스로틀 없음 — 다음 복귀 때 바로 재시도 (첫 실행 직후 네트워크 미준비로 6시간 옛 버전에 머물던 것)
   if(!man||!man.build||!Array.isArray(man.files)||!/^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$/.test(man.build)||man.build.includes('..')) return 'badmanifest';
+  mark(now);
   if(man.build===APP_BUILD) return 'latest';
   let bad=''; try{ bad=localStorage.getItem('ieum_ota_bad')||''; }catch(_){} if(bad===man.build) return 'bad';
   let ready=''; try{ ready=localStorage.getItem('ieum_ota_ready')||''; }catch(_){}
@@ -3386,10 +3387,10 @@ async function checkWebUpdate(force){ if(!NATIVE||!RELAY.url) return 'skip';
     await nP('Filesystem','writeFile',{path:dir+'/index.html',data:WEB_STUB,directory:'DATA',encoding:'utf8',recursive:true});
     try{ localStorage.setItem('ieum_ota_ready',man.build); }catch(_){}
     nativeApplyBundle(man.build); return 'downloaded';
-  }catch(e){ return 'failed'; } }
+  }catch(e){ mark(now-5.5*3600e3); return 'failed'; } } // 내려받기 실패는 30분 뒤 재시도
 function otaBusy(){ try{ const a=document.activeElement; if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true;
   if(document.querySelector('.sheet-bg.show')) return true; if(typeof TUT!=='undefined'&&TUT.on) return true; if(PENDING_RESTORE) return true; }catch(_){} return false; }
-function nativeApplyBundle(build){ if(otaBusy()){ try{ localStorage.setItem('ieum_ota_pending',build); }catch(_){} return; }
+function nativeApplyBundle(build){ if(otaBusy()){ try{ localStorage.setItem('ieum_ota_pending',build); toast('새 버전을 받았어요 — 잠시 후 적용돼요'); }catch(_){} return; }
   nP('Filesystem','getUri',{path:'web/'+build,directory:'DATA'}).then(u=>{ const path=String(u&&u.uri||'').replace(/^file:\/\//,'');
     if(!path) return; nativeFlush(); try{ localStorage.setItem(LS, JSON.stringify(S)); localStorage.removeItem('ieum_ota_pending'); }catch(_){}
     nP('WebView','setServerBasePath',{path}).catch(()=>{}); nP('WebView','persistServerBasePath').catch(()=>{}); }).catch(()=>{}); }
@@ -3415,7 +3416,7 @@ async function nativeBoot(){ if(!NATIVE) return;
 function nativeStatusBar(){ if(!NATIVE) return; const dark=document.documentElement.dataset.theme==='dark';
   const st=dark?'DARK':'LIGHT'; nP('SystemBars','setStyle',{style:st}).catch(()=>{}); nP('StatusBar','setStyle',{style:st}).catch(()=>{}); } // 헤더가 크림(라이트)·검정(다크): LIGHT=어두운 아이콘, DARK=밝은 아이콘
 async function manualWebUpdate(){ toast('업데이트 확인 중…'); const r=await checkWebUpdate(true);
-  toast({latest:'최신 버전이에요 ('+APP_BUILD+')',downloaded:'새 버전을 받았어요 — 잠시 후 적용돼요',ready:'새 버전이 준비돼 있어요 — 잠시 후 적용돼요',offline:'네트워크에 연결되지 않아요',throttled:'최신 상태예요',bad:'해당 버전은 이 앱에서 열리지 않아 건너뛰었어요'}[r]||'업데이트를 확인하지 못했어요'); }
+  toast({latest:'최신 버전이에요 ('+APP_BUILD+')',downloaded:'새 버전을 받았어요 — 잠시 후 적용돼요',ready:'새 버전이 준비돼 있어요 — 잠시 후 적용돼요',offline:'네트워크에 연결되지 않아요',throttled:'최신 상태예요',failed:'내려받지 못했어요 — 잠시 후 다시 시도해 주세요',bad:'해당 버전은 이 앱에서 열리지 않아 건너뛰었어요'}[r]||'업데이트를 확인하지 못했어요'); }
 
 /* ---- ⑦ 이전 버전(TWA) 기록 가져오기: 옛 앱의 기록은 크롬 저장소에 있다 → 크롬 커스텀탭으로 웹 이음(?handoff=1)을 열어
         릴레이에 7일 1회용 백업을 올리고, 앱을 여는 intent 링크(?r=코드)로 되돌아오면 기존 #r= 복원 흐름이 받는다 ---- */
