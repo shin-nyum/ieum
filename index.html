@@ -415,6 +415,13 @@
   .bal.pos{background:#e7f0ea;color:var(--ok)}
   .bal.neg{background:#f6e7e4;color:var(--danger)}
   .bal.even{background:#f3ece1;color:var(--muted)}
+  /* 첫 실행 권한 안내 시트 */
+  .perm-row{display:flex;align-items:center;gap:12px;padding:12px 2px;border-bottom:1px solid var(--line)}
+  .perm-row:last-of-type{border-bottom:0}
+  .perm-ic{flex:none;width:44px;height:44px;border-radius:12px;background:var(--tint2);display:flex;align-items:center;justify-content:center;font-size:24px;line-height:1}
+  .perm-t{flex:1;min-width:0;font-size:16.5px;line-height:1.4;color:var(--ink)}
+  .perm-d{font-size:13.5px;color:var(--muted);margin-top:2px}
+  .perm-row .btn{width:auto;flex:none}
 </style>
 </head>
 <body>
@@ -450,7 +457,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v118'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v119'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -481,12 +488,13 @@ function seed(){ // 신규 사용자: 빈 상태로 시작 (샘플은 원할 때
          guestSession:{name:'', acctIdx:0} }
   };
 }
+function _dOff(n){ const d=new Date(); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); } // 샘플 날짜: 오늘 기준 ±n일 (튜토리얼이 항상 '다음 경조사'를 보여주도록)
 function sampleData(){ // 둘러보기용 샘플 (demo:true 표시 → 한 번에 삭제 가능)
   return {
     events:[
       { id:'e1', demo:true, role:'host', type:'wedding',
         partyA:'김민준', partyB:'이서연', subtitle:'저희 결혼합니다',
-        date:'2026-10-17', time:'13:00', venue:'더채플 앳 청담', address:'서울 강남구 청담동 123-4',
+        date:_dOff(30), time:'13:00', venue:'더채플 앳 청담', address:'서울 강남구 청담동 123-4',
         message:'서로 마주보며 다져온 사랑을\n이제 함께 한곳을 바라보며\n걸어가고자 합니다.',
         externalUrl:'',
         accounts:[ {label:'신랑측', bank:'카카오뱅크', number:'3333-01-1234567', holder:'김민준', kakaopay:'https://qr.kakaopay.com/demo-minjun'},
@@ -496,7 +504,7 @@ function sampleData(){ // 둘러보기용 샘플 (demo:true 표시 → 한 번�
                  mkGuest('정해린','가족',1) ] },
       { id:'e2', demo:true, role:'guest', type:'wedding',
         partyA:'박서준', partyB:'김지우', subtitle:'결혼합니다',
-        date:'2026-09-05', time:'12:00', venue:'그랜드 워커힐 서울', address:'서울 광진구 워커힐로 177',
+        date:_dOff(9), time:'12:00', venue:'그랜드 워커힐 서울', address:'서울 광진구 워커힐로 177',
         message:'두 사람이 사랑으로 만나\n새로운 가정을 이룹니다.',
         externalUrl:'https://www.barunsoncard.com',
         accounts:[ {label:'신랑측', bank:'국민', number:'123-45-6789012', holder:'박서준', kakaopay:'https://qr.kakaopay.com/demo-seojun'},
@@ -504,14 +512,14 @@ function sampleData(){ // 둘러보기용 샘플 (demo:true 표시 → 한 번�
         myGift:100000, myRelation:'친구', guests:[] },
       { id:'e3', demo:true, role:'guest', type:'memorial',
         partyA:'故 김정호', partyB:'', subtitle:'삼가 고인의 명복을 빕니다',
-        date:'2026-07-03', time:'09:00', venue:'서울추모공원 빈소 3호', address:'서울 서초구 원지동 산4',
+        date:_dOff(-12), time:'09:00', venue:'서울추모공원 빈소 3호', address:'서울 서초구 원지동 산4',
         message:'장례에 마음 보태주셔서 감사합니다.\n상주 김민수',
         externalUrl:'',
         accounts:[ {label:'상주측', bank:'농협', number:'302-1234-5678-91', holder:'김민수'} ],
         myGift:50000, myRelation:'직장', guests:[] }
     ],
     people:[
-      { id:'p1', demo:true, name:'박서준', relation:'친구', items:[ {id:'pi1', dir:'gave', amount:100000, label:'결혼식', date:'2026-09-05'} ] },
+      { id:'p1', demo:true, name:'박서준', relation:'친구', items:[ {id:'pi1', dir:'gave', amount:100000, label:'결혼식', date:_dOff(9)} ] },
       { id:'p2', demo:true, name:'이수민', relation:'친구', items:[ {id:'pi2', dir:'received', amount:100000, label:'내 결혼식 때', date:'2024-05-11'}, {id:'pi3', dir:'gave', amount:50000, label:'돌잔치', date:'2025-08-20'} ] },
       { id:'p3', demo:true, name:'김태영', relation:'직장', items:[ {id:'pi4', dir:'received', amount:50000, label:'내 결혼식 때', date:'2024-05-11'} ] }
     ]
@@ -1073,7 +1081,8 @@ function closePayPop(){ const bg=document.getElementById('paypop'); if(!bg) retu
 /* ======================= 렌더 ======================= */
 function render(){
   const bn=document.getElementById('bottomnav'), hn=document.getElementById('hostnav');
-  if(!S.ui.entered){ if(bn)bn.style.display='none'; if(hn)hn.style.display='none'; $('#ddayTop').textContent=''; $('#app').innerHTML=landingView(); return; }
+  if(!S.ui.entered){ if(bn)bn.style.display='none'; if(hn)hn.style.display='none'; $('#ddayTop').textContent=''; $('#app').innerHTML=landingView(); try{ if(permNeeded()) openPermSheet(); }catch(e){} return; }
+  try{ const pb=document.getElementById('permsheet'); if(pb) pb.remove(); }catch(e){} // 랜딩을 벗어나면 권한 안내는 접어둠(완료 표시 없이 → 다음 랜딩에 다시)
   if(S.ui.tab==='host'){ if(bn)bn.style.display='none'; const he=hostEvent()||ensureHostEvent();
     const sub=S.ui.hostSub==='thanks';
     if(hn){ hn.style.display=sub?'none':'flex'; hn.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.getAttribute('data-h')===(S.ui.hostTab||'setup'))); }
@@ -1142,14 +1151,33 @@ function pruneDraft(){ // 아무것도 입력 안 한 호스트 초안은 나갈
   const before=S.events.length;
   S.events=S.events.filter(e=>!(e.draft && e.role==='host' && !evHasContent(e)));
   if(S.events.length!==before){ if(!S.events.find(e=>e.id===S.ui.hostEventId)) S.ui.hostEventId=null; save(); } }
-function tutAutoOk(){ // 첫 설치 판정: 빈 초안(draft)은 제외, 자동복구로 데이터가 도착했으면 취소
-  return S.meta && !S.meta.tutDone && !S.people.length
-    && !S.events.filter(e=>!(e.draft&&!evHasContent(e))).length; }
+function tutAuto(kind){ // 역할별 최초 1회: '내 경조사'/'내 행사 만들기'를 처음 누를 때 자동 시작 (닫아도 다시 안 뜸, 사용법 보기로 재시청)
+  try{ if(!S.meta) return false; return kind==='host' ? !S.meta.tutHostDone : !S.meta.tutGuestDone; }catch(e){ return false; } }
 function enterAs(mode){ S.ui.tab=mode; if(mode==='guest'){ S.ui.guestView='list'; } else { ensureHostEvent(); S.ui.hostTab='setup'; } S.ui.entered=true; save(); render(); window.scrollTo(0,0);
-  // 첫 설치(빈 데이터) 유저: 튜토리얼 자동 시작 (X로 닫으면 다시 안 뜸)
-  }
+  if(tutAuto(mode)) setTimeout(()=>{ try{ startTutorial(mode); }catch(e){} },260); }
 function goLanding(){ try{ abortTutorial(); }catch(e){} try{ pruneDraft(); }catch(e){}
   S.ui.entered=false; save(); render(); window.scrollTo(0,0); }
+
+/* ---- 첫 실행 권한 안내(네이티브 앱): 알림 권한은 여기서 1회 요청, 나머지는 어떤 권한을 언제 쓰는지만. 닫으면 다시 안 뜸(설정 › 경조사 알림에서 언제든) ---- */
+function permNeeded(){ try{ return !!NATIVE && !!S.meta && !S.meta.permDone; }catch(e){ return false; } }
+function openPermSheet(){ if(document.getElementById('permsheet')) return;
+  const bg=document.createElement('div'); bg.id='permsheet'; bg.className='sheet-bg'; bg.onclick=closePermSheet; document.body.appendChild(bg);
+  renderPermSheet(); setTimeout(()=>bg.classList.add('show'),10); }
+function renderPermSheet(){ const bg=document.getElementById('permsheet'); if(!bg) return; const on=!!S.ui.noti;
+  bg.innerHTML=`<div class="sheet" onclick="event.stopPropagation()">
+    <div class="secthead" style="margin-bottom:6px"><div class="t" style="font-size:18px">이음이 쓰는 권한</div></div>
+    <div class="perm-row"><div class="perm-ic">🔔</div><div class="perm-t"><b>경조사 알림</b><div class="perm-d">일주일 전·전날·당일, 명부 기록 리마인드</div></div>
+      ${on?'<span class="pill pill-ok">허용됨</span>':'<button class="btn btn-primary btn-sm" onclick="permAllowNoti()">허용</button>'}</div>
+    <div class="perm-row"><div class="perm-ic">📷</div><div class="perm-t"><b>사진</b><div class="perm-d">감사 인사에 사진을 붙일 때만, 그때 선택 창에서</div></div></div>
+    <div class="perm-row"><div class="perm-ic">🔗</div><div class="perm-t"><b>초대 링크</b><div class="perm-d">카톡의 초대 링크가 이음으로 바로 열려요</div></div></div>
+    <button class="btn ${on?'btn-primary':'btn-line'}" style="margin-top:14px" onclick="closePermSheet()">${on?'시작하기':'나중에 할게요'}</button>
+  </div>`; }
+function permAllowNoti(){ const done=()=>{ try{ renderPermSheet(); }catch(e){} };
+  if(NATIVE){ nP('LocalNotifications','requestPermissions').then(p=>{ if(p&&p.display==='granted'){ S.ui.noti=true; save(); try{ nativeNotiSync(); }catch(e){} toast('알림을 켰어요'); } else toast('알림 권한이 거부되었어요 — 휴대폰 설정 › 앱 › 이음에서 허용해 주세요'); done(); }).catch(()=>{ toast('알림을 켤 수 없어요'); done(); }); }
+  else if('Notification' in window){ Promise.resolve(Notification.requestPermission()).then(p=>{ if(p==='granted'){ S.ui.noti=true; save(); try{ syncNotiPref(); registerDailySync(); }catch(e){} } done(); }).catch(done); }
+  else done(); }
+function closePermSheet(){ const bg=document.getElementById('permsheet'); if(!bg) return; try{ if(S.meta){ S.meta.permDone=true; save(); } }catch(e){}
+  bg.classList.remove('show'); setTimeout(()=>{ try{ bg.remove(); }catch(e){} },220); try{ otaResume(); }catch(e){} }
 
 /* ---------- 호스트 ---------- */
 function hostFoldSet(k,v){ if(!S.ui.hostFold)S.ui.hostFold={}; S.ui.hostFold[k]=v; }
@@ -2472,7 +2500,7 @@ function moreView(){ return `
   </div>
   <div class="card" style="padding:0 4px 5px">
     <div class="mi-sec">행사 · 기록</div>
-    ${moreItem('✍️','내 행사 만들기','',"setTab('host')")}
+    ${moreItem('✍️','내 행사 만들기','',"enterAs('host')")}
     ${moreItem('✉️','감사 인사 보내기','','openThanksSafe()')}
   </div>
   <div class="card" style="padding:0 4px 5px">
@@ -3124,7 +3152,7 @@ function applyIncomingInvite(iv){ // #e=(자체완결)·#i=(릴레이 코드) �
 /* ======================= 튜토리얼 (데모 데이터로 동적 안내) ======================= */
 // 데모는 '튜토리얼 안에서만' 존재한다: 시작 시 주입 → 종료·부팅 시 자동 정리.
 // 단, 편집 흔적이 있는 데모(순정 지문 불일치)는 삭제하지 않고 실데이터로 승격(demo 해제).
-var TUT={on:false,i:0,last:-1}; // var: 부트 핸들러(#e=/#g=)가 선언 이전에 typeof TUT를 참조 — const면 TDZ로 ReferenceError
+var TUT={on:false,i:0,last:-1,kind:'guest'}; // var: 부트 핸들러(#e=/#g=)가 선언 이전에 typeof TUT를 참조 — const면 TDZ로 ReferenceError
 const TUT_STEPS=[
  {at:'list', v:()=>{S.ui.tab='guest';S.ui.guestView='list';}, sel:'.homehero',
   t:'다음 경조사가 맨 위에', x:'가장 가까운 일정이 크게 떠요. 카드를 누르면 상세로 가요.'},
@@ -3139,24 +3167,27 @@ const TUT_STEPS=[
  {at:'ledger', v:()=>{S.ui.tab='guest';S.ui.guestView='ledger';}, sel:'.stats',
   t:'품앗이 가계부', x:'보낸 돈·받은 돈·합계가 자동으로 정리돼요.'},
  {at:'ledger', v:()=>{S.ui.tab='guest';S.ui.guestView='ledger';}, sel:'.reco-cta',
-  t:'주고받은 사람', x:'이름으로 검색하면 그동안 주고받은 금액이 한눈에 보여요.'},
+  t:'주고받은 사람', x:'이름으로 검색하면 그동안 주고받은 금액이 한눈에 보여요.\n\n튜토리얼 끝! 데모는 지워지고, 이제 진짜 경조사를 담아보세요 🎉'},
  {host:true, ht:'setup', at:'host', v:()=>{S.ui.tab='host'; ensureHostEvent(); S.ui.hostSub=null; S.ui.hostTab='setup';}, sel:'.fold:not(.hostsw)',
   t:'내 행사 만들기 (주최자)', x:'내 결혼식·행사는 여기서. 위에서 아래로 행사 정보 → 계좌 → 보내기만 채우면 준비 끝이에요.'},
  {host:true, ht:'ledger', at:'host', v:()=>{S.ui.tab='host'; ensureHostEvent(); S.ui.hostSub=null; S.ui.hostTab='ledger';}, sel:'.stats',
-  t:'장부 정리', x:'하객이 보낸 마음이 여기에 자동으로 기록돼요. 현금 수령분도 이름 옆에 직접 입력해 한 장부로 정리!\n\n튜토리얼 끝! 데모는 지워지고, 이제 진짜 경조사를 담아보세요 🎉'},];
-function startTutorial(){ if(TUT.on) return;
-  TUT.on=true; TUT.last=-1; if(S.meta) S.meta.tutDone=true;
-  fillSample(); tutGo(0); }
-function tutGo(i){ if(!TUT.on) return;
-  if(i>=TUT_STEPS.length){ endTutorial(true); return; }
-  TUT.i=Math.max(0,i); S.ui.entered=true; TUT_STEPS[TUT.i].v(); save(); render(); window.scrollTo(0,0); }
+  t:'장부 정리', x:'하객이 보낸 마음이 여기에 자동으로 기록돼요. 현금 수령분도 이름 옆에 직접 입력해 한 장부로 정리!\n\n튜토리얼 끝! 이제 행사 정보부터 채워보세요 🎉'},];
+function tutSteps(){ return TUT_STEPS.filter(s=>TUT.kind==='host'?!!s.host:!s.host); } // 역할별: 하객 7단계(데모 주입) / 주최자 2단계
+function startTutorial(kind){ if(TUT.on) return;
+  kind=(kind==='host'||kind==='guest')?kind:(S.ui.tab==='host'?'host':'guest'); // 푸터 [사용법 보기]는 현재 탭 기준
+  TUT.on=true; TUT.kind=kind; TUT.last=-1;
+  if(S.meta){ S.meta.tutDone=true; if(kind==='host') S.meta.tutHostDone=true; else S.meta.tutGuestDone=true; }
+  if(kind==='guest') fillSample(); tutGo(0); }
+function tutGo(i){ if(!TUT.on) return; const steps=tutSteps();
+  if(i>=steps.length){ endTutorial(true); return; }
+  TUT.i=Math.max(0,i); S.ui.entered=true; steps[TUT.i].v(); save(); render(); window.scrollTo(0,0); }
 function tutTeardown(){ document.querySelectorAll('.tut-hi').forEach(e=>e.classList.remove('tut-hi'));
   const b=document.getElementById('tutbox'); if(b) b.remove(); }
 function abortTutorial(){ // 랜딩 이탈·멀티탭 동기화·자동복구 등: 화면 강제 이동 없이 조용히 종료+정리
   if(!TUT.on) return; TUT.on=false; tutTeardown(); try{ cleanupDemo(); }catch(e){} }
 function tutApply(){ if(!TUT.on) return;
   document.querySelectorAll('.tut-hi').forEach(e=>e.classList.remove('tut-hi'));
-  const st=TUT_STEPS[TUT.i];
+  const steps=tutSteps(); const st=steps[TUT.i]; if(!st){ endTutorial(true); return; }
   // 사용자가 다른 화면으로 이동했으면 동명 요소 오탐 하이라이트 금지 → 복귀 버튼 제공
   const onStep = S.ui.entered && (st.host
     ? (S.ui.tab==='host' && !S.ui.hostSub && (S.ui.hostTab||'setup')===st.ht)
@@ -3164,11 +3195,11 @@ function tutApply(){ if(!TUT.on) return;
   const el = onStep ? document.querySelector(st.sel) : null;
   let box=document.getElementById('tutbox');
   if(!box){ box=document.createElement('div'); box.id='tutbox'; box.className='tutbox'; document.body.appendChild(box); }
-  const last=TUT.i===TUT_STEPS.length-1;
+  const last=TUT.i===steps.length-1;
   box.innerHTML=`<button class="x" onclick="endTutorial(false)" aria-label="튜토리얼 닫기">✕</button>
     <div class="tt">${st.t}</div><div class="tx">${st.x.replace(/\n/g,'<br/>')}</div>
     ${!el?`<button class="btn btn-line btn-sm" style="margin-top:10px" onclick="tutGo(${TUT.i})">↩ 이 단계 화면으로 돌아가기</button>`:''}
-    <div class="tutdots">${TUT_STEPS.map((_,k)=>`<i class="${k===TUT.i?'on':''}"></i>`).join('')}</div>
+    <div class="tutdots">${steps.map((_,k)=>`<i class="${k===TUT.i?'on':''}"></i>`).join('')}</div>
     <div class="tutbtns">
       ${TUT.i>0?`<button class="btn btn-ghost btn-sm" style="flex:1" onclick="tutGo(${TUT.i-1})">이전</button>`:''}
       <button class="btn btn-primary btn-sm" style="flex:2" onclick="tutGo(${TUT.i+1})">${last?'시작하기 🎉':'다음'}</button>
@@ -3186,12 +3217,14 @@ function tutPlace(el,box){ if(!TUT.on||!document.body.contains(el)) return;
   const left=Math.min(Math.max(12, r.left+r.width/2-bw/2), innerWidth-12-bw);
   box.style.top=top+'px'; box.style.left=left+'px';
 }
-function endTutorial(done){ if(!TUT.on) return; TUT.on=false;
+function endTutorial(done){ if(!TUT.on) return; TUT.on=false; const kind=TUT.kind;
   tutTeardown();
   cleanupDemo();
-  try{ pruneDraft(); }catch(e){} // 튜토리얼 중 만들어진 빈 주최자 초안 정리
-  S.ui.tab='guest'; S.ui.guestView='list'; save(); render(); window.scrollTo(0,0);
-  toast(done?'준비 끝! 이제 진짜 경조사를 담아보세요 🎉':'튜토리얼을 닫았어요 — 화면 맨 아래 [사용법 보기]에서 다시 볼 수 있어요'); }
+  if(kind==='host'){ S.ui.tab='host'; ensureHostEvent(); S.ui.hostSub=null; S.ui.hostTab='setup'; } // 주최자: 방금 본 행사 정보 화면에 그대로
+  else { try{ pruneDraft(); }catch(e){} S.ui.tab='guest'; S.ui.guestView='list'; } // 하객: 튜토리얼 중 생긴 빈 주최자 초안 정리
+  save(); render(); window.scrollTo(0,0);
+  toast(done?(kind==='host'?'준비 끝! 행사 정보부터 채워보세요 🎉':'준비 끝! 이제 진짜 경조사를 담아보세요 🎉'):'튜토리얼을 닫았어요 — 화면 맨 아래 [사용법 보기]에서 다시 볼 수 있어요');
+  try{ otaResume(); }catch(e){} }
 /* ---- 데모 정리 ----
    tut(이번 튜토리얼 주입분) → 무조건 삭제(연습 조작 포함 — "끝나면 지워져요" 약속).
    demo(레거시 v1.0 소급 태깅분) → 이름 1필드가 아니라 '전체 내용 시그니처'가 순정 샘플과
@@ -3214,7 +3247,7 @@ function cleanupDemo(){ let changed=false;
   if(S.ui.currentEventId && !S.events.find(e=>e.id===S.ui.currentEventId)){ S.ui.currentEventId=null; if(S.ui.guestView==='detail')S.ui.guestView='list'; }
   if(S.ui.hostEventId && !S.events.find(e=>e.id===S.ui.hostEventId)) S.ui.hostEventId=null;
   if(changed) save(); return changed; }
-window.addEventListener('resize', ()=>{ try{ if(TUT.on){ const el=document.querySelector(TUT_STEPS[TUT.i].sel); const box=document.getElementById('tutbox'); if(el&&box) tutPlace(el,box); } }catch(e){} });
+window.addEventListener('resize', ()=>{ try{ if(TUT.on){ const st=tutSteps()[TUT.i]; const el=st?document.querySelector(st.sel):null; const box=document.getElementById('tutbox'); if(el&&box) tutPlace(el,box); } }catch(e){} });
 
 /* ======================= 네이티브 컨테이너(Capacitor Android) 브리지 =======================
    같은 index.html이 Play 앱(WebView)에서도 돈다. 네이티브에서만 갈아끼우는 것:
@@ -3359,7 +3392,7 @@ if(NATIVE){
 }
 
 /* ---- ⑤ 뒤로가기: 웹의 popstate 로직을 그대로 — 히스토리가 있으면 back, 없으면 한 단계 위로, 최상위면 홈으로(종료 대신 최소화) ---- */
-if(NATIVE){ nOn('App','backButton',d=>{ try{
+if(NATIVE){ nOn('App','backButton',d=>{ try{ if(document.getElementById('permsheet')){ closePermSheet(); return; }
   if(d&&d.canGoBack){ history.back(); return; }
   if(!atTopLevel()){ backStep(); return; }
   nP('App','minimizeApp').catch(()=>{}); }catch(_){} }); }
@@ -3394,6 +3427,7 @@ function nativeApplyBundle(build){ if(otaBusy()){ try{ localStorage.setItem('ieu
   nP('Filesystem','getUri',{path:'web/'+build,directory:'DATA'}).then(u=>{ const path=String(u&&u.uri||'').replace(/^file:\/\//,'');
     if(!path) return; nativeFlush(); try{ localStorage.setItem(LS, JSON.stringify(S)); localStorage.removeItem('ieum_ota_pending'); }catch(_){}
     nP('WebView','setServerBasePath',{path}).catch(()=>{}); nP('WebView','persistServerBasePath').catch(()=>{}); }).catch(()=>{}); }
+function otaResume(){ if(!NATIVE) return; setTimeout(()=>{ try{ if(otaBusy()) return; const p=localStorage.getItem('ieum_ota_pending')||'', rd=localStorage.getItem('ieum_ota_ready')||'', bad=localStorage.getItem('ieum_ota_bad')||''; if(p&&p===rd&&p!==APP_BUILD&&p!==bad) nativeApplyBundle(p); }catch(_){} },400); } // 시트·튜토리얼 때문에 미뤄둔 번들을 닫힐 때 적용
 async function nativeCleanupBundles(){ try{ const cur=(NINFO.serverBasePath||'').match(/\/web\/([^/]+)\/?$/); const keep=cur?cur[1]:null;
   let ready=''; try{ ready=localStorage.getItem('ieum_ota_ready')||''; }catch(_){}
   const d=await nP('Filesystem','readdir',{path:'web',directory:'DATA'});
@@ -3469,7 +3503,8 @@ window.addEventListener('popstate', ()=>{
 });
 function backStep(){ // 한 단계 위로 (popstate·네이티브 뒤로가기 공용)
   try{
-    if(document.getElementById('mapsheet')) closeMapSheet();
+    if(document.getElementById('permsheet')) closePermSheet(); // 첫 실행 권한 안내
+    else if(document.getElementById('mapsheet')) closeMapSheet();
     else if(document.getElementById('tiepop')) closeTiePop();
     else if(document.getElementById('paypop')) closePayPop();   // 송금 복귀 확인 시트 — pendingPay는 유지되어 명부 카드의 [기록하기]가 폴백
     else if(document.getElementById('addpop')) closeAddSheet(); // 경조사 추가 선택 시트
