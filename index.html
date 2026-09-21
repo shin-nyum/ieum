@@ -562,7 +562,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v124'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v125'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -1042,7 +1042,7 @@ function openExternal(ev){
 function acceptInvite(){ const iv=S.ui.pendingInvite; if(!iv)return;
   const mine=S.events.find(e=>e.role==='host'&&evKeys(e).includes(evKey(iv))); if(mine){ S.ui.pendingInvite=null; save(); openEvent(mine.id); toast('내 행사예요 — 주최자 화면으로 열었어요'); return; }
   const dup=S.events.find(e=>e.role!=='host'&&e.partyA===iv.partyA&&e.partyB===iv.partyB&&e.date===iv.date&&e.venue===iv.venue);
-  if(dup){ S.ui.currentEventId=dup.id; } else { S.events.push(iv); S.ui.currentEventId=iv.id; }
+  if(dup){ S.ui.currentEventId=dup.id; } else { S.events.push(iv); S.ui.currentEventId=iv.id; reviewBump('accept'); }
   S.ui.pendingInvite=null; S.ui.guestView='detail'; save(); render(); window.scrollTo(0,0); toast('내 경조사에 담았어요');
   reciToastFor(S.events.find(e=>e.id===S.ui.currentEventId)); }
 function declineInvite(){ S.ui.guestView='list'; save(); render(); toast('목록 위에 담아뒀어요 — 언제든 다시 열 수 있어요'); } // 초대장은 배너로 보존
@@ -1308,7 +1308,35 @@ function shareFromHost(kind){ const ev=hostEvent(); if(!ev)return;
     if(!ev.scale && (ev.guests||[]).length<FREE_GUESTS){ openScaleSheet(kind); return; }
     if(ev.scale==='big' || (ev.guests||[]).length>=FREE_GUESTS){ passTrack('bigEvent');
       passPrompt(()=>shareFromHost(kind),`하객 ${FREE_GUESTS}명이 넘는 행사는 이음 패스로 보내요. 한 번 결제하면 발송·전체 장부·엑셀이 평생 열려요.`); return; } }
+  reviewBump('send'); // 게이트를 통과한 실제 발송만 센다
   if(kind==='sms') shareEventSMS(ev); else shareEvent(ev); }
+/* ---- 리뷰 요청 타이밍(Play 앱만): 주최자=초대 발송 3회째, 하객=이음 초대 3건째 등록 — 만족도가 가장 높은 순간.
+        여기서는 '요청 예정'만 세우고, 실제 표시는 메인 화면에서 한가할 때(reviewTick). 최대 2회·30일 간격, 리뷰하러 가면 끝. ---- */
+const REVIEW_AT=3;
+function _rv(){ if(!S.meta.review) S.meta.review={asks:0,last:0,done:false}; return S.meta.review; }
+function reviewBump(kind){ try{ if(!S.meta) return; let n;
+  if(kind==='send'){ S.meta.sentCount=(S.meta.sentCount||0)+1; n=S.meta.sentCount; }
+  else { S.meta.acceptCount=(S.meta.acceptCount||0)+1; n=Math.max(S.meta.acceptCount, S.events.filter(e=>e.invited&&!e.demo&&!e.tut).length); } // 기존 사용자: 이미 담아둔 초대 건수 인정
+  const r=_rv(); if(!r.done && r.asks<2 && n>=REVIEW_AT && (r.asks===0 || Date.now()-r.last>30*864e5)) S.meta.reviewDue=true;
+  save(); setTimeout(reviewTick,1800); }catch(e){} }
+function reviewIdle(){ try{ if(!NATIVE||!S.ui.entered) return false; if(typeof TUT!=='undefined'&&TUT.on) return false; if(document.querySelector('.sheet-bg')) return false;
+  const a=document.activeElement; if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return false;
+  return S.ui.tab==='host' ? !S.ui.hostSub : ['list','ledger','more'].includes(S.ui.guestView); }catch(e){ return false; } } // 상세·송금·가져오기 흐름 중에는 끼어들지 않는다
+function reviewTick(){ try{ if(!S.meta||!S.meta.reviewDue||!reviewIdle()) return; S.meta.reviewDue=false; const r=_rv(); r.asks++; r.last=Date.now();
+  if((NINFO.versionCode||0)>=5){ r.done=true; save(); nP('IeumNative','requestReview').catch(()=>{}); return; } // 1.4.1+: Play 인앱 리뷰 카드 — 표시 여부는 Google 쿼터가 결정, 앞에 질문을 두지 않는 것이 지침
+  save(); openReviewSheet(); }catch(e){} }
+function openReviewSheet(){ if(document.getElementById('reviewsheet')) return;
+  const bg=document.createElement('div'); bg.id='reviewsheet'; bg.className='sheet-bg'; bg.onclick=closeReviewSheet; document.body.appendChild(bg);
+  bg.innerHTML=`<div class="sheet" onclick="event.stopPropagation()" style="text-align:center">
+    <div style="font-size:34px;line-height:1">💝</div>
+    <div class="secthead" style="margin:10px 0 12px;justify-content:center"><div class="t" style="font-size:18px">이음이 도움이 되셨나요?</div></div>
+    <button class="btn btn-primary" onclick="goReview()">⭐ Play 스토어에 리뷰 남기기</button>
+    <button class="btn btn-ghost btn-sm" style="margin-top:9px" onclick="closeReviewSheet()">다음에</button>
+  </div>`; setTimeout(()=>bg.classList.add('show'),10); }
+function closeReviewSheet(){ const bg=document.getElementById('reviewsheet'); if(!bg) return; bg.classList.remove('show'); setTimeout(()=>{ try{ bg.remove(); }catch(e){} },220); try{ otaResume(); }catch(e){} }
+function openStore(){ try{ location.href='market://details?id=kr.ieum.app'; }catch(e){} } // IeumNative가 market:// 스킴을 Play 스토어로 넘긴다
+function goReview(){ try{ _rv().done=true; save(); }catch(e){} closeReviewSheet(); setTimeout(openStore,260); }
+
 /* ---- 발송 전 규모 확인(행사당 1회 · 패스 없는 비부고 행사) ---- */
 function openScaleSheet(kind){ let bg=document.getElementById('scalesheet');
   if(!bg){ bg=document.createElement('div'); bg.id='scalesheet'; bg.className='sheet-bg'; bg.onclick=closeScaleSheet; document.body.appendChild(bg); }
@@ -3614,7 +3642,7 @@ async function nativeBoot(){ if(!NATIVE) return;
     if(p && p===rd && p!==APP_BUILD && p!==bad) nativeApplyBundle(p);   // 실제로 받아둔 번들일 때만 (return 금지 — 아래 리스너 등록까지 마쳐야 함)
     else if(p) localStorage.removeItem('ieum_ota_pending'); }catch(_){}
   setTimeout(()=>{ nativeCleanupBundles(); checkWebUpdate(false); },2500);
-  nOn('App','appStateChange',s=>{ if(s&&s.isActive){ checkWebUpdate(false); nativeNotiSync(); try{ relayPull(); }catch(_){} payAppState(true); } else { nativeFlush(); payAppState(false); } });
+  nOn('App','appStateChange',s=>{ if(s&&s.isActive){ setTimeout(reviewTick,1500); checkWebUpdate(false); nativeNotiSync(); try{ relayPull(); }catch(_){} payAppState(true); } else { nativeFlush(); payAppState(false); } });
   nOn('App','pause',()=>nativeFlush());
   try{ nativeStatusBar(); }catch(_){}
   try{ nativeBillingInit(); }catch(_){} // Play 결제: 상품 조회 + 이 Google 계정의 구매 복원
@@ -3677,6 +3705,7 @@ function backStep(){ // 한 단계 위로 (popstate·네이티브 뒤로가기 �
   try{
     if(document.getElementById('permsheet')) closePermSheet(); // 첫 실행 권한 안내
     else if(document.getElementById('scalesheet')) closeScaleSheet(); // 발송 전 규모 확인
+    else if(document.getElementById('reviewsheet')) closeReviewSheet(); // 리뷰 요청
     else if(document.getElementById('mapsheet')) closeMapSheet();
     else if(document.getElementById('tiepop')) closeTiePop();
     else if(document.getElementById('paypop')) closePayPop();   // 송금 복귀 확인 시트 — pendingPay는 유지되어 명부 카드의 [기록하기]가 폴백
@@ -3704,7 +3733,7 @@ window.addEventListener('error', ()=>{ try{ toast('일시적인 문제가 발생
 /* 통계 숫자 자동 맞춤: 큰 금액(₩12,300,000 등)도 한 줄에 들어오도록 칸 너비에 맞춰 글자 크기를 줄인다 (v120 굵은 글씨 회귀 수정) */
 function fitStats(){ try{ document.querySelectorAll('.stat .v').forEach(v=>{ v.style.fontSize=''; let fs=parseFloat(getComputedStyle(v).fontSize)||16, n=0;
   while(v.scrollWidth>v.clientWidth+0.5 && fs>10.5 && n<16){ fs-=0.75; v.style.fontSize=fs+'px'; n++; } }); }catch(e){} }
-{ const _render0=render; render=function(){ const r=_render0.apply(this,arguments); fitStats(); return r; }; } // 전체 렌더 직후 동기 맞춤
+{ const _render0=render; let _rvT=null; render=function(){ const r=_render0.apply(this,arguments); fitStats(); try{ if(S.meta&&S.meta.reviewDue){ clearTimeout(_rvT); _rvT=setTimeout(reviewTick,1200); } }catch(e){} return r; }; } // 전체 렌더 직후 동기 맞춤 + 미뤄둔 리뷰 요청 재확인
 try{ let _fitT=null; new MutationObserver(()=>{ clearTimeout(_fitT); _fitT=setTimeout(fitStats,40); }).observe(document.getElementById('app'),{childList:true,subtree:true,characterData:true}); }catch(e){} // 장부 부분 갱신(updateHostLedgerUI)에도
 window.addEventListener('resize',()=>{ try{ fitStats(); }catch(e){} });
 applyTheme();

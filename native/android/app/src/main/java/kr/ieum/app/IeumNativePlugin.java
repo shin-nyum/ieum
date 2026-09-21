@@ -91,6 +91,24 @@ public class IeumNativePlugin extends Plugin {
         call.resolve();
     }
 
+    /** Play 인앱 리뷰 카드(앱을 떠나지 않고 별점). 실제 표시 여부는 Google 쿼터가 결정하며 앱은 알 수 없다 — 어떤 경우에도 resolve. */
+    @PluginMethod
+    public void requestReview(final PluginCall call) {
+        try {
+            final com.google.android.play.core.review.ReviewManager manager =
+                com.google.android.play.core.review.ReviewManagerFactory.create(getContext());
+            manager.requestReviewFlow().addOnCompleteListener(task -> {
+                if (!task.isSuccessful()) { JSObject o = new JSObject(); o.put("launched", false); call.resolve(o); return; }
+                getActivity().runOnUiThread(() ->
+                    manager.launchReviewFlow(getActivity(), task.getResult()).addOnCompleteListener(done -> {
+                        JSObject o = new JSObject(); o.put("launched", true); call.resolve(o);
+                    }));
+            });
+        } catch (Throwable e) {
+            JSObject o = new JSObject(); o.put("launched", false); call.resolve(o);
+        }
+    }
+
     @PluginMethod
     public void getInfo(PluginCall call) {
         JSObject o = new JSObject();
