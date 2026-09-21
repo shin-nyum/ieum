@@ -562,7 +562,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v122'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v123'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -1928,7 +1928,7 @@ function settingsView(){ const st=S.settings||{}; const ago=backupAgo();
       <button class="${S.ui.noti?'on':''}" onclick="if(!S.ui.noti)toggleNoti()">켜기</button>
       <button class="${!S.ui.noti?'on':''}" onclick="if(S.ui.noti)toggleNoti()">끄기</button>
     </div>
-    <p class="lblnote" style="margin-top:14px;text-align:right;opacity:.7">${NATIVE?`이음 앱 ${esc(NINFO.versionName||'')} · 웹 ${APP_BUILD}${payLab()?' · 결제 시험':''} <button class="minibtn" style="margin-left:6px" onclick="manualWebUpdate()">업데이트 확인</button>`:`이음 ${APP_BUILD}`}</p>
+    <p class="lblnote" style="margin-top:14px;text-align:right;opacity:.7">${NATIVE?`<span onclick="labTap()">이음 앱 ${esc(NINFO.versionName||'')} · 웹 ${APP_BUILD}${payLab()?' · 결제 시험':''}</span> <button class="minibtn" style="margin-left:6px" onclick="manualWebUpdate()">업데이트 확인</button>`:`이음 ${APP_BUILD}`}</p>
   </div>
   <div class="card">
     <div class="secthead"><div class="t">💾 백업 · 기기 이전</div><div class="c">${ago?`마지막 백업 ${ago}`:'아직 백업 없음'}</div></div>
@@ -2250,6 +2250,10 @@ function premiumOk(){ try{ return !!(S.settings&&S.settings.premium&&S.settings.
 const PASS_FREE=true; // 2026-09 결제 UI 비노출 — 모든 부가 기능 무료 (결제 코드는 유지)
 function payLab(){ try{ return !!NATIVE && localStorage.getItem('ieum_paylab')==='1'; }catch(e){ return false; } } // Play 앱에서만 의미 있음
 function payFree(){ return PAY.mode==='free' && !payLab(); }
+let _labN=0,_labT=0; // 소유자용: 설정 맨 아래 버전 줄을 7번 연속 탭 → 결제 시험 모드 켜기/끄기 (링크는 카톡 인앱 브라우저에서 열리면 앱에 닿지 않음)
+function labTap(){ if(!NATIVE) return; const now=Date.now(); if(now-_labT>2500) _labN=0; _labT=now; if(++_labN<7) return; _labN=0;
+  try{ if(localStorage.getItem('ieum_paylab')==='1'){ localStorage.removeItem('ieum_paylab'); toast('결제 시험 모드를 껐어요'); }
+    else { localStorage.setItem('ieum_paylab','1'); toast('결제 시험 모드를 켰어요 — 이 기기에서만 이음 패스 결제가 켜져요'); } }catch(e){} render(); }
 function hasPass(ev){ return (PASS_FREE && !payLab()) || premiumOk() || !!(ev&&ev.pass); } // 1회 결제=계정 전체 영구 (pid가 settings에 있어 백업·이전에도 유지)
 function passTrack(k){ if(!S.meta.passStats)S.meta.passStats={shown:0,accepted:0,declined:0,used:{},method:{}};
   if(k==='shown'||k==='accepted'||k==='declined')S.meta.passStats[k]++;
