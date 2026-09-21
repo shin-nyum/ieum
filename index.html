@@ -506,12 +506,10 @@
   .lc-d{font-size:15px;color:var(--ink2)}
   .lc-go{font-size:15.5px;font-weight:700}
   .land-row{display:flex;gap:10px;align-items:stretch} /* v126: 내 경조사 | 가계부 */
-  .land-row .land-card.primary{flex:1.75;min-width:0}
-  .land-ledger{flex:1;min-width:0;padding:20px 14px}
-  .land-ledger .lc-ic{color:var(--primary-d);height:30px}
-  .land-ledger .lc-ic svg{width:31px;height:31px;display:block}
-  .land-ledger .lc-t{font-size:20px}
-  .land-ledger .lc-d{font-size:14px}
+  .land-row .land-card{flex:1 1 50%;min-width:0;padding:18px 16px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;text-align:left} /* 1:1 대칭 · 위쪽 정렬 */
+  .land-row .land-card .lc-d{font-size:14.5px}
+  .evtag{display:inline-block;margin-top:3px;font-size:12.5px;font-weight:700;color:var(--gold-text);background:var(--dd-bg);border-radius:6px;padding:2px 8px;cursor:pointer} /* v127: 받은 내역의 행사 태그 */
+  html[data-theme="dark"] .evtag{color:var(--gold)}
   .bnav{background:var(--card);backdrop-filter:none;border-top:1px solid var(--line);padding:8px 4px calc(8px + env(safe-area-inset-bottom))}
   .bnav button{font-size:13px;font-weight:800;color:var(--muted)}
   .bnav button .bn-ic{opacity:1;stroke-width:1.9;width:24px;height:24px}
@@ -557,7 +555,7 @@
   </nav>
   <nav class="bnav" id="hostnav" style="display:none" aria-label="주최자 메뉴">
     <button data-h="setup" aria-label="행사 정보와 보내기" onclick="setHostTab('setup')"><svg class="bn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>행사·보내기</button>
-    <button data-h="ledger" aria-label="장부 정리" onclick="setHostTab('ledger')"><svg class="bn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9.5 7h6"/></svg>장부</button>
+    <button data-h="ledger" aria-label="품앗이 가계부" onclick="setHostTab('ledger')"><svg class="bn-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9.5 7h6"/></svg>가계부</button>
     <button data-h="more" aria-label="부가 기능" onclick="setHostTab('more')"><svg class="bn-ic" viewBox="0 0 24 24" fill="none"><circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/></svg>더보기</button>
   </nav>
 </div>
@@ -569,7 +567,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v126'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v127'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -968,8 +966,8 @@ function shareReply(ev,code,nm,me){
   if(ready){ try{ Kakao.Share.sendDefault({objectType:'feed', installTalk:true,
       content:{title:`[이음] ${nm}입니다`, description:summary.split('\n').slice(1).join(' · ')||'마음을 전했어요',
         imageUrl:'https://shin-nyum.github.io/ieum/og-image3.jpg', imageWidth:800, imageHeight:400, link:{mobileWebUrl:link,webUrl:link}},
-      buttons:[{title:'장부에 반영하기', link:{mobileWebUrl:link,webUrl:link}}]}); return; }catch(e){} }
-  if(navigator.share){ navigator.share({title:'[이음] 마음 전해드려요', text:summary+'\n👇 아래 링크를 누르시면 장부에 자동 반영됩니다.', url:link}).catch(()=>{}); return; }
+      buttons:[{title:'가계부에 반영하기', link:{mobileWebUrl:link,webUrl:link}}]}); return; }catch(e){} }
+  if(navigator.share){ navigator.share({title:'[이음] 마음 전해드려요', text:summary+'\n👇 아래 링크를 누르시면 가계부에 자동 반영됩니다.', url:link}).catch(()=>{}); return; }
   copy(summary+'\n'+link); toast('알림 메시지를 복사했어요 — 주최자에게 붙여넣어 보내세요'); }
 /* 릴레이: 사서함 주소는 행사 키의 해시(서버에 이름·행사 원문 비노출), 응답은 호스트 수신 시 서버에서 삭제 */
 async function relayKeyOf(key){ const buf=await crypto.subtle.digest('SHA-256', new TextEncoder().encode('ieum1|'+key));
@@ -1008,7 +1006,7 @@ function relayPull(force){ if(!RELAY.url) return; // 호스트: 내 행사 사�
           const a=document.activeElement, typing=!!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)); // 장부 입력 중이면 DOM 교체로 입력값·키보드를 날리지 않는다
           if(typing){ try{ if(S.ui.tab==='host'&&(S.ui.hostTab||'setup')==='ledger'&&hostEvent()&&hostEvent().id===ev.id) updateHostLedgerUI(ev); }catch(e){} } else render();
           const who=multi?`「${evNamePlain(ev)||ev.date||'이름 없는 행사'}」 `:'';
-          setTimeout(()=>toast(typing?`${who}명부 기록 ${n}건을 받았어요 — 입력을 마치면 명단에 보여요`:`${who}명부 기록 ${n}건이 장부에 반영됐어요 ✓`),300); }
+          setTimeout(()=>toast(typing?`${who}명부 기록 ${n}건을 받았어요 — 입력을 마치면 명단에 보여요`:`${who}명부 기록 ${n}건이 가계부에 반영됐어요 ✓`),300); }
       }catch(e){ failed++; } }
     if(_relayForce&&!total) toast(failed?'확인하지 못했어요 — 네트워크를 확인해 주세요':'새 기록이 없어요');
   })().finally(()=>{ _relayPullP=null; _relayForce=false; });
@@ -1240,11 +1238,10 @@ function landingView(){
       <button class="land-card primary" onclick="enterAs('guest')">
         <div class="lc-ic">🎁</div>
         <div class="lc-t">내 경조사</div>
-        <div class="lc-d">받은 청첩장·부고 관리, 축의금 송금</div>
-        <div class="lc-go">시작하기 ›</div>
+        <div class="lc-d">청첩장·부고, 송금</div>
       </button>
       <button class="land-card land-ledger" onclick="enterLedger()" aria-label="품앗이 가계부 열기">
-        <div class="lc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="2.5" width="15" height="19" rx="2.6"/><rect x="7.5" y="5.5" width="9" height="4" rx="1"/><path d="M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01M16 17h.01" stroke-width="2.6"/></svg></div>
+        <div class="lc-ic">🧮</div>
         <div class="lc-t">가계부</div>
         <div class="lc-d">주고받은 내역</div>
       </button>
@@ -1252,7 +1249,7 @@ function landingView(){
       <button class="land-card" onclick="enterAs('host')">
         <div class="lc-ic">✍️</div>
         <div class="lc-t">내 행사 만들기</div>
-        <div class="lc-d">청첩장 보내기, 축의금 장부</div>
+        <div class="lc-d">청첩장 보내기, 받은 축의금 정리</div>
       </button>
     </div>
     <p class="land-foot">
@@ -1322,7 +1319,7 @@ function shareFromHost(kind){ const ev=hostEvent(); if(!ev)return;
   if(!hasPass(ev) && ev.type!=='memorial'){
     if(!ev.scale && (ev.guests||[]).length<FREE_GUESTS){ openScaleSheet(kind); return; }
     if(ev.scale==='big' || (ev.guests||[]).length>=FREE_GUESTS){ passTrack('bigEvent');
-      passPrompt(()=>shareFromHost(kind),`하객 ${FREE_GUESTS}명이 넘는 행사는 이음 패스로 보내요. 한 번 결제하면 발송·전체 장부·엑셀이 평생 열려요.`); return; } }
+      passPrompt(()=>shareFromHost(kind),`하객 ${FREE_GUESTS}명이 넘는 행사는 이음 패스로 보내요. 한 번 결제하면 발송·전체 명단·엑셀이 평생 열려요.`); return; } }
   reviewBump('send'); // 게이트를 통과한 실제 발송만 센다
   if(kind==='sms') shareEventSMS(ev); else shareEvent(ev); }
 /* ---- 리뷰 요청 타이밍(Play 앱만): 주최자=초대 발송 3회째, 하객=이음 초대 3건째 등록 — 만족도가 가장 높은 순간.
@@ -1367,8 +1364,8 @@ function pickScale(sc,kind){ const ev=own(hostEvent()); ev.scale=(sc==='big'?'bi
 function lockedCount(ev){ try{ if(!ev||ev.type==='memorial'||hasPass(ev)) return 0; return Math.max(0,(ev.guests||[]).filter(x=>!x.unregistered).length-FREE_GUESTS); }catch(e){ return 0; } }
 function openGuests(ev){ const reg=(ev.guests||[]).filter(x=>!x.unregistered); return lockedCount(ev)?reg.slice(0,FREE_GUESTS):reg; }
 function lockNote(ev){ try{ if(!ev||ev.type==='memorial'||hasPass(ev)) return ''; const n=(ev.guests||[]).filter(x=>!x.unregistered).length;
-  if(n>=Math.ceil(FREE_GUESTS*0.8)&&n<=FREE_GUESTS) return `<div class="note" style="margin-top:10px">장부에 <b>${n}명</b>이 기록됐어요. ${FREE_GUESTS+1}번째 하객부터는 <b>이음 패스</b>로 열려요.</div>`; }catch(e){} return ''; }
-function unlockLedger(){ passTrack('ledgerLock'); passPrompt(()=>{ render(); },`하객이 ${FREE_GUESTS}명을 넘었어요. 한 번 결제하면 전체 장부·엑셀·발송이 평생 열려요.`); }
+  if(n>=Math.ceil(FREE_GUESTS*0.8)&&n<=FREE_GUESTS) return `<div class="note" style="margin-top:10px">가계부에 <b>${n}명</b>이 기록됐어요. ${FREE_GUESTS+1}번째 하객부터는 <b>이음 패스</b>로 열려요.</div>`; }catch(e){} return ''; }
+function unlockLedger(){ passTrack('ledgerLock'); passPrompt(()=>{ render(); },`하객이 ${FREE_GUESTS}명을 넘었어요. 한 번 결제하면 전체 명단·엑셀·발송이 평생 열려요.`); }
 function hostView(){
   const ev=hostEvent(); const c=cfg(ev); const led=ledgerStats(ev);
   const hf=S.ui.hostFold||{};
@@ -1378,11 +1375,13 @@ function hostView(){
   const acctOpen = hf.acct!==undefined? hf.acct : (infoDone&&!acctDone);
   const budOpen  = hf.bud===true;
   const ht=S.ui.hostTab||'setup';
-  const back=`<button class="backbtn" onclick="backFromHost()">‹ 내 경조사</button>`;
+  const back=`<button class="backbtn" onclick="backFromHost()">‹ ${S.ui.evFrom==='ledger'?'품앗이 가계부':'내 경조사'}</button>`;
 
   if(ht==='ledger') return back+`
+  <div class="listhead"><div class="t serif">품앗이 가계부</div></div>
+  ${ledgerChips(ev.id)}
   <div class="card">
-    <div class="secthead"><div class="t">📒 장부 정리</div><div class="c">하객 ${ev.guests.length}명 <button class="minibtn" style="margin-left:6px" onclick="relayPull(true)">↻ 새로고침</button></div></div>
+    <div class="secthead"><div class="t">${c.icon||'📒'} 받은 ${c.money}</div><div class="c">하객 ${ev.guests.length}명 <button class="minibtn" style="margin-left:6px" onclick="relayPull(true)">↻ 새로고침</button></div></div>
     <div class="stats">
       <div class="stat"><div class="v" id="hl-paid">${led.paid}</div><div class="k">마음 전한 분</div></div>
       <div class="stat"><div class="v big" id="hl-total">${won(led.total)}</div><div class="k">총 ${c.money}</div></div>
@@ -1409,7 +1408,7 @@ function hostView(){
   <div class="card">
     <h3>행사 마무리</h3>
     <div class="stack">
-      <button class="btn btn-ghost" onclick="exportXlsxGate()">장부 엑셀 내보내기 · 서식 포함 ${ev.type==='memorial'?'':passChip(ev)}</button>
+      <button class="btn btn-ghost" onclick="exportXlsxGate()">엑셀로 내보내기 · 서식 포함 ${ev.type==='memorial'?'':passChip(ev)}</button>
       <button class="btn btn-ghost" onclick="openThanks()">${ev.type==='memorial'?'답례 인사 준비하기':'감사 인사 준비하기'}</button>
     </div>
   </div>
@@ -1534,7 +1533,7 @@ function homeHero(ev){ const c=cfg(ev); const mem=ev.type==='memorial';
     <div class="hh-ic">${c.icon}</div>
     <div class="hh-nm serif">${esc(evNamePlain(ev))||'(이름 미입력)'} <span class="typ">${c.label}</span></div>
     <div class="hh-dt">${dateText(ev)}<br/>${esc(ev.venue||'장소 미정')}</div>
-    <div class="hh-btns"><button class="btn ${mem?'btn-ghost':'btn-primary'} btn-sm" onclick="event.stopPropagation();openEvent('${ev.id}')">${ev.role==='host'?'📒 장부·관리 열기':(mem?'🕊️ 조의 전하기':'💸 마음 전하기')}</button></div>
+    <div class="hh-btns"><button class="btn ${mem?'btn-ghost':'btn-primary'} btn-sm" onclick="event.stopPropagation();openEvent('${ev.id}')">${ev.role==='host'?'📒 내 행사 열기':(mem?'🕊️ 조의 전하기':'💸 마음 전하기')}</button></div>
   </div>`; }
 function guestList(){
   const all=S.events.filter(e=>!(e.draft&&!evHasContent(e)));
@@ -1820,17 +1819,17 @@ function delGuest(id){const ev=hostEvent();const x=ev.guests.find(g=>g.id===id);
   if(x && !confirm(`${x.name}님을 명단에서 삭제할까요?`))return;
   ev.guests=ev.guests.filter(g=>g.id!==id);save();render();toast('삭제했어요');}
 function delEvent(id){ const ev=S.events.find(e=>e.id===id); if(!ev)return;
-  if(!confirm(`'${evNamePlain(ev)||'이 경조사'}'를 삭제할까요?\n장부·기록도 함께 삭제됩니다.`))return;
+  if(!confirm(`'${evNamePlain(ev)||'이 경조사'}'를 삭제할까요?\n받은 기록도 함께 삭제됩니다.`))return;
   S.events=S.events.filter(e=>e.id!==id);
   if(S.ui.hostEventId===id)S.ui.hostEventId=null;
   if(S.ui.currentEventId===id)S.ui.currentEventId=null;
-  S.ui.tab='guest'; S.ui.guestView=(S.ui.evFrom==='allev')?'allev':'list'; S.ui.evFrom=null; S.ui.hostSub=null;
+  S.ui.tab='guest'; S.ui.guestView=(S.ui.evFrom==='allev')?'allev':(S.ui.evFrom==='ledger'?'ledger':'list'); S.ui.evFrom=null; S.ui.hostSub=null;
   save(); render(); window.scrollTo(0,0); toast('경조사를 삭제했어요'); }
 let HGQ=''; // 하객 검색어 (세션 한정)
 function hostGuestsHTML(ev){ const q=HGQ.trim(); const locked=lockedCount(ev);
   let list=openGuests(ev);
   if(q) list=list.filter(x=>(x.name||'').includes(q)||(x.relation||'').includes(q));
-  const lock=locked?`<div class="grow" style="border-color:var(--primary)"><div class="top"><div><div class="nm">🔒 ${FREE_GUESTS+1}번째 하객부터 ${locked}명</div><div class="meta">기록은 안전하게 보관 중이에요</div></div></div><button class="btn btn-primary btn-sm" style="margin-top:9px" onclick="unlockLedger()">이음 패스로 전체 장부 열기 · ${passPriceLabel()}</button></div>`:'';
+  const lock=locked?`<div class="grow" style="border-color:var(--primary)"><div class="top"><div><div class="nm">🔒 ${FREE_GUESTS+1}번째 하객부터 ${locked}명</div><div class="meta">기록은 안전하게 보관 중이에요</div></div></div><button class="btn btn-primary btn-sm" style="margin-top:9px" onclick="unlockLedger()">이음 패스로 전체 명단 열기 · ${passPriceLabel()}</button></div>`:'';
   if(!list.length) return (q?`<div class="empty">'${esc(q)}' 검색 결과가 없어요</div>`:'<div class="empty">하객을 추가해 주세요</div>')+lock;
   return list.map(x=>rowHost(ev,x)).join('')+lock; }
 function renderHostGuests(){ const ev=hostEvent(); const el=$('#hg-list'); if(ev&&el) el.innerHTML=hostGuestsHTML(ev); }
@@ -1878,10 +1877,24 @@ function myStats(){ let given=0,gaveCount=0,received=0,recvCount=0; const byRel=
   }));
   return {given,gaveCount,received,recvCount,net:received-given,byRel}; }
 function openLedger(){ S.ui.guestView='ledger'; save(); render(); window.scrollTo(0,0); }
+/* ---- 가계부 하나로(v127): 내 행사의 받은 내역(옛 '장부')은 가계부의 '행사 태그'. 가계부에서든 주최자 탭에서든 같은 화면으로 들어간다 ---- */
+function myHostEvents(){ return S.events.filter(e=>e.role==='host'&&!e.demo&&!e.tut&&evHasContent(e)); }
+function evTagLabel(e){ const n=evNamePlain(e)||'내 행사'; return ((cfg(e).icon||'')+' '+(n.length>11?n.slice(0,10)+'…':n)).trim(); }
+function ledgerChips(active){ const evs=myHostEvents();
+  if(active&&active!=='all'&&!evs.find(e=>e.id===active)){ const cur=S.events.find(e=>e.id===active); if(cur) evs.push(cur); } // 아직 비어 있는 새 행사도 자기 태그는 보이게
+  return `<div class="chips" style="margin:0 0 12px">
+    <button class="chip ${active==='all'?'on':''}" onclick="setGuestTab('ledger')">전체</button>
+    <button class="chip" onclick="openTx('gave')">보낸</button>
+    <button class="chip" onclick="openTx('received')">받은</button>
+    ${evs.map(e=>`<button class="chip ${active===e.id?'on':''}" onclick="openEventLedger('${jsq(e.id)}')">${esc(evTagLabel(e))}</button>`).join('')}
+  </div>`; }
+function openEventLedger(id){ const ev=S.events.find(e=>e.id===id&&e.role==='host'); if(!ev) return;
+  S.ui.entered=true; S.ui.tab='host'; S.ui.hostEventId=id; S.ui.hostSub=null; S.ui.hostTab='ledger'; S.ui.evFrom='ledger'; save(); render(); window.scrollTo(0,0); try{ relayPull(); }catch(e){} }
 function ledgerView(){ const s=myStats();
   const all=txAll();
   return `
   <div class="listhead"><div class="t serif">품앗이 가계부</div></div>
+  ${ledgerChips('all')}
   <div class="card reco-cta" onclick="openPeople()" style="border-color:var(--sage)">
     <div class="rc-ic">🔎</div>
     <div class="rc-tx"><div class="rc-t" style="color:var(--sage-d)">주고받은 사람</div></div>
@@ -1903,7 +1916,7 @@ function ledgerView(){ const s=myStats();
 /* ---- 주고받은 내역 (은행 앱 컨셉: 기간·방향 필터) ---- */
 function txAll(){ const arr=[];
   S.events.forEach(e=>{ if(e.demo||e.tut) return;
-    if(e.role==='host'){ (e.guests||[]).forEach(g=>{ const p=g.pay||{}; if(p.amount>0) arr.push({dir:'received',amount:p.amount,label:g.name,sub:evNamePlain(e)+' · '+cfg(e).label,date:e.date||''}); }); }
+    if(e.role==='host'){ openGuests(e).forEach(g=>{ const p=g.pay||{}; if(p.amount>0) arr.push({dir:'received',amount:p.amount,label:g.name,sub:evNamePlain(e)+' · '+cfg(e).label,date:e.date||'',evId:e.id,tag:evTagLabel(e)}); }); } // 잠긴(31번째~) 하객은 내역에 나오지 않음
     else if(e.myGift>0){ arr.push({dir:'gave',amount:e.myGift,label:evNamePlain(e),sub:cfg(e).label+(e.myRelation?' · '+e.myRelation:''),date:e.date||''}); } });
   (S.people||[]).forEach(p=>{ if(p.demo||p.tut) return; (p.items||[]).forEach(it=>{ if(it.amount>0)
     arr.push({dir:it.dir,amount:it.amount,label:p.name,sub:(it.label||'경조사')+' · 직접 기록',date:it.date||''}); }); });
@@ -1911,7 +1924,7 @@ function txAll(){ const arr=[];
 function txRow(t){ const g=t.dir==='gave'; // 부호 대신 뱃지 — 보냄=은은한 붉은톤, 받음=은은한 초록톤
   return `<div class="calevrow" style="cursor:default">
   <span style="flex:none;font-size:11px;color:var(--muted);width:64px;font-variant-numeric:tabular-nums">${t.date||'날짜 없음'}</span>
-  <span class="cnm">${esc(t.label)}<span style="color:var(--muted);font-weight:400;font-size:11px"> · ${esc(t.sub)}</span></span>
+  <span class="cnm">${esc(t.label)}${t.evId?`<br><span class="evtag" onclick="event.stopPropagation();openEventLedger('${jsq(t.evId)}')">${esc(t.tag)}</span>`:`<span style="color:var(--muted);font-weight:400;font-size:11px"> · ${esc(t.sub)}</span>`}</span>
   <span class="pill ${g?'pill-no':'pill-ok'}" style="flex:none">${g?'보냄':'받음'}</span>
   <span class="rv" style="color:${g?'var(--danger)':'var(--ok)'}">${won(t.amount)}</span></div>`; }
 function openTx(f){ S.ui.txFilter=f||'all'; if(!S.ui.txPeriod)S.ui.txPeriod='3m'; S.ui.guestView='tx'; save(); render(); window.scrollTo(0,0); }
@@ -2361,7 +2374,7 @@ function passPrompt(cont,note){ _passCont=cont||null; _payPick=null; passTrack('
       <div style="font-weight:700;font-size:16px">이음 패스</div>
       <div style="font-size:14px">${payFree()?`<s style="color:var(--muted)">${PASS_PRICE}</s> <b style="color:var(--ok)">테스터 무료</b>`:`<b>${passPriceLabel()}</b> <span style="color:var(--muted);font-size:12px">· 한 번 결제 · 평생</span>`}</div>
     </div>
-    <p class="sub" style="margin:6px 0 12px">${_memo?`딱 한 번 결제하면 <b>모든 행사</b>에서 <b>장부 엑셀 내보내기</b>가 평생 열려요 (결혼식 등 하객 ${FREE_GUESTS}명 이상 발송 포함).`:`딱 한 번 결제하면 <b>모든 행사</b>에서 <b>하객 ${FREE_GUESTS}명 넘는 행사의 발송·전체 장부</b>와 <b>장부 엑셀 내보내기</b>가 평생 열려요.`} 백업·기기 이전에도 유지됩니다.</p>
+    <p class="sub" style="margin:6px 0 12px">${_memo?`딱 한 번 결제하면 <b>모든 행사</b>에서 <b>엑셀 내보내기</b>가 평생 열려요 (결혼식 등 하객 ${FREE_GUESTS}명 이상 발송 포함).`:`딱 한 번 결제하면 <b>모든 행사</b>에서 <b>하객 ${FREE_GUESTS}명 넘는 행사의 발송·전체 명단</b>와 <b>엑셀 내보내기</b>가 평생 열려요.`} 백업·기기 이전에도 유지됩니다.</p>
     ${note?`<div class="note" style="margin:0 0 12px">${note}</div>`:''}
     ${!payFree()&&(PLAYB||NATIVE)?`
     <div class="note" style="margin:0">▶ <b>Google Play 결제</b>로 안전하게 진행됩니다 — 결제·환불 모두 Play 계정에서 관리돼요.</div>`
@@ -2436,17 +2449,17 @@ function loadExcelJS(cb,fail){ if(window.ExcelJS){ cb(); return; }
   const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
   s.onload=cb; s.onerror=()=>{ if(fail)fail(); }; document.head.appendChild(s); }
 function exportLedgerXLSX(){ const ev=hostEvent(); const c=cfg(ev);
-  toast('장부 엑셀을 만드는 중…');
+  toast('엑셀을 만드는 중…');
   loadExcelJS(async ()=>{ try{
     const led=ledgerStats(ev);
     const wb=new ExcelJS.Workbook(); wb.creator='이음';
-    const ws=wb.addWorksheet('장부',{views:[{showGridLines:false}]});
+    const ws=wb.addWorksheet('가계부',{views:[{showGridLines:false}]});
     ws.columns=[{width:16},{width:11},{width:12},{width:15},{width:14}];
     const BORDER={style:'thin',color:{argb:'FFE7E0D5'}};
     const allB={top:BORDER,left:BORDER,bottom:BORDER,right:BORDER};
     // 타이틀
     ws.mergeCells('A1:E1'); const t=ws.getCell('A1');
-    t.value=`이음 장부 — ${evNamePlain(ev)} ${c.label}`;
+    t.value=`이음 품앗이 가계부 — ${evNamePlain(ev)} ${c.label}`;
     t.font={name:'Malgun Gothic',size:15,bold:true,color:{argb:'FFFFFFFF'}};
     t.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFA87F6A'}};
     t.alignment={horizontal:'center',vertical:'middle'}; ws.getRow(1).height=32;
@@ -2504,7 +2517,7 @@ function exportLedgerXLSX(){ const ev=hostEvent(); const c=cfg(ev);
     ws.getCell(`A${r+2}`).font={name:'Malgun Gothic',size:8,color:{argb:'FFB0A698'}};
     const buf=await wb.xlsx.writeBuffer();
     const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-    exportFile(blob, `이음_장부_${evNamePlain(ev)}.xlsx`, '이음 장부', '장부 엑셀을 내보냈어요 (서식 포함)');
+    exportFile(blob, `이음_가계부_${evNamePlain(ev)}.xlsx`, '이음 가계부', '엑셀을 내보냈어요 (서식 포함)');
   }catch(e){ toast('엑셀 생성 실패 — CSV로 대신 내보내요'); exportLedgerCSV(); }
   }, ()=>{ toast('엑셀 모듈 로드 실패 — CSV로 대신 내보내요'); exportLedgerCSV(); });
 }
@@ -2514,7 +2527,7 @@ function exportLedgerCSV(){ const ev=hostEvent(); const c=cfg(ev);
     p.amount??'', p.amount!=null?(p.source==='app'?'이음송금':(p.method==='cash'?'현금':'직접입력')):'' ]); });
   const led=ledgerStats(ev); rows.push(['','','','','']); rows.push(['합계','','', led.total, `이음 ${led.appSum}/직접 ${led.manualSum}`]);
   const csv='﻿'+rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\r\n');
-  exportFile(new Blob([csv],{type:'text/csv;charset=utf-8'}), `${evNamePlain(ev)}_장부.csv`, '이음 장부', '엑셀(CSV)로 내보냈어요'); }
+  exportFile(new Blob([csv],{type:'text/csv;charset=utf-8'}), `${evNamePlain(ev)}_가계부.csv`, '이음 가계부', '엑셀(CSV)로 내보냈어요'); }
 function openThanks(){ S.ui.hostSub='thanks'; S.ui.tab='host'; save(); render(); window.scrollTo(0,0); }
 function thankSamples(ev){ return cfg(ev).label==='부고'
   ? ['{이름}님, 바쁘신 중에도 귀한 걸음 하시어 위로해 주심에 진심으로 깊은 감사의 말씀을 드립니다. 베풀어주신 따뜻한 마음 잊지 않고 고이 간직하겠습니다. 항상 건강과 평안이 함께하시길 기원합니다.',
@@ -2599,7 +2612,7 @@ function backFromHost2(){ S.ui.hostSub=null; save(); render(); window.scrollTo(0
 function navGroup(v){ if(['ledger','people','person','personadd','tx'].includes(v))return 'ledger'; if(v==='reco')return 'more'; if(['more','settings','doc'].includes(v))return 'more'; return 'home'; }
 function setGuestTab(v){ S.ui.tab='guest'; S.ui.guestView=v; if(v==='reco'&&S.ui.reco)S.ui.reco.ctxEventId=null; save(); render(); window.scrollTo(0,0); }
 function updateBottomNav(){ const g=navGroup(S.ui.guestView); document.querySelectorAll('#bottomnav button').forEach(b=>b.classList.toggle('on', b.getAttribute('data-g')===g)); }
-function backFromHost(){ pruneDraft(); S.ui.tab='guest'; S.ui.guestView=(S.ui.evFrom==='allev')?'allev':'list'; S.ui.evFrom=null; S.ui.hostSub=null; save(); render(); window.scrollTo(0,0); }
+function backFromHost(){ pruneDraft(); S.ui.tab='guest'; S.ui.guestView=(S.ui.evFrom==='allev')?'allev':(S.ui.evFrom==='ledger'?'ledger':'list'); S.ui.evFrom=null; S.ui.hostSub=null; save(); render(); window.scrollTo(0,0); }
 function setHostTab(t){ S.ui.hostTab=t; save(); render(); window.scrollTo(0,0); if(t==='ledger'){ try{ relayPull(); }catch(e){} } }
 
 /* ======================= 주고받은 사람 (통합·검색 이력) ======================= */
@@ -2610,7 +2623,7 @@ function unifiedPeople(){ const map={};
     if(!map[k])map[k]={name:k,relation:relation||'',items:[]}; if(relation&&!map[k].relation)map[k].relation=relation; map[k].items.push(item); };
   (S.people||[]).forEach(p=>{ const k=(p.name||'').trim(); if(k&&!map[k]) map[k]={name:k,relation:p.relation||'',items:[]}; // 이력 0건도 목록·상세에 노출
     (p.items||[]).forEach(it=>push(p.name,p.relation,{dir:it.dir,amount:it.amount,label:it.label,date:it.date,src:'manual',auto:false,pid:p.id,iid:it.id})); });
-  S.events.filter(e=>e.role==='host').forEach(e=>{ (e.guests||[]).forEach(g=>{ const p=g.pay||{}; if(p.amount>0) push(g.name,g.relation,{dir:'received',amount:p.amount,label:evNamePlain(e)+' '+cfg(e).label,date:e.date,src:p.source==='app'?'app':(p.method==='cash'?'cash':'manual'),auto:true}); }); });
+  S.events.filter(e=>e.role==='host').forEach(e=>{ openGuests(e).forEach(g=>{ const p=g.pay||{}; if(p.amount>0) push(g.name,g.relation,{dir:'received',amount:p.amount,label:evNamePlain(e)+' '+cfg(e).label,date:e.date,src:p.source==='app'?'app':(p.method==='cash'?'cash':'manual'),auto:true}); }); });
   S.events.filter(e=>e.role!=='host'&&e.myGift>0).forEach(e=>{ push(evNamePlain(e), e.myRelation, {dir:'gave',amount:e.myGift,label:cfg(e).label+' '+cfg(e).money,date:e.date,src:'app',auto:true}); });
   return Object.values(map).sort((a,b)=>{ const la=a.items.reduce((m,i)=>(i.date||'')>m?i.date:m,''), lb=b.items.reduce((m,i)=>(i.date||'')>m?i.date:m,''); return lb.localeCompare(la); }); }
 function pStats2(p){ let gave=0,recv=0; p.items.forEach(it=>{ if(it.dir==='gave')gave+=it.amount; else recv+=it.amount; }); return {gave,recv,net:gave-recv}; }
@@ -3299,7 +3312,7 @@ function clearBootHash(){ // 일부 웹뷰는 문서 파싱 중 replaceState를 
     copy(info); setTimeout(()=>toast(`내 행사가 아니에요 — 주최자 폰에서 열어주세요 (${info} 복사됨)`),400); return; }
   mergeGuestReply(ev,o);
   S.ui.entered=true; S.ui.tab='host'; S.ui.hostEventId=ev.id; S.ui.hostSub=null; S.ui.hostTab='setup'; save();
-  setTimeout(()=>toast(`『${o.n}』님의 기록을 장부에 반영했어요 ✓`),400);
+  setTimeout(()=>toast(`『${o.n}』님의 기록을 가계부에 반영했어요 ✓`),400);
 }catch(e){} })();
 
 /* ======================= 기기 이전 링크(#b= 데이터 / #r= 릴레이) ======================= */
@@ -3385,7 +3398,7 @@ const TUT_STEPS=[
  {host:true, ht:'setup', at:'host', v:()=>{S.ui.tab='host'; ensureHostEvent(); S.ui.hostSub=null; S.ui.hostTab='setup';}, sel:'.fold:not(.hostsw)',
   t:'내 행사 만들기 (주최자)', x:'내 결혼식·행사는 여기서. 위에서 아래로 행사 정보 → 계좌 → 보내기만 채우면 준비 끝이에요.'},
  {host:true, ht:'ledger', at:'host', v:()=>{S.ui.tab='host'; ensureHostEvent(); S.ui.hostSub=null; S.ui.hostTab='ledger';}, sel:'.stats',
-  t:'장부 정리', x:'하객이 보낸 마음이 여기에 자동으로 기록돼요. 현금 수령분도 이름 옆에 직접 입력해 한 장부로 정리!\n\n튜토리얼 끝! 이제 행사 정보부터 채워보세요 🎉'},];
+  t:'품앗이 가계부', x:'하객이 보낸 마음이 여기에 자동으로 기록돼요. 현금 수령분도 이름 옆에 직접 입력해 한곳에 정리!\n\n튜토리얼 끝! 이제 행사 정보부터 채워보세요 🎉'},];
 function tutSteps(){ return TUT_STEPS.filter(s=>TUT.kind==='host'?!!s.host:!s.host); } // 역할별: 하객 7단계(데모 주입) / 주최자 2단계
 function startTutorial(kind){ if(TUT.on) return;
   kind=(kind==='host'||kind==='guest')?kind:(S.ui.tab==='host'?'host':'guest'); // 푸터 [사용법 보기]는 현재 탭 기준
@@ -3540,7 +3553,7 @@ function dueMessageJS(ev,days){ const mem=ev.type==='memorial';
   if(days===1) return mem?{title:`${nm}님 부고 — 내일 발인이에요`,body:when}:{title:`내일, ${nm}님의 ${label}이에요`,body:when+' — 마음을 준비해 주세요'};
   if(days===0) return mem?{title:`${nm}님 부고 — 오늘 발인이에요`,body:when}:{title:`오늘, ${nm}님의 ${label}이에요`,body:when};
   if(days==='rec0'||days==='rec1'){ const money=mem?'조의금':'축의금'; // 명부 기록 리마인드 (하객, 미기록)
-    return {title:`${nm}님${mem?'':' '+label} ${money}, 명부에 기록하셨나요?`, body:days==='rec0'?`보낸 마음은 [${money} 명부에 기록하기]를 눌러야 주최자 장부와 내 품앗이 가계부에 남아요`:`아직 기록 전이에요 — 이음을 열고 한 번만 눌러 주세요 (현금으로 냈다면 '현금 전달'로)`}; }
+    return {title:`${nm}님${mem?'':' '+label} ${money}, 명부에 기록하셨나요?`, body:days==='rec0'?`보낸 마음은 [${money} 명부에 기록하기]를 눌러야 주최자와 내 품앗이 가계부에 남아요`:`아직 기록 전이에요 — 이음을 열고 한 번만 눌러 주세요 (현금으로 냈다면 '현금 전달'로)`}; }
   if(days==='pp0'||days==='pp1') return {title:`${nm}님께 보낸 송금, 명부에 기록하셨나요?`, body:days==='pp0'?'송금을 마쳤다면 이음을 열고 [명부에 기록하기]를 눌러 주세요':'기록이 없으면 주최자 장부에도, 내 가계부에도 남지 않아요'};
   if(days===-1){ if(ev.role!=='host') return null;
     return mem?{title:'조문해 주신 분들께 감사 인사를 전할 차례예요',body:'이음의 [답례 인사 준비하기]에서 문구와 사진을 준비할 수 있어요'}
