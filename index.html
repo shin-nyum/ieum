@@ -562,7 +562,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v123'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v124'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -1303,9 +1303,29 @@ function shareFromHost(kind){ const ev=hostEvent(); if(!ev)return;
     toast('행사 정보(이름·날짜)를 먼저 입력해 주세요');
     hostFoldSet('info',true); render(); window.scrollTo(0,0); return; }
   // 대규모 행사(FREE_GUESTS명+) 발송 게이트 — 장부 인원 기준. 오픈 수는 2차 전파로 부풀 수 있어 과금 근거로 쓰지 않음. 부고는 예외(장례 중 결제 UI 금지).
-  if(!hasPass(ev) && ev.type!=='memorial' && (ev.guests||[]).length>=FREE_GUESTS){
-    passTrack('bigEvent'); passPrompt(()=>shareFromHost(kind),`하객 ${FREE_GUESTS}명 이상의 큰 행사예요. 새 발송에만 패스가 필요해요.`); return; }
+  // v124: ① 첫 발송 전에 규모를 한 번 묻고 30명이 넘으면 그 자리에서 패스(첫 발송 땐 장부가 비어 이 게이트가 늘 빠졌음) ② 장부가 이미 30명 이상이면 새 발송에 패스 ③ 31번째 하객부터의 장부 잠금은 hostGuestsHTML
+  if(!hasPass(ev) && ev.type!=='memorial'){
+    if(!ev.scale && (ev.guests||[]).length<FREE_GUESTS){ openScaleSheet(kind); return; }
+    if(ev.scale==='big' || (ev.guests||[]).length>=FREE_GUESTS){ passTrack('bigEvent');
+      passPrompt(()=>shareFromHost(kind),`하객 ${FREE_GUESTS}명이 넘는 행사는 이음 패스로 보내요. 한 번 결제하면 발송·전체 장부·엑셀이 평생 열려요.`); return; } }
   if(kind==='sms') shareEventSMS(ev); else shareEvent(ev); }
+/* ---- 발송 전 규모 확인(행사당 1회 · 패스 없는 비부고 행사) ---- */
+function openScaleSheet(kind){ let bg=document.getElementById('scalesheet');
+  if(!bg){ bg=document.createElement('div'); bg.id='scalesheet'; bg.className='sheet-bg'; bg.onclick=closeScaleSheet; document.body.appendChild(bg); }
+  bg.innerHTML=`<div class="sheet" onclick="event.stopPropagation()">
+    <div class="secthead" style="margin-bottom:10px"><div class="t" style="font-size:18px">하객이 몇 분쯤 오시나요?</div></div>
+    <button class="btn btn-primary" onclick="pickScale('small','${kind==='sms'?'sms':'kakao'}')">${FREE_GUESTS}명 이하예요</button>
+    <button class="btn btn-line" style="margin-top:9px" onclick="pickScale('big','${kind==='sms'?'sms':'kakao'}')">${FREE_GUESTS}명이 넘어요</button>
+    <p class="lblnote" style="text-align:center;margin-top:10px">${FREE_GUESTS}명까지 무료 · 더 큰 행사는 이음 패스 ${passPriceLabel()} 한 번</p>
+  </div>`; setTimeout(()=>bg.classList.add('show'),10); }
+function closeScaleSheet(){ const bg=document.getElementById('scalesheet'); if(!bg) return; bg.classList.remove('show'); setTimeout(()=>{ try{ bg.remove(); }catch(e){} },220); }
+function pickScale(sc,kind){ const ev=own(hostEvent()); ev.scale=(sc==='big'?'big':'small'); save(); closeScaleSheet(); setTimeout(()=>shareFromHost(kind),240); }
+/* ---- 31번째 하객부터 잠금(백스톱): 기록은 그대로 쌓이고(유실 없음) 패스로 열린다. 부고·패스 보유·과금 대상 아님(웹 등)은 잠금 없음 ---- */
+function lockedCount(ev){ try{ if(!ev||ev.type==='memorial'||hasPass(ev)) return 0; return Math.max(0,(ev.guests||[]).filter(x=>!x.unregistered).length-FREE_GUESTS); }catch(e){ return 0; } }
+function openGuests(ev){ const reg=(ev.guests||[]).filter(x=>!x.unregistered); return lockedCount(ev)?reg.slice(0,FREE_GUESTS):reg; }
+function lockNote(ev){ try{ if(!ev||ev.type==='memorial'||hasPass(ev)) return ''; const n=(ev.guests||[]).filter(x=>!x.unregistered).length;
+  if(n>=Math.ceil(FREE_GUESTS*0.8)&&n<=FREE_GUESTS) return `<div class="note" style="margin-top:10px">장부에 <b>${n}명</b>이 기록됐어요. ${FREE_GUESTS+1}번째 하객부터는 <b>이음 패스</b>로 열려요.</div>`; }catch(e){} return ''; }
+function unlockLedger(){ passTrack('ledgerLock'); passPrompt(()=>{ render(); },`하객이 ${FREE_GUESTS}명을 넘었어요. 한 번 결제하면 전체 장부·엑셀·발송이 평생 열려요.`); }
 function hostView(){
   const ev=hostEvent(); const c=cfg(ev); const led=ledgerStats(ev);
   const hf=S.ui.hostFold||{};
@@ -1325,6 +1345,7 @@ function hostView(){
       <div class="stat"><div class="v big" id="hl-total">${won(led.total)}</div><div class="k">총 ${c.money}</div></div>
     </div>
     <div class="note" style="margin-top:10px" id="hl-split">🔵 이음 송금 ${won(led.appSum)} · ✏️ 현금·직접입력 ${won(led.manualSum)}</div>
+    ${lockNote(ev)}
     <div class="secthead" style="margin:16px 0 4px"><div class="t">하객 명단 · 매칭</div></div>
     ${ev.guests.length>7?`<input id="hgq" placeholder="🔍 하객 이름 검색" value="${esc(HGQ)}" oninput="HGQ=this.value;renderHostGuests()" style="margin-bottom:9px">`:''}
     <div class="glist" id="hg-list">
@@ -1394,7 +1415,7 @@ function hostView(){
       <button class="btn btn-kakao" onclick="shareFromHost('kakao')">카카오톡으로 보내기</button>
       <button class="btn btn-ghost" onclick="shareFromHost('sms')">문자로 보내기</button>
     </div>
-    ${(!hasPass(ev)&&ev.type!=='memorial'&&(ev.guests||[]).length>=Math.ceil(FREE_GUESTS*0.8)&&(ev.guests||[]).length<FREE_GUESTS)?`<div class="note" style="margin-top:10px">장부에 <b>${(ev.guests||[]).length}명</b>이 기록됐어요. ${FREE_GUESTS}명 이상이면 새 발송에는 <b>이음 패스</b>가 필요해요.</div>`:''}
+    ${lockNote(ev)}
   </div>`;
 }
 function exportXlsxGate(){ const ev=hostEvent(); if(ev&&ev.type==='memorial'){ exportLedgerXLSX(); return; } withPass('xlsx',exportLedgerXLSX); } // 부고는 결제 UI 금지 — 게이트 없이 바로
@@ -1763,11 +1784,12 @@ function delEvent(id){ const ev=S.events.find(e=>e.id===id); if(!ev)return;
   S.ui.tab='guest'; S.ui.guestView=(S.ui.evFrom==='allev')?'allev':'list'; S.ui.evFrom=null; S.ui.hostSub=null;
   save(); render(); window.scrollTo(0,0); toast('경조사를 삭제했어요'); }
 let HGQ=''; // 하객 검색어 (세션 한정)
-function hostGuestsHTML(ev){ const q=HGQ.trim();
-  let list=ev.guests.filter(x=>!x.unregistered);
+function hostGuestsHTML(ev){ const q=HGQ.trim(); const locked=lockedCount(ev);
+  let list=openGuests(ev);
   if(q) list=list.filter(x=>(x.name||'').includes(q)||(x.relation||'').includes(q));
-  if(!list.length) return q?`<div class="empty">'${esc(q)}' 검색 결과가 없어요</div>`:'<div class="empty">하객을 추가해 주세요</div>';
-  return list.map(x=>rowHost(ev,x)).join(''); }
+  const lock=locked?`<div class="grow" style="border-color:var(--primary)"><div class="top"><div><div class="nm">🔒 ${FREE_GUESTS+1}번째 하객부터 ${locked}명</div><div class="meta">기록은 안전하게 보관 중이에요</div></div></div><button class="btn btn-primary btn-sm" style="margin-top:9px" onclick="unlockLedger()">이음 패스로 전체 장부 열기 · ${passPriceLabel()}</button></div>`:'';
+  if(!list.length) return (q?`<div class="empty">'${esc(q)}' 검색 결과가 없어요</div>`:'<div class="empty">하객을 추가해 주세요</div>')+lock;
+  return list.map(x=>rowHost(ev,x)).join('')+lock; }
 function renderHostGuests(){ const ev=hostEvent(); const el=$('#hg-list'); if(ev&&el) el.innerHTML=hostGuestsHTML(ev); }
 function updateHostLedgerUI(ev,x){ // 입력 포커스·키보드 유지를 위한 부분 갱신
   const led=ledgerStats(ev);
@@ -2247,14 +2269,15 @@ function _psig(){ if(!S.settings)S.settings={}; if(!S.settings.pid) S.settings.p
   const a=_fnv(PASS_SALT+'|'+S.settings.pid); return a+_fnv(a+PASS_SALT); }
 function grantPremium(){ if(!S.settings)S.settings={}; S.settings.premium=_psig(); }
 function premiumOk(){ try{ return !!(S.settings&&S.settings.premium&&S.settings.premium===_psig()); }catch(e){ return false; } }
-const PASS_FREE=true; // 2026-09 결제 UI 비노출 — 모든 부가 기능 무료 (결제 코드는 유지)
+const PLAY_PAID=true; // 2026-09-21 사용자 결정: Play 앱만 과금, 웹(PWA)은 무료. false로 내리면 전원 무료로 즉시 복귀(OTA)
+function playPaid(){ try{ return !!NATIVE && PLAY_PAID && NBILL.plugin===true; }catch(e){ return false; } } // 결제 플러그인이 든 Play 앱(1.4.0+)에서만 — 1.3.0은 플러그인이 없어 무료·무차단
 function payLab(){ try{ return !!NATIVE && localStorage.getItem('ieum_paylab')==='1'; }catch(e){ return false; } } // Play 앱에서만 의미 있음
-function payFree(){ return PAY.mode==='free' && !payLab(); }
+function payFree(){ return !playPaid() && !payLab() && PAY.mode==='free'; }
 let _labN=0,_labT=0; // 소유자용: 설정 맨 아래 버전 줄을 7번 연속 탭 → 결제 시험 모드 켜기/끄기 (링크는 카톡 인앱 브라우저에서 열리면 앱에 닿지 않음)
 function labTap(){ if(!NATIVE) return; const now=Date.now(); if(now-_labT>2500) _labN=0; _labT=now; if(++_labN<7) return; _labN=0;
   try{ if(localStorage.getItem('ieum_paylab')==='1'){ localStorage.removeItem('ieum_paylab'); toast('결제 시험 모드를 껐어요'); }
     else { localStorage.setItem('ieum_paylab','1'); toast('결제 시험 모드를 켰어요 — 이 기기에서만 이음 패스 결제가 켜져요'); } }catch(e){} render(); }
-function hasPass(ev){ return (PASS_FREE && !payLab()) || premiumOk() || !!(ev&&ev.pass); } // 1회 결제=계정 전체 영구 (pid가 settings에 있어 백업·이전에도 유지)
+function hasPass(ev){ return !(playPaid()||payLab()) || premiumOk() || !!(ev&&ev.pass); } // 과금 대상이 아니면(웹·구버전 앱) 항상 통과 // 1회 결제=계정 전체 영구 (pid가 settings에 있어 백업·이전에도 유지)
 function passTrack(k){ if(!S.meta.passStats)S.meta.passStats={shown:0,accepted:0,declined:0,used:{},method:{}};
   if(k==='shown'||k==='accepted'||k==='declined')S.meta.passStats[k]++;
   else S.meta.passStats.used[k]=(S.meta.passStats.used[k]||0)+1; }
@@ -2295,7 +2318,7 @@ function passPrompt(cont,note){ _passCont=cont||null; _payPick=null; passTrack('
       <div style="font-weight:700;font-size:16px">이음 패스</div>
       <div style="font-size:14px">${payFree()?`<s style="color:var(--muted)">${PASS_PRICE}</s> <b style="color:var(--ok)">테스터 무료</b>`:`<b>${passPriceLabel()}</b> <span style="color:var(--muted);font-size:12px">· 한 번 결제 · 평생</span>`}</div>
     </div>
-    <p class="sub" style="margin:6px 0 12px">${_memo?`딱 한 번 결제하면 <b>모든 행사</b>에서 <b>장부 엑셀 내보내기</b>가 평생 열려요 (결혼식 등 하객 ${FREE_GUESTS}명 이상 발송 포함).`:`딱 한 번 결제하면 <b>모든 행사</b>에서 <b>장부 엑셀 내보내기</b>와 <b>하객 ${FREE_GUESTS}명 이상 발송</b>이 평생 열려요.`} 백업·기기 이전에도 유지됩니다.</p>
+    <p class="sub" style="margin:6px 0 12px">${_memo?`딱 한 번 결제하면 <b>모든 행사</b>에서 <b>장부 엑셀 내보내기</b>가 평생 열려요 (결혼식 등 하객 ${FREE_GUESTS}명 이상 발송 포함).`:`딱 한 번 결제하면 <b>모든 행사</b>에서 <b>하객 ${FREE_GUESTS}명 넘는 행사의 발송·전체 장부</b>와 <b>장부 엑셀 내보내기</b>가 평생 열려요.`} 백업·기기 이전에도 유지됩니다.</p>
     ${note?`<div class="note" style="margin:0 0 12px">${note}</div>`:''}
     ${!payFree()&&(PLAYB||NATIVE)?`
     <div class="note" style="margin:0">▶ <b>Google Play 결제</b>로 안전하게 진행됩니다 — 결제·환불 모두 Play 계정에서 관리돼요.</div>`
@@ -2316,7 +2339,7 @@ function passPrompt(cont,note){ _passCont=cont||null; _payPick=null; passTrack('
 function pickPay(k,el){ _payPick=k; document.querySelectorAll('.payopt').forEach(b=>b.classList.toggle('on',b===el)); }
 function hidePassSheet(){ const bg=document.getElementById('paysheet'); if(!bg)return;
   bg.classList.remove('show'); _sheetHideT=setTimeout(()=>{ try{bg.remove();}catch(e){} },220); }
-function declinePass(){ hidePassSheet(); passTrack('declined'); save(); _passCont=null; _payPick=null; }
+function declinePass(){ hidePassSheet(); passTrack('declined'); try{ const ev=hostEvent(); if(ev&&ev.scale==='big'&&!hasPass(ev)) ev.scale=null; }catch(e){} save(); _passCont=null; _payPick=null; } // '30명이 넘어요' 후 결제를 미루면 다음 발송 때 규모를 다시 묻는다
 function acceptPass(){
   if(_payPick){ if(!S.meta.passStats)S.meta.passStats={shown:0,accepted:0,declined:0,used:{},method:{}};
     if(!S.meta.passStats.method)S.meta.passStats.method={};
@@ -2344,6 +2367,7 @@ async function nativeBillingInit(){ if(!NATIVE) return;
   try{ const r=await nP('IeumBilling','getProduct',{sku:PLAY.sku}); NBILL.plugin=true; NBILL.ok=!!(r&&r.available); NBILL.price=(r&&r.price)||''; }
   catch(e){ const m=String((e&&(e.code||e.message))||e); NBILL.plugin=!/UNIMPLEMENTED|not implemented|not available/i.test(m); NBILL.ok=false; }
   if(!NBILL.plugin) return;
+  try{ if(playPaid()&&!premiumOk()) render(); }catch(_){} // 과금 대상 확정 → 배지·잠금 표시 반영
   try{ nOn('IeumBilling','purchase',r=>{ try{ if(r&&r.status==='purchased'&&!premiumOk()){ _playGrant(r,false); save(); render(); toast('이음 패스가 열렸어요 — 감사합니다'); } }catch(_){} }); }catch(_){}
   nativeRestorePass(false); }
 async function nativeRestorePass(manual){ if(!NATIVE) return;
@@ -2478,7 +2502,7 @@ function setThanksPhoto(){ const inp=document.createElement('input'); inp.type='
       img.src=r.result; }; r.readAsDataURL(f); }; inp.click(); }
 function clearThanksPhoto(){ const ev=hostEvent(); if(!ev)return; own(ev); delete ev.thanksPhoto; save(); render(); }
 function thanksView(){ const ev=hostEvent(); const c=cardState(ev); const samples=thankSamples(ev);
-  const recip=ev.guests.filter(g=>g.pay&&g.pay.amount!=null);
+  const _open=new Set(openGuests(ev).map(g=>g.id)), _lk=lockedCount(ev); const recip=ev.guests.filter(g=>g.pay&&g.pay.amount!=null&&(!_lk||_open.has(g.id)));
   const previewName=(recip[0]||{}).name||'○○'; const mem=ev.type==='memorial';
   return `<button class="backbtn" onclick="backFromHost2()">‹ 내 행사</button>
   <div class="listhead"><div class="t serif">감사 인사 보내기</div></div>
@@ -3652,6 +3676,7 @@ window.addEventListener('popstate', ()=>{
 function backStep(){ // 한 단계 위로 (popstate·네이티브 뒤로가기 공용)
   try{
     if(document.getElementById('permsheet')) closePermSheet(); // 첫 실행 권한 안내
+    else if(document.getElementById('scalesheet')) closeScaleSheet(); // 발송 전 규모 확인
     else if(document.getElementById('mapsheet')) closeMapSheet();
     else if(document.getElementById('tiepop')) closeTiePop();
     else if(document.getElementById('paypop')) closePayPop();   // 송금 복귀 확인 시트 — pendingPay는 유지되어 명부 카드의 [기록하기]가 폴백
