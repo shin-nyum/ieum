@@ -505,6 +505,13 @@
   .lc-t{font-size:22px;font-weight:800}
   .lc-d{font-size:15px;color:var(--ink2)}
   .lc-go{font-size:15.5px;font-weight:700}
+  .land-row{display:flex;gap:10px;align-items:stretch} /* v126: 내 경조사 | 가계부 */
+  .land-row .land-card.primary{flex:1.75;min-width:0}
+  .land-ledger{flex:1;min-width:0;padding:20px 14px}
+  .land-ledger .lc-ic{color:var(--primary-d);height:30px}
+  .land-ledger .lc-ic svg{width:31px;height:31px;display:block}
+  .land-ledger .lc-t{font-size:20px}
+  .land-ledger .lc-d{font-size:14px}
   .bnav{background:var(--card);backdrop-filter:none;border-top:1px solid var(--line);padding:8px 4px calc(8px + env(safe-area-inset-bottom))}
   .bnav button{font-size:13px;font-weight:800;color:var(--muted)}
   .bnav button .bn-ic{opacity:1;stroke-width:1.9;width:24px;height:24px}
@@ -562,7 +569,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v125'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v126'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -1229,12 +1236,19 @@ function landingView(){
       <p class="land-desc">경조사를 한곳에서.</p>
     </div>
     <div class="land-choice">
+      <div class="land-row">
       <button class="land-card primary" onclick="enterAs('guest')">
         <div class="lc-ic">🎁</div>
         <div class="lc-t">내 경조사</div>
         <div class="lc-d">받은 청첩장·부고 관리, 축의금 송금</div>
         <div class="lc-go">시작하기 ›</div>
       </button>
+      <button class="land-card land-ledger" onclick="enterLedger()" aria-label="품앗이 가계부 열기">
+        <div class="lc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="2.5" width="15" height="19" rx="2.6"/><rect x="7.5" y="5.5" width="9" height="4" rx="1"/><path d="M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01M16 17h.01" stroke-width="2.6"/></svg></div>
+        <div class="lc-t">가계부</div>
+        <div class="lc-d">주고받은 내역</div>
+      </button>
+      </div>
       <button class="land-card" onclick="enterAs('host')">
         <div class="lc-ic">✍️</div>
         <div class="lc-t">내 행사 만들기</div>
@@ -1260,6 +1274,7 @@ function tutAuto(kind){ // 역할별 최초 1회: '내 경조사'/'내 행사 �
   try{ if(!S.meta) return false; return kind==='host' ? !S.meta.tutHostDone : !S.meta.tutGuestDone; }catch(e){ return false; } }
 function enterAs(mode){ S.ui.tab=mode; if(mode==='guest'){ S.ui.guestView='list'; } else { ensureHostEvent(); S.ui.hostTab='setup'; } S.ui.entered=true; save(); render(); window.scrollTo(0,0);
   if(tutAuto(mode)) setTimeout(()=>{ try{ startTutorial(mode); }catch(e){} },260); }
+function enterLedger(){ S.ui.tab='guest'; S.ui.guestView='ledger'; S.ui.entered=true; save(); render(); window.scrollTo(0,0); } // 첫 화면 → 품앗이 가계부 직행 (튜토리얼 자동 시작은 '내 경조사'에서만)
 function goLanding(){ try{ abortTutorial(); }catch(e){} try{ pruneDraft(); }catch(e){}
   S.ui.entered=false; save(); render(); window.scrollTo(0,0); }
 
