@@ -508,7 +508,8 @@
   .land-row{display:flex;gap:10px;align-items:stretch} /* v126: 내 경조사 | 가계부 */
   .land-row .land-card{flex:1 1 50%;min-width:0;padding:18px 16px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;text-align:left} /* 1:1 대칭 · 위쪽 정렬 */
   .land-row .land-card .lc-d{font-size:14.5px}
-  .evtag{display:inline-block;margin-top:3px;font-size:12.5px;font-weight:700;color:var(--gold-text);background:var(--dd-bg);border-radius:6px;padding:2px 8px;cursor:pointer} /* v127: 받은 내역의 행사 태그 */
+  .calevrow .cnm{min-width:0}
+  .evtag{display:inline-block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom;margin-top:3px;font-size:12.5px;font-weight:700;color:var(--gold-text);background:var(--dd-bg);border-radius:6px;padding:2px 8px;cursor:pointer} /* v127: 받은 내역의 행사 태그 */
   html[data-theme="dark"] .evtag{color:var(--gold)}
   .bnav{background:var(--card);backdrop-filter:none;border-top:1px solid var(--line);padding:8px 4px calc(8px + env(safe-area-inset-bottom))}
   .bnav button{font-size:13px;font-weight:800;color:var(--muted)}
@@ -567,7 +568,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v127'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v128'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -1241,7 +1242,7 @@ function landingView(){
         <div class="lc-d">청첩장·부고, 송금</div>
       </button>
       <button class="land-card land-ledger" onclick="enterLedger()" aria-label="품앗이 가계부 열기">
-        <div class="lc-ic">🧮</div>
+        <div class="lc-ic">📒</div>
         <div class="lc-t">가계부</div>
         <div class="lc-d">주고받은 내역</div>
       </button>
@@ -1927,7 +1928,7 @@ function txRow(t){ const g=t.dir==='gave'; // 부호 대신 뱃지 — 보냄=�
   <span class="cnm">${esc(t.label)}${t.evId?`<br><span class="evtag" onclick="event.stopPropagation();openEventLedger('${jsq(t.evId)}')">${esc(t.tag)}</span>`:`<span style="color:var(--muted);font-weight:400;font-size:11px"> · ${esc(t.sub)}</span>`}</span>
   <span class="pill ${g?'pill-no':'pill-ok'}" style="flex:none">${g?'보냄':'받음'}</span>
   <span class="rv" style="color:${g?'var(--danger)':'var(--ok)'}">${won(t.amount)}</span></div>`; }
-function openTx(f){ S.ui.txFilter=f||'all'; if(!S.ui.txPeriod)S.ui.txPeriod='3m'; S.ui.guestView='tx'; save(); render(); window.scrollTo(0,0); }
+function openTx(f){ S.ui.txFilter=f||'all'; if(!S.ui.txPeriod)S.ui.txPeriod='3m'; S.ui.tab='guest'; S.ui.hostSub=null; S.ui.evFrom=null; S.ui.guestView='tx'; save(); render(); window.scrollTo(0,0); }
 function txSetF(f){ S.ui.txFilter=f; save(); render(); }
 function txSetP(p){ S.ui.txPeriod=p; save(); render(); }
 function txView(){ const f=S.ui.txFilter||'all', per=S.ui.txPeriod||'3m';
