@@ -511,6 +511,14 @@
   .calevrow .cnm{min-width:0}
   .evtag{display:inline-block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom;margin-top:3px;font-size:12.5px;font-weight:700;color:var(--gold-text);background:var(--dd-bg);border-radius:6px;padding:2px 8px;cursor:pointer} /* v127: 받은 내역의 행사 태그 */
   html[data-theme="dark"] .evtag{color:var(--gold)}
+  /* v129: 두 줄 요약 */
+  .sumcard{padding:4px 16px}
+  .sumrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer}
+  .sumrow:last-child{border-bottom:0}
+  .sumrow .k{flex:1;min-width:0;font-size:16.5px;font-weight:700;color:var(--ink);line-height:1.35}
+  .sumrow .k small{font-weight:600;color:var(--muted);font-size:13px;margin-left:6px;white-space:nowrap}
+  .sumrow .v{flex:none;font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:-.01em}
+  .sumrow.in .v{color:var(--ok)} .sumrow.out .v{color:var(--danger)}
   .bnav{background:var(--card);backdrop-filter:none;border-top:1px solid var(--line);padding:8px 4px calc(8px + env(safe-area-inset-bottom))}
   .bnav button{font-size:13px;font-weight:800;color:var(--muted)}
   .bnav button .bn-ic{opacity:1;stroke-width:1.9;width:24px;height:24px}
@@ -568,7 +576,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v128'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v129'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -1891,6 +1899,12 @@ function ledgerChips(active){ const evs=myHostEvents();
   </div>`; }
 function openEventLedger(id){ const ev=S.events.find(e=>e.id===id&&e.role==='host'); if(!ev) return;
   S.ui.entered=true; S.ui.tab='host'; S.ui.hostEventId=id; S.ui.hostSub=null; S.ui.hostTab='ledger'; S.ui.evFrom='ledger'; save(); render(); window.scrollTo(0,0); try{ relayPull(); }catch(e){} }
+/* ---- 두 줄 요약(v129): 받은 합계 / 보낸 합계 — 라벨 왼쪽·금액 오른쪽. onIn/onOut = 탭 동작 ---- */
+function sumRows(recv, sent, recvN, sentN, onIn, onOut){
+  return `<div class="card sumcard">
+    <div class="sumrow in" onclick="${onIn}"><span class="k">받은 경조사비 합계<small>${recvN}건</small></span><span class="v">${won(recv)}</span></div>
+    <div class="sumrow out" onclick="${onOut}"><span class="k">보낸 경조사비 합계<small>${sentN}건</small></span><span class="v">${won(sent)}</span></div>
+  </div>`; }
 function ledgerView(){ const s=myStats();
   const all=txAll();
   return `
@@ -1901,13 +1915,7 @@ function ledgerView(){ const s=myStats();
     <div class="rc-tx"><div class="rc-t" style="color:var(--sage-d)">주고받은 사람</div></div>
     <div class="rc-go" style="color:var(--sage-d)">›</div>
   </div>
-  <div class="card">
-    <div class="stats">
-      <div class="stat" style="cursor:pointer" onclick="openTx('gave')"><div class="v">${won(s.given)}</div><div class="k">보낸 경조사비 (${s.gaveCount}) ›</div></div>
-      <div class="stat" style="cursor:pointer" onclick="openTx('received')"><div class="v">${won(s.received)}</div><div class="k">받은 경조사비 (${s.recvCount}) ›</div></div>
-      <div class="stat" style="cursor:pointer" onclick="openTx('all')"><div class="v big" style="color:${s.net>=0?'var(--ok)':'var(--danger)'}">${(s.net>=0?'+':'−')+won(Math.abs(s.net))}</div><div class="k">합계 ›</div></div>
-    </div>
-  </div>
+  ${sumRows(s.received, s.given, all.filter(t=>t.dir==='received').length, all.filter(t=>t.dir==='gave').length, "openTx('received')", "openTx('gave')")}
   <div class="card"><div class="secthead"><div class="t">최근 내역</div><div class="c">${all.length}건</div></div>
     <div class="glist">${all.slice(0,3).map(txRow).join('')||'<div class="empty">아직 주고받은 내역이 없어요.</div>'}</div>
     ${all.length>=4?`<button class="backbtn" style="margin:8px 0 0" onclick="openTx('all')">＋ 더보기 · ${all.length}건 전체 ›</button>`:''}
@@ -1938,16 +1946,13 @@ function txView(){ const f=S.ui.txFilter||'all', per=S.ui.txPeriod||'3m';
   let list=txAll().filter(t=>!cutStr||(t.date&&t.date>=cutStr));
   const sent=list.filter(t=>t.dir==='gave').reduce((s,t)=>s+t.amount,0);
   const recv=list.filter(t=>t.dir==='received').reduce((s,t)=>s+t.amount,0);
+  const recvN=list.filter(t=>t.dir==='received').length, sentN=list.filter(t=>t.dir==='gave').length;
   if(f!=='all') list=list.filter(t=>t.dir===f);
   return `<button class="backbtn" onclick="setGuestTab('ledger')">‹ 품앗이 가계부</button>
   <div class="listhead"><div class="t serif">주고받은 내역</div><div class="c">${list.length}건</div></div>
   <div class="seg2" style="margin-bottom:8px">${[['all','전체'],['gave','보낸'],['received','받은']].map(([k,l])=>`<button class="${f===k?'on':''}" onclick="txSetF('${k}')">${l}</button>`).join('')}</div>
   <div class="chips" style="margin-bottom:12px">${[['1m','1개월'],['3m','3개월'],['6m','6개월'],['12m','1년'],['all','전체']].map(([k,l])=>`<button class="chip ${per===k?'on':''}" onclick="txSetP('${k}')">${l}</button>`).join('')}</div>
-  <div class="card"><div class="stats">
-    <div class="stat"><div class="v">${won(sent)}</div><div class="k">기간 내 보냄</div></div>
-    <div class="stat"><div class="v">${won(recv)}</div><div class="k">기간 내 받음</div></div>
-    <div class="stat"><div class="v big" style="color:${recv-sent>=0?'var(--ok)':'var(--danger)'}">${(recv-sent>=0?'+':'−')+won(Math.abs(recv-sent))}</div><div class="k">합계</div></div>
-  </div></div>
+  ${sumRows(recv, sent, recvN, sentN, "txSetF('received')", "txSetF('gave')")}
   <div class="card"><div class="glist">${list.map(txRow).join('')||'<div class="empty">이 기간에는 내역이 없어요.</div>'}</div></div>`;
 }
 /* ---- 주고받은 사람: 직접 추가 화면 ---- */
