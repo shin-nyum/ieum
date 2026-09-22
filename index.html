@@ -519,6 +519,7 @@
   .sumrow .k small{font-weight:600;color:var(--muted);font-size:13px;margin-left:6px;white-space:nowrap}
   .sumrow .v{flex:none;font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:-.01em}
   .sumrow.in .v{color:var(--ok)} .sumrow.out .v{color:var(--danger)}
+  .sumrow.solo{border-bottom:0;cursor:default;padding:10px 0 2px} /* v130: 행사 태그 화면의 총액 한 줄 */
   .bnav{background:var(--card);backdrop-filter:none;border-top:1px solid var(--line);padding:8px 4px calc(8px + env(safe-area-inset-bottom))}
   .bnav button{font-size:13px;font-weight:800;color:var(--muted)}
   .bnav button .bn-ic{opacity:1;stroke-width:1.9;width:24px;height:24px}
@@ -576,7 +577,7 @@
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v129'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v130'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -1391,11 +1392,7 @@ function hostView(){
   ${ledgerChips(ev.id)}
   <div class="card">
     <div class="secthead"><div class="t">${c.icon||'📒'} 받은 ${c.money}</div><div class="c">하객 ${ev.guests.length}명 <button class="minibtn" style="margin-left:6px" onclick="relayPull(true)">↻ 새로고침</button></div></div>
-    <div class="stats">
-      <div class="stat"><div class="v" id="hl-paid">${led.paid}</div><div class="k">마음 전한 분</div></div>
-      <div class="stat"><div class="v big" id="hl-total">${won(led.total)}</div><div class="k">총 ${c.money}</div></div>
-    </div>
-    <div class="note" style="margin-top:10px" id="hl-split">🔵 이음 송금 ${won(led.appSum)} · ✏️ 현금·직접입력 ${won(led.manualSum)}</div>
+    <div class="sumrow in solo"><span class="k">총 ${c.money}</span><span class="v" id="hl-total">${won(led.total)}</span></div>
     ${lockNote(ev)}
     <div class="secthead" style="margin:16px 0 4px"><div class="t">하객 명단 · 매칭</div></div>
     ${ev.guests.length>7?`<input id="hgq" placeholder="🔍 하객 이름 검색" value="${esc(HGQ)}" oninput="HGQ=this.value;renderHostGuests()" style="margin-bottom:9px">`:''}
@@ -1845,8 +1842,7 @@ function renderHostGuests(){ const ev=hostEvent(); const el=$('#hg-list'); if(ev
 function updateHostLedgerUI(ev,x){ // 입력 포커스·키보드 유지를 위한 부분 갱신
   const led=ledgerStats(ev);
   const set=(id,v)=>{const el=document.getElementById(id); if(el)el.textContent=v;};
-  set('hl-paid',led.paid); set('hl-total',won(led.total));
-  const sp=document.getElementById('hl-split'); if(sp) sp.textContent=`🔵 이음 송금 ${won(led.appSum)} · ✏️ 현금·직접입력 ${won(led.manualSum)}`;
+  set('hl-total',won(led.total)); // v130: 한 줄 요약(총액)만 갱신
   if(x){ const p=x.pay||{};
     const src=p.amount!=null?(p.source==='app'?`<span class="pill pill-app">🔵 이음${p.method==='kakao'?'·카카오':p.method==='toss'?'·토스':''}</span>`:`<span class="pill pill-cash">${p.method==='cash'?'💵 현금':'✏️ 직접입력'}</span>`):'';
     const se=document.getElementById('src-'+x.id); if(se) se.innerHTML=src;
@@ -1900,10 +1896,10 @@ function ledgerChips(active){ const evs=myHostEvents();
 function openEventLedger(id){ const ev=S.events.find(e=>e.id===id&&e.role==='host'); if(!ev) return;
   S.ui.entered=true; S.ui.tab='host'; S.ui.hostEventId=id; S.ui.hostSub=null; S.ui.hostTab='ledger'; S.ui.evFrom='ledger'; save(); render(); window.scrollTo(0,0); try{ relayPull(); }catch(e){} }
 /* ---- 두 줄 요약(v129): 받은 합계 / 보낸 합계 — 라벨 왼쪽·금액 오른쪽. onIn/onOut = 탭 동작 ---- */
-function sumRows(recv, sent, recvN, sentN, onIn, onOut){
+function sumRows(recv, sent, recvN, sentN, onIn, onOut, only){ // only: 'received'|'gave' → 그 줄만
   return `<div class="card sumcard">
-    <div class="sumrow in" onclick="${onIn}"><span class="k">받은 경조사비 합계<small>${recvN}건</small></span><span class="v">${won(recv)}</span></div>
-    <div class="sumrow out" onclick="${onOut}"><span class="k">보낸 경조사비 합계<small>${sentN}건</small></span><span class="v">${won(sent)}</span></div>
+    ${only==='gave'?'':`<div class="sumrow in" onclick="${onIn}"><span class="k">받은 경조사비 합계<small>${recvN}건</small></span><span class="v">${won(recv)}</span></div>`}
+    ${only==='received'?'':`<div class="sumrow out" onclick="${onOut}"><span class="k">보낸 경조사비 합계<small>${sentN}건</small></span><span class="v">${won(sent)}</span></div>`}
   </div>`; }
 function ledgerView(){ const s=myStats();
   const all=txAll();
@@ -1952,7 +1948,7 @@ function txView(){ const f=S.ui.txFilter||'all', per=S.ui.txPeriod||'3m';
   <div class="listhead"><div class="t serif">주고받은 내역</div><div class="c">${list.length}건</div></div>
   <div class="seg2" style="margin-bottom:8px">${[['all','전체'],['gave','보낸'],['received','받은']].map(([k,l])=>`<button class="${f===k?'on':''}" onclick="txSetF('${k}')">${l}</button>`).join('')}</div>
   <div class="chips" style="margin-bottom:12px">${[['1m','1개월'],['3m','3개월'],['6m','6개월'],['12m','1년'],['all','전체']].map(([k,l])=>`<button class="chip ${per===k?'on':''}" onclick="txSetP('${k}')">${l}</button>`).join('')}</div>
-  ${sumRows(recv, sent, recvN, sentN, "txSetF('received')", "txSetF('gave')")}
+  ${sumRows(recv, sent, recvN, sentN, "txSetF('received')", "txSetF('gave')", f==='all'?null:f)}
   <div class="card"><div class="glist">${list.map(txRow).join('')||'<div class="empty">이 기간에는 내역이 없어요.</div>'}</div></div>`;
 }
 /* ---- 주고받은 사람: 직접 추가 화면 ---- */
@@ -3397,13 +3393,13 @@ const TUT_STEPS=[
   t:'청첩장 상세', x:'날짜·장소 확인, 길찾기, 축의금 보내기까지 여기서 끝나요.'},
  {at:'detail', ev:'e2', v:()=>{S.ui.tab='guest';S.ui.guestView='detail';S.ui.currentEventId='e2';S.ui.payCat='bank';}, sel:'.paycat .btn-primary',
   t:'보내고 → 명부에 기록', x:'뱅킹앱에서 보내고 돌아와 [축의금 명부에 기록하기]를 누르면 끝이에요.'},
- {at:'ledger', v:()=>{S.ui.tab='guest';S.ui.guestView='ledger';}, sel:'.stats',
+ {at:'ledger', v:()=>{S.ui.tab='guest';S.ui.guestView='ledger';}, sel:'.sumcard',
   t:'품앗이 가계부', x:'보낸 돈·받은 돈·합계가 자동으로 정리돼요.'},
  {at:'ledger', v:()=>{S.ui.tab='guest';S.ui.guestView='ledger';}, sel:'.reco-cta',
   t:'주고받은 사람', x:'이름으로 검색하면 그동안 주고받은 금액이 한눈에 보여요.\n\n튜토리얼 끝! 데모는 지워지고, 이제 진짜 경조사를 담아보세요 🎉'},
  {host:true, ht:'setup', at:'host', v:()=>{S.ui.tab='host'; ensureHostEvent(); S.ui.hostSub=null; S.ui.hostTab='setup';}, sel:'.fold:not(.hostsw)',
   t:'내 행사 만들기 (주최자)', x:'내 결혼식·행사는 여기서. 위에서 아래로 행사 정보 → 계좌 → 보내기만 채우면 준비 끝이에요.'},
- {host:true, ht:'ledger', at:'host', v:()=>{S.ui.tab='host'; ensureHostEvent(); S.ui.hostSub=null; S.ui.hostTab='ledger';}, sel:'.stats',
+ {host:true, ht:'ledger', at:'host', v:()=>{S.ui.tab='host'; ensureHostEvent(); S.ui.hostSub=null; S.ui.hostTab='ledger';}, sel:'.sumrow',
   t:'품앗이 가계부', x:'하객이 보낸 마음이 여기에 자동으로 기록돼요. 현금 수령분도 이름 옆에 직접 입력해 한곳에 정리!\n\n튜토리얼 끝! 이제 행사 정보부터 채워보세요 🎉'},];
 function tutSteps(){ return TUT_STEPS.filter(s=>TUT.kind==='host'?!!s.host:!s.host); } // 역할별: 하객 7단계(데모 주입) / 주최자 2단계
 function startTutorial(kind){ if(TUT.on) return;
