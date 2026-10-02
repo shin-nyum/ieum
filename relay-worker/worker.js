@@ -122,6 +122,21 @@ export default {
         return new Response(r.body, { headers: { 'Content-Type': ct, 'Cache-Control': 'no-store', ...CORS } });
       }
 
+      // 루트(/) = 카카오톡 공유 메시지 하단 '이음' 앱 이름·아이콘의 이동처(카카오 디벨로퍼스 [제품 링크 관리] 기본 웹 도메인을 이 워커로 지정).
+      // 카카오는 이 링크를 끄거나 바꾸는 옵션이 없어 '눌러도 아무 일 없게' 만든다: 카카오톡 인앱 브라우저면 즉시 닫고, 그 밖엔 뒤로 가거나 빈 화면.
+      if ((req.method === 'GET' || req.method === 'HEAD') && url.pathname === '/') {
+        const html = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+          + '<meta name="robots" content="noindex,nofollow"><title>이음</title>'
+          + '<style>html,body{margin:0;height:100%;background:#f2f2f2;font-family:-apple-system,BlinkMacSystemFont,"Malgun Gothic",sans-serif}'
+          + '#m{display:none;position:fixed;inset:0;align-items:center;justify-content:center;color:#666;font-size:16px;text-align:center;padding:24px;line-height:1.6}</style>'
+          + '<script>(function(){var ua=navigator.userAgent||"";'
+          + 'if(/KAKAOTALK/i.test(ua)){location.replace(/iPhone|iPad|iPod/i.test(ua)?"kakaoweb://closeBrowser":"kakaotalk://inappbrowser/close");}'
+          + 'else{try{if(history.length>1)history.back();}catch(e){}}'
+          + 'setTimeout(function(){var m=document.getElementById("m");if(m&&document.visibilityState==="visible")m.style.display="flex";},700);})();</script>'
+          + '</head><body><div id="m">이 화면은 닫으셔도 돼요.</div></body></html>';
+        return new Response(req.method === 'HEAD' ? null : html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300', 'X-Robots-Tag': 'noindex, nofollow' } });
+      }
+
       return json({ error: 'NOT_FOUND' }, 404);
     } catch (e) {
       return json({ error: 'INTERNAL', detail: String(e && e.message || e) }, 500);

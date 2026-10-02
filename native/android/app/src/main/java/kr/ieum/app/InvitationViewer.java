@@ -10,6 +10,7 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
+import android.net.http.SslError;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -25,6 +26,7 @@ import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.RenderProcessGoneDetail;
+import android.webkit.SslErrorHandler;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -138,6 +140,7 @@ final class InvitationViewer {
         Session s = current;
         s.tag = tag == null ? "" : tag;
         s.fallback = TextUtils.isEmpty(fallback) ? url : fallback;
+        s.loadingUrl = url;
         s.lastText = null;
         s.titleView.setText(TextUtils.isEmpty(title) ? "모바일 청첩장" : title);
         s.setHost(url);
@@ -164,6 +167,7 @@ final class InvitationViewer {
         if (s == null || s.web == null) return;
         try { s.web.evaluateJavascript(PAUSE_MEDIA, null); } catch (Exception ignored) {}
         try { s.web.onPause(); } catch (Exception ignored) {}
+        mute(s, true);
     }
 
     void onResume() {
@@ -171,6 +175,13 @@ final class InvitationViewer {
         if (s != null) s.paused = false;
         if (s == null || s.web == null) return;
         try { s.web.onResume(); } catch (Exception ignored) {}
+        mute(s, false);   // 소리만 되살림 — 멈춘 음악이 저절로 다시 재생되지는 않는다
+    }
+
+    private static void mute(Session s, boolean on) {
+        try {
+            if (s != null && s.web != null && WebViewFeature.isFeatureSupported(WebViewFeature.MUTE_AUDIO)) WebViewCompat.setAudioMuted(s.web, on);
+        } catch (Throwable ignored) {}
     }
 
     private int dp(float v) {
@@ -220,6 +231,7 @@ final class InvitationViewer {
         AlertDialog errDialog = null;
         String tag = "";
         String fallback = "";
+        String loadingUrl = "";
         String lastText = null;
         long lastAt = 0;
         boolean torn = false;
@@ -413,6 +425,7 @@ final class InvitationViewer {
                     bar.setProgress(5);
                     bar.setVisibility(View.VISIBLE);
                     setHost(url);
+                    loadingUrl = url == null ? "" : url;
                     if (!docStartHook) inject(view);
                 }
 
@@ -428,6 +441,15 @@ final class InvitationViewer {
                     String d = error == null || error.getDescription() == null ? "" : error.getDescription().toString();
                     if (d.contains("ABORTED")) return;
                     showLoadError();
+                }
+
+                @Override
+                public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+                    try { handler.cancel(); } catch (Exception ignored) {}   // 인증서 오류는 절대 진행하지 않는다
+                    try {
+                        String eu = error == null ? null : error.getUrl();
+                        if (eu != null && eu.equals(loadingUrl)) showLoadError();
+                    } catch (Exception ignored) {}
                 }
 
                 @Override
