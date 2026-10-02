@@ -7,8 +7,8 @@ android {
         applicationId "kr.ieum.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 5
-        versionName "1.4.1"
+        versionCode 6
+        versionName "1.4.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -52,6 +52,9 @@ dependencies {
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation "com.android.billingclient:billing:8.3.0" // Google Play 결제 (이음 패스) — IeumBillingPlugin
     implementation "com.google.android.play:review:2.0.2" // Play 인앱 리뷰 — IeumNativePlugin.requestReview
+    implementation "androidx.webkit:webkit:$androidxWebkitVersion" // 모바일 청첩장 뷰어 — 문서 시작 스크립트·WebMessageListener (InvitationViewer)
+    implementation "androidx.activity:activity:$androidxActivityVersion" // 뷰어 다이얼로그 뒤로가기(OnBackPressedDispatcher)
+    implementation "androidx.core:core:$androidxCoreVersion" // 뷰어 인셋·시스템바
     implementation project(':capacitor-android')
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"

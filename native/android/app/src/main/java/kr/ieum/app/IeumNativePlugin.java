@@ -6,10 +6,13 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.net.Uri;
+import android.webkit.RenderProcessGoneDetail;
+import android.webkit.WebView;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
+import com.getcapacitor.WebViewListener;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,6 +22,8 @@ import java.util.Map;
  *  - 커스텀 스킴·intent:// 링크 처리 (카카오톡 공유·토스 송금·지도 앱)  ← WebView는 브라우저와 달리 이를 스스로 못 연다
  *  - 다른 앱에서 '공유'로 들어온 텍스트(ACTION_SEND) 회수  ← 청첩장 링크 가져오기
  *  - OTA 웹 번들 부팅 확인(webReady) / 앱 정보
+ *  - 모바일 청첩장 뷰어(openInvitation/closeInvitation/invitationNotice) — 초대 링크로 들어온 하객에게 모청을 앱 안에서 바로 보여 주고,
+ *    모청 속 계좌 복사를 invitationCopy 이벤트로 웹에 넘긴다(계좌 판별·명부 기록 흐름은 웹이 맡음). 1.4.2+
  */
 @CapacitorPlugin(name = "IeumNative")
 public class IeumNativePlugin extends Plugin {
@@ -38,6 +43,41 @@ public class IeumNativePlugin extends Plugin {
     }
 
     private String pendingShareText = null;
+    private InvitationViewer viewer = null;
+
+    private final InvitationViewer.Host viewerHost = new InvitationViewer.Host() {
+        @Override
+        public void onCopy(String text, String via, String tag) {
+            JSObject o = new JSObject();
+            o.put("text", text);
+            o.put("via", via);
+            o.put("tag", tag);
+            notifyListeners("invitationCopy", o, true);
+        }
+
+        @Override
+        public void onLeave(String kind, String app, String url, String tag) {
+            JSObject o = new JSObject();
+            o.put("kind", kind);
+            o.put("app", app);
+            o.put("url", url);
+            o.put("tag", tag);
+            notifyListeners("invitationLeave", o, true);
+        }
+
+        @Override
+        public void onClosed(String tag, String reason) {
+            JSObject o = new JSObject();
+            o.put("tag", tag);
+            o.put("reason", reason);
+            notifyListeners("invitationClosed", o, false);
+        }
+
+        @Override
+        public void openExternal(Uri uri) {
+            openOutside(uri);
+        }
+    };
     private String pendingShareSubject = null;
 
     /**
@@ -72,6 +112,26 @@ public class IeumNativePlugin extends Plugin {
         intent.removeExtra(Intent.EXTRA_TEXT); // 회전·재생성 시 재전달 방지
         intent.removeExtra(Intent.EXTRA_SUBJECT);
         return true;
+    }
+
+    @Override
+    public void load() {
+        super.load();
+        try {
+            bridge.addWebViewListener(new WebViewListener() {
+                @Override
+                public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+                    // 모든 WebView가 렌더러 하나를 같이 쓴다 — 무거운 모청 페이지로 렌더러가 죽어도 앱이 통째로 꺼지지 않게 화면만 다시 만든다(기록은 저장소에 있음)
+                    try {
+                        getActivity().runOnUiThread(() -> {
+                            try { if (viewer != null) viewer.close(); } catch (Throwable ignored) {}
+                            try { getActivity().recreate(); } catch (Throwable ignored) {}
+                        });
+                    } catch (Throwable ignored) {}
+                    return true;
+                }
+            });
+        } catch (Throwable ignored) {}
     }
 
     @PluginMethod
@@ -128,6 +188,87 @@ public class IeumNativePlugin extends Plugin {
         p.edit().putBoolean(KEY_ROLLED_BACK, false).apply();
         o.put("filesDir", getContext().getFilesDir().getAbsolutePath());
         call.resolve(o);
+    }
+
+    /** 모바일 청첩장 뷰어 열기 — url은 http(s)만. 이미 떠 있으면 같은 창에서 새 주소. tag는 이벤트에 그대로 실려 돌아온다(행사 id). */
+    @PluginMethod
+    public void openInvitation(final PluginCall call) {
+        final String url = call.getString("url", "");
+        final String title = call.getString("title", "");
+        final String tag = call.getString("tag", "");
+        final String fallback = call.getString("fallback", "");
+        if (url == null || !(url.startsWith("https://") || url.startsWith("http://"))) {
+            call.reject("BAD_URL");
+            return;
+        }
+        getActivity().runOnUiThread(() -> {
+            try {
+                if (viewer == null) viewer = new InvitationViewer(getActivity(), viewerHost);
+                viewer.open(url, title, tag, fallback);
+                JSObject o = new JSObject();
+                o.put("opened", true);
+                call.resolve(o);
+            } catch (Throwable e) {
+                call.reject("OPEN_FAILED");
+            }
+        });
+    }
+
+    @PluginMethod
+    public void closeInvitation(final PluginCall call) {
+        getActivity().runOnUiThread(() -> {
+            try { if (viewer != null) viewer.close(); } catch (Throwable ignored) {}
+            call.resolve();
+        });
+    }
+
+    /** 뷰어 위에 짧은 안내(토스트) — 웹 화면은 뷰어에 가려 보이지 않으므로. */
+    @PluginMethod
+    public void invitationNotice(final PluginCall call) {
+        final String text = call.getString("text", "");
+        getActivity().runOnUiThread(() -> {
+            try { if (viewer != null) viewer.notice(text); } catch (Throwable ignored) {}
+            call.resolve();
+        });
+    }
+
+    @PluginMethod
+    public void invitationState(final PluginCall call) {
+        getActivity().runOnUiThread(() -> {
+            JSObject o = new JSObject();
+            boolean open = viewer != null && viewer.isShowing();
+            o.put("open", open);
+            o.put("tag", open ? viewer.currentTag() : "");
+            call.resolve(o);
+        });
+    }
+
+    @Override
+    protected void handleOnPause() {
+        super.handleOnPause();
+        try { if (viewer != null) viewer.onPause(); } catch (Throwable ignored) {}
+    }
+
+    @Override
+    protected void handleOnResume() {
+        super.handleOnResume();
+        try { if (viewer != null) viewer.onResume(); } catch (Throwable ignored) {}
+    }
+
+    @Override
+    protected void handleOnDestroy() {
+        try { if (viewer != null) viewer.close(); } catch (Throwable ignored) {}
+        viewer = null;
+        super.handleOnDestroy();
+    }
+
+    /** 뷰어 안에서 누른 http(s)가 아닌 링크(또는 지도 등 바깥으로 보낼 http(s))를 외부 앱·브라우저로. */
+    void openOutside(Uri url) {
+        if (url == null || url.getScheme() == null) return;
+        String scheme = url.getScheme().toLowerCase();
+        if (scheme.equals("intent")) { openIntentUri(url.toString()); return; }
+        if (scheme.equals("http") || scheme.equals("https")) { if (!viewUri(url)) notifyFail(url.toString(), scheme); return; }
+        openScheme(url, scheme);
     }
 
     /** WebView 내비게이션 가로채기: http(s)·data·blob은 Capacitor 기본 정책, 나머지 스킴은 외부 앱으로. */
@@ -193,6 +334,13 @@ public class IeumNativePlugin extends Plugin {
     }
 
     private void notifyFail(String url, String scheme) {
+        if (viewer != null && viewer.isShowing()) {
+            final String m = "supertoss".equals(scheme) ? "토스 앱이 없어요 — 계좌번호를 복사해 보내 주세요"
+                : ("kakaolink".equals(scheme) || "kakaotalk".equals(scheme)) ? "카카오톡을 열 수 없어요"
+                : "연결된 앱을 열 수 없어요";
+            getActivity().runOnUiThread(() -> { try { viewer.notice(m); } catch (Throwable ignored) {} });
+            return;
+        }
         JSObject o = new JSObject();
         o.put("url", url);
         o.put("scheme", scheme);

@@ -1,5 +1,6 @@
 package kr.ieum.app;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;
@@ -8,6 +9,15 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // 재생성(프로세스 종료 뒤 복귀·글자 크기 변경)이나 최근 앱에서 다시 열 때 안드로이드는 처음 받은 링크 인텐트를 그대로 다시 준다.
+        // Capacitor는 그때마다 appUrlOpen을 다시 보내므로 같은 초대·모청이 또 열리고, 송금하고 돌아온 하객의 기록 흐름이 끊긴다 → 링크 데이터를 비운다.
+        try {
+            Intent in = getIntent();
+            boolean fromHistory = in != null && (in.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0;
+            if (in != null && (savedInstanceState != null || fromHistory) && (in.getData() != null || Intent.ACTION_SEND.equals(in.getAction()))) {
+                setIntent(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setPackage(getPackageName()));
+            }
+        } catch (Exception ignored) {}
         registerPlugin(IeumNativePlugin.class);
         registerPlugin(IeumBillingPlugin.class);
         super.onCreate(savedInstanceState);
