@@ -598,7 +598,7 @@ if(window.top!==window.self){ try{ window.stop(); }catch(e){} try{ document.docu
 // 웹 플랫폼에 배포 도메인 등록 → 발급된 JavaScript 키를 여기에 한 번만 넣으면 모든 유저에게 적용됨.
 // (비워두면 기기 기본 공유(Web Share)/링크복사로 자동 대체 — 일반 유저는 아무 설정도 필요 없음)
 const KAKAO_JS_KEY = '07bb97e7792dc2f572d02120cd9a3f0f';
-const APP_BUILD='v131'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
+const APP_BUILD='v132'; // 설정 화면·공유 토스트에 노출 — 폰이 어떤 빌드를 돌리는지 지원 시 즉시 확인용 (SW CACHE와 함께 올릴 것)
 try{ if(KAKAO_JS_KEY && window.Kakao && !Kakao.isInitialized()) Kakao.init(KAKAO_JS_KEY); }catch(e){}
 
 const TYPES={
@@ -1089,7 +1089,8 @@ function mcardAutoOk(u){ try{ const x=new URL(u); if(x.protocol!=='https:'||x.us
 function nHas(p,m){ try{ const C=window.Capacitor; const P=C&&C.Plugins&&C.Plugins[p]; if(P&&typeof P[m]==='function') return true; const H=C&&C.PluginHeaders; return !!(H&&H.some(h=>h&&h.name===p&&(h.methods||[]).some(x=>x&&x.name===m))); }catch(e){ return false; } }
 async function openMcard(ev,opts){ opts=opts||{}; if(!ev) return false; const u=mcardUrl(ev);
   if(!u){ if(!opts.auto) toast('주최자가 외부 청첩장 링크를 입력하면 여기서 열립니다'); return false; }
-  if(!opts.auto&&S.events.includes(ev)){ ev.mcardOpenedAt=Date.now(); save(); } // 직접 연 모청 — 돌아오면 '마음 전하셨나요?'
+  if(!opts.auto&&S.events.includes(ev)){ ev.mcardOpenedAt=Date.now(); if(!ev.engaged) ev.engaged=Date.now(); save(); // 직접 연 모청 — 돌아오면 '마음 전하셨나요?'(관심 있는 행사 → 명부 리마인드 대상)
+    if(S.ui.tab==='guest'&&S.ui.guestView==='card') setTimeout(()=>{ try{ render(); }catch(e){} },0); } // 이동은 이 클릭 안에서 먼저 일어남 — 같은 화면으로 돌아왔을 때 안내가 이미 그려져 있게
   if(NATIVE){ const tag=ev.id+'~'+Date.now().toString(36)+(++_mcSeq);
     if(!nHas('IeumNative','openInvitation')){ if(opts.auto) return false; openUrl(u); return false; } // 1.4.1 이하: 뷰어 없음 — 직접 누른 경우만 외부 브라우저
     try{ await nP('IeumNative','openInvitation',{url:u.replace(/^http:\/\//i,'https://'),fallback:u,title:evNamePlain(ev)||'',tag}); MCARD={open:true,evId:ev.id,tag,native:true}; return true; } // 앱은 평문(http) 금지 → https로 시도, 안 되면 뷰어의 '브라우저로 열기'
@@ -1110,7 +1111,7 @@ function mcardAutoOpen(ev){ try{ const u=mcardUrl(ev); if(!u||!mcardAutoOk(u)||!
   const pn=(window.performance&&performance.now)?performance.now():0; if(pn>6000) return; // 짧은 링크 조회가 오래 걸렸으면 하객이 이미 화면을 보고 있음 — 갑자기 넘기지 않는다
   const t0=Date.now(); let fired=false;
   const go=()=>{ if(fired) return; fired=true; try{ if(_bootTouched||Date.now()-t0>4000||!still()) return; ev.mcardAutoAt=Date.now(); save(); openMcard(ev,{auto:true}); }catch(e){} };
-  if(document.readyState==='complete') setTimeout(go,120); // 로드가 끝난 뒤 이동해야 이음 화면이 방문 기록에 남는다(로드 전 자동 이동은 '대체' 처리)
+  if(document.readyState==='complete') setTimeout(go,120); // 로드 뒤에만 이동(로드 전 이동은 기록이 '대체'됨). 단 크롬 계열(안드로이드 크롬·삼성 인터넷·카톡 안드로이드)은 탭 없이 이동한 항목을 뒤로가기에서 건너뛴다 → 모청에서 뒤로 가면 카톡으로 돌아갈 수 있음. 기록 경로는 카드 재탭('마음 전하셨나요?')
   else addEventListener('load',()=>setTimeout(go,120),{once:true}); // 로드 전 예비 이동은 하지 않음(이음 화면이 기록에서 '대체'됨) — 4초 안에 로드가 안 끝나면 이동 안 함
 }catch(e){} }
 /* 복사한 글 → 계좌 판별: ① 행사에 담긴 계좌 번호가 들어 있으면 그 계좌 ② 아니면 숫자 9~16자리 묶음(하이픈 허용)이면서 전화번호 모양이 아니면 '청첩장 계좌'. 주소·전화·인사말은 무시 */
@@ -3976,6 +3977,7 @@ try{ if('serviceWorker' in navigator){ navigator.serviceWorker.addEventListener(
   if(evq&&S.events.some(e=>e.id===evq)){ S.ui.entered=true; openEvent(evq); history.replaceState(null,'',location.pathname+location.hash); } } }catch(e){}
 try{ relayPull(); }catch(e){}  // 호스트: 릴레이 사서함의 하객 응답 자동 반영 (RELAY.url 설정 시에만)
 addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ try{ relayPull(); }catch(e){} } }); // 앱으로 돌아올 때마다 사서함 확인
+addEventListener('pageshow',e=>{ try{ if(e.persisted&&S.ui.entered&&S.ui.tab==='guest'&&S.ui.guestView==='card'&&!document.querySelector('.sheet-bg.show')) render(); }catch(_){} }); // v132: 모청에서 뒤로(bfcache 복원) — 청첩장 화면의 '마음 전하셨나요?'를 최신으로
 try{ bootRawSnapshot(); }catch(e){}  // 업데이트 직후에도 '가공 전 원본' 3세대 보존
 /* 종료·백그라운드 전환 시 자동 백업(기기 내 미러+스냅샷) — 리마인더 없이 항상 최신 유지 */
 function flushMirror(){ // 종료 직전엔 600ms 디바운스가 죽으므로 즉시 기록 — SW 백그라운드 알림이 마지막 순간의 행사도 보게
