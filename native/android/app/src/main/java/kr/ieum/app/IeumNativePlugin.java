@@ -6,13 +6,10 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.net.Uri;
-import android.webkit.RenderProcessGoneDetail;
-import android.webkit.WebView;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
-import com.getcapacitor.WebViewListener;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import java.util.HashMap;
 import java.util.Map;
@@ -112,26 +109,6 @@ public class IeumNativePlugin extends Plugin {
         intent.removeExtra(Intent.EXTRA_TEXT); // 회전·재생성 시 재전달 방지
         intent.removeExtra(Intent.EXTRA_SUBJECT);
         return true;
-    }
-
-    @Override
-    public void load() {
-        super.load();
-        try {
-            bridge.addWebViewListener(new WebViewListener() {
-                @Override
-                public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
-                    // 모든 WebView가 렌더러 하나를 같이 쓴다 — 무거운 모청 페이지로 렌더러가 죽어도 앱이 통째로 꺼지지 않게 화면만 다시 만든다(기록은 저장소에 있음)
-                    try {
-                        getActivity().runOnUiThread(() -> {
-                            try { if (viewer != null) viewer.close(); } catch (Throwable ignored) {}
-                            try { getActivity().recreate(); } catch (Throwable ignored) {}
-                        });
-                    } catch (Throwable ignored) {}
-                    return true;
-                }
-            });
-        } catch (Throwable ignored) {}
     }
 
     @PluginMethod
@@ -339,6 +316,12 @@ public class IeumNativePlugin extends Plugin {
                 : ("kakaolink".equals(scheme) || "kakaotalk".equals(scheme)) ? "카카오톡을 열 수 없어요"
                 : "연결된 앱을 열 수 없어요";
             getActivity().runOnUiThread(() -> { try { viewer.notice(m); } catch (Throwable ignored) {} });
+            JSObject f = new JSObject();
+            f.put("kind", "failed");
+            f.put("app", "");
+            f.put("url", url == null ? "" : (url.length() > 300 ? url.substring(0, 300) : url));
+            f.put("tag", viewer.currentTag());
+            notifyListeners("invitationLeave", f, true);
             return;
         }
         JSObject o = new JSObject();

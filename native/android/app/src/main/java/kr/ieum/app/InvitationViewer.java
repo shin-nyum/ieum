@@ -29,6 +29,7 @@ import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -47,6 +48,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.webkit.WebViewCompat;
 import androidx.webkit.WebViewFeature;
+import java.io.ByteArrayInputStream;
 import java.util.Collections;
 import java.util.Locale;
 import org.json.JSONObject;
@@ -158,6 +160,7 @@ final class InvitationViewer {
 
     void onPause() {
         Session s = current;
+        if (s != null) s.paused = true;
         if (s == null || s.web == null) return;
         try { s.web.evaluateJavascript(PAUSE_MEDIA, null); } catch (Exception ignored) {}
         try { s.web.onPause(); } catch (Exception ignored) {}
@@ -165,6 +168,7 @@ final class InvitationViewer {
 
     void onResume() {
         Session s = current;
+        if (s != null) s.paused = false;
         if (s == null || s.web == null) return;
         try { s.web.onResume(); } catch (Exception ignored) {}
     }
@@ -212,6 +216,8 @@ final class InvitationViewer {
         boolean msgListener = false;
         boolean crashed = false;
         boolean errorShown = false;
+        boolean paused = false;   // 앱이 뒤로 간 동안(뱅킹앱 사용 중)의 클립보드 변경은 모청 복사가 아님 — 안드로이드 7~9는 백그라운드에도 알려 준다
+        AlertDialog errDialog = null;
         String tag = "";
         String fallback = "";
         String lastText = null;
@@ -324,7 +330,7 @@ final class InvitationViewer {
             if (clip != null) {
                 clipListener = () -> {
                     try {
-                        if (torn || !dialog.isShowing()) return;
+                        if (torn || paused || !dialog.isShowing()) return;
                         ClipData cd = clip.getPrimaryClip();
                         if (cd == null || cd.getItemCount() == 0) return;
                         CharSequence t = cd.getItemAt(0).coerceToText(activity);
@@ -388,6 +394,18 @@ final class InvitationViewer {
                 @Override
                 public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                     return route(request.getUrl(), request.isForMainFrame(), request.hasGesture(), request.isRedirect());
+                }
+
+                @Override
+                public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                    // 이음 자신(shin-nyum.github.io)은 앱과 같은 출처 저장소를 쓴다 — 모청이 iframe·자동 이동으로 띄워도 여기선 아무것도 불러오지 않는다
+                    try {
+                        Uri u = request.getUrl();
+                        if (u != null && OWN_HOST.equals(lower(u.getHost()))) {
+                            return new WebResourceResponse("text/plain", "utf-8", 403, "Forbidden", null, new ByteArrayInputStream(new byte[0]));
+                        }
+                    } catch (Exception ignored) {}
+                    return null;
                 }
 
                 @Override
@@ -490,16 +508,17 @@ final class InvitationViewer {
         private void showLoadError() {
             if (errorShown || torn || !dialog.isShowing()) return;
             errorShown = true;
-            try {
-                new AlertDialog.Builder(activity)
+            try {   // 이 창(세션)에 묶인 대화상자 — 창이 닫히면 같이 닫히고, 버튼은 이 창만 다룬다
+                errDialog = new AlertDialog.Builder(activity)
                     .setMessage("청첩장을 불러오지 못했어요.\n인터넷 연결을 확인하거나 브라우저로 열어 보세요.")
-                    .setPositiveButton("다시 시도", (d, i) -> { errorShown = false; if (web != null) web.reload(); })
+                    .setPositiveButton("다시 시도", (d, i) -> { errorShown = false; if (!torn && web != null) web.reload(); })
                     .setNeutralButton("브라우저로 열기", (d, i) -> {
                         errorShown = false;
+                        if (torn) return;
                         try { host.openExternal(Uri.parse(fallback)); } catch (Exception ignored) {}
-                        close();
+                        try { dialog.dismiss(); } catch (Exception ignored) {}
                     })
-                    .setNegativeButton("닫기", (d, i) -> { errorShown = false; close(); })
+                    .setNegativeButton("닫기", (d, i) -> { errorShown = false; if (!torn) { try { dialog.dismiss(); } catch (Exception ignored) {} } })
                     .setOnCancelListener(d -> errorShown = false)
                     .show();
             } catch (Exception e) {
@@ -522,6 +541,8 @@ final class InvitationViewer {
         private void teardown() {
             if (torn) return;
             torn = true;
+            try { if (errDialog != null && errDialog.isShowing()) errDialog.dismiss(); } catch (Exception ignored) {}
+            errDialog = null;
             try {
                 if (clip != null && clipListener != null) clip.removePrimaryClipChangedListener(clipListener);
             } catch (Exception ignored) {}

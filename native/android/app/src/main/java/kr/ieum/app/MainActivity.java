@@ -3,7 +3,10 @@ package kr.ieum.app;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.webkit.RenderProcessGoneDetail;
+import android.webkit.WebView;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.WebViewListener;
 
 public class MainActivity extends BridgeActivity {
 
@@ -14,10 +17,20 @@ public class MainActivity extends BridgeActivity {
         try {
             Intent in = getIntent();
             boolean fromHistory = in != null && (in.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0;
-            if (in != null && (savedInstanceState != null || fromHistory) && (in.getData() != null || Intent.ACTION_SEND.equals(in.getAction()))) {
+            boolean plain = in == null || (Intent.ACTION_MAIN.equals(in.getAction()) && in.getData() == null && (in.getExtras() == null || in.getExtras().isEmpty()));
+            if ((savedInstanceState != null || fromHistory) && !plain) {   // 링크·공유·알림 클릭 인텐트 모두 — 한 번 처리한 것을 다시 처리하지 않게
                 setIntent(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setPackage(getPackageName()));
             }
         } catch (Exception ignored) {}
+        // 모든 WebView(메인·모청 뷰어)가 렌더러 하나를 같이 쓴다 — 무거운 모청 페이지로 렌더러가 죽어도 앱이 통째로 꺼지지 않게 화면만 다시 만든다(기록은 저장소에 있음).
+        // Bridge 빌더에 넣어야 한다: 플러그인 load()에서 bridge.addWebViewListener로 넣으면 Bridge 생성 직후 setWebViewListeners가 목록을 바꿔 사라진다.
+        bridgeBuilder.addWebViewListener(new WebViewListener() {
+            @Override
+            public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+                runOnUiThread(() -> { try { recreate(); } catch (Throwable ignored) {} });
+                return true;
+            }
+        });
         registerPlugin(IeumNativePlugin.class);
         registerPlugin(IeumBillingPlugin.class);
         super.onCreate(savedInstanceState);
